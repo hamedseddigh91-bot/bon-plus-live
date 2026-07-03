@@ -569,9 +569,63 @@ function AdminShellInner({
               </button>
             </div>
           </div>
+
+          <nav className="mt-3 flex gap-2 overflow-x-auto pb-1 lg:hidden" aria-label="Mobile admin sections">
+            {visibleNavItems.map((item) => {
+              const active = isActivePath(pathname, item);
+              const Icon = item.icon;
+
+              return (
+                <Link
+                  key={`mobile-row-${item.href}`}
+                  href={item.href}
+                  prefetch
+                  className={`flex h-11 shrink-0 items-center gap-2 rounded-2xl border px-3 text-xs font-black transition ${
+                    active
+                      ? "border-amber-200 bg-amber-200 text-black shadow-[0_10px_28px_rgba(251,191,36,0.18)]"
+                      : "border-white/10 bg-white/[0.055] text-white/58 hover:bg-white/[0.09] hover:text-white"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{t[item.labelKey]}</span>
+                </Link>
+              );
+            })}
+          </nav>
         </header>
 
-        <main className="bp-page-enter bp-content-shell min-h-screen px-3 py-4 sm:px-6 lg:px-8 lg:py-5">
+        <nav className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-5 gap-1 rounded-[1.35rem] border border-white/10 bg-[#080a10]/95 p-1.5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-2xl lg:hidden" aria-label="Mobile quick navigation">
+          {visibleNavItems.slice(0, 4).map((item) => {
+            const active = isActivePath(pathname, item);
+            const Icon = item.icon;
+
+            return (
+              <Link
+                key={`mobile-bottom-${item.href}`}
+                href={item.href}
+                prefetch
+                className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-black transition ${
+                  active ? "bg-amber-200 text-black" : "text-white/55 hover:bg-white/[0.08] hover:text-white"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                <span className="max-w-full truncate">{t[item.labelKey]}</span>
+              </Link>
+            );
+          })}
+
+          <button
+            type="button"
+            onClick={() => setMobileNavOpen(true)}
+            className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-black text-white/55 transition hover:bg-white/[0.08] hover:text-white"
+            aria-label="Open all menu items"
+          >
+            <Menu className="h-4 w-4" />
+            <span>Menu</span>
+          </button>
+        </nav>
+
+        <main className="bp-page-enter bp-content-shell min-h-screen px-3 py-4 pb-28 sm:px-6 lg:px-8 lg:py-5 lg:pb-5">
           <div className="bp-content-wrap mx-auto w-full max-w-[1680px]">{children}</div>
         </main>
       </div>
