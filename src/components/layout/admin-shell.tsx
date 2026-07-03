@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-import { useMemo, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
@@ -17,6 +17,7 @@ import {
   History,
   Languages,
   LogOut,
+  Menu,
   Moon,
   MessageSquare,
   Search,
@@ -24,6 +25,7 @@ import {
   Settings2,
   Sparkles,
   Sun,
+  X,
   TicketPercent,
   UserCog,
   Users,
@@ -211,6 +213,7 @@ function AdminShellInner({
   const router = useRouter();
   const { language, setLanguage, theme, setTheme, dir, t } = useAdminLanguage();
   const [isSigningOut, startSignOut] = useTransition();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const visibleModules = roleModules[role] ?? roleModules.read_only;
   const visibleNavItems = useMemo(
     () => navItems.filter((item) => visibleModules.includes(item.module)),
@@ -238,6 +241,124 @@ function AdminShellInner({
         <div className="bp-orb bp-orb-3" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.03),transparent_30%)]" />
       </div>
+
+
+      {mobileNavOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            aria-label="Close navigation overlay"
+            className="absolute inset-0 bg-black/72 backdrop-blur-sm"
+            onClick={() => setMobileNavOpen(false)}
+          />
+
+          <aside
+            className="absolute top-0 h-full w-[min(88vw,360px)] overflow-y-auto overscroll-contain border-white/10 bg-[#080a10]/96 px-4 py-4 shadow-[0_24px_90px_rgba(0,0,0,0.45)] backdrop-blur-2xl"
+            style={dir === "rtl" ? { right: 0, borderLeftWidth: 1 } : { left: 0, borderRightWidth: 1 }}
+          >
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <Link
+                href="/admin"
+                prefetch
+                onClick={() => setMobileNavOpen(false)}
+                className="flex min-w-0 items-center gap-3 rounded-[1.35rem] border border-white/10 bg-white/[0.05] p-3"
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.1rem] bg-gradient-to-br from-amber-200 via-yellow-300 to-orange-400 text-sm font-black text-black">
+                  BP
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-base font-bold text-white">{t.appName}</p>
+                  <p className="truncate text-xs text-white/42">{t.appSubtitle}</p>
+                </div>
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-white/70"
+                aria-label="Close menu"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {businesses.length > 0 && (
+              <div className="mb-4 overflow-hidden rounded-[1.25rem] border border-white/10 bg-white/[0.04] p-2">
+                <BusinessSwitcher businesses={businesses} currentSlug={currentBusinessSlug} />
+              </div>
+            )}
+
+            <div className="mb-4 rounded-[1.25rem] border border-white/10 bg-white/[0.045] px-4 py-3">
+              <p className="truncate text-xs text-white/40">{userEmail}</p>
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-200">
+                  {role.replace("_", " ")}
+                </p>
+                <span className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-2.5 py-1 text-[10px] font-bold text-emerald-100">
+                  {t.ready}
+                </span>
+              </div>
+            </div>
+
+            <nav className="space-y-1 pb-8">
+              {isPlatformAdmin && (
+                <Link
+                  href="/platform"
+                  prefetch
+                  onClick={() => setMobileNavOpen(false)}
+                  className={`group flex h-12 items-center gap-4 rounded-[1.15rem] px-4 text-[15px] font-semibold transition ${
+                    pathname.startsWith("/platform")
+                      ? "bg-gradient-to-r from-amber-200 to-yellow-300 text-black shadow-[0_18px_50px_rgba(251,191,36,0.20)]"
+                      : "text-white/58 hover:bg-white/[0.07] hover:text-white"
+                  }`}
+                >
+                  <Crown className="h-5 w-5 shrink-0" />
+                  <span>{t.platform}</span>
+                </Link>
+              )}
+
+              {visibleNavItems.map((item) => {
+                const active = isActivePath(pathname, item);
+                const Icon = item.icon;
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    prefetch
+                    onClick={() => setMobileNavOpen(false)}
+                    className={`group relative flex h-12 items-center gap-4 overflow-hidden rounded-[1.15rem] px-4 text-[15px] font-semibold transition duration-300 ${
+                      active
+                        ? "bg-gradient-to-r from-amber-200 to-yellow-300 text-black shadow-[0_18px_50px_rgba(251,191,36,0.20)]"
+                        : "text-white/58 hover:bg-white/[0.07] hover:text-white"
+                    }`}
+                  >
+                    <span
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition ${
+                        active ? "bg-black/10 text-black" : "bg-white/[0.06] text-white/55 group-hover:text-white"
+                      }`}
+                    >
+                      <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 2} />
+                    </span>
+                    <span className="truncate">{t[item.labelKey]}</span>
+                    {active && <span className="ms-auto h-2 w-2 rounded-full bg-black/50" />}
+                  </Link>
+                );
+              })}
+
+              <button
+                type="button"
+                onClick={() => startSignOut(async () => signOut())}
+                disabled={isSigningOut}
+                className="mt-4 flex h-12 w-full items-center gap-4 rounded-[1.15rem] px-4 text-[15px] font-semibold text-white/58 transition hover:bg-red-400/10 hover:text-red-100 disabled:opacity-40"
+              >
+                <LogOut className="h-5 w-5 shrink-0" />
+                <span>{isSigningOut ? t.signingOut : t.signOut}</span>
+              </button>
+            </nav>
+          </aside>
+        </div>
+      )}
 
       <aside className="fixed left-0 top-0 z-30 hidden h-screen w-[326px] overflow-y-auto overscroll-contain border-r border-white/10 bg-black/35 px-5 py-5 shadow-[24px_0_80px_rgba(0,0,0,0.25)] backdrop-blur-2xl lg:block">
         <Link
@@ -345,8 +466,33 @@ function AdminShellInner({
       </aside>
 
       <div className="relative z-10 lg:pl-[326px]">
-        <header className="sticky top-0 z-20 border-b border-white/10 bg-[#06070b]/72 px-4 py-4 backdrop-blur-2xl sm:px-6 lg:px-8">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:justify-between">
+        <header className="sticky top-0 z-20 border-b border-white/10 bg-[#06070b]/72 px-4 py-3 backdrop-blur-2xl sm:px-6 lg:px-8 lg:py-4">
+          <div className="mb-3 flex items-center justify-between gap-3 lg:hidden">
+            <Link
+              href="/admin"
+              prefetch
+              className="flex min-w-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.055] px-3 py-2"
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-200 to-yellow-300 text-xs font-black text-black">
+                BP
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-bold text-white">{t.appName}</span>
+                <span className="block truncate text-[11px] text-white/40">{t.ready}</span>
+              </span>
+            </Link>
+
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(true)}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-white/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+              aria-label="Open menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:justify-between lg:gap-4">
             <div className="min-w-0 overflow-hidden lg:max-w-[calc(100vw-760px)] xl:max-w-[calc(100vw-820px)] 2xl:max-w-[760px]">
               <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-amber-200/75">
                 <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_18px_rgba(110,231,183,0.8)]" />
@@ -358,13 +504,13 @@ function AdminShellInner({
               <p className="mt-1 max-w-full truncate text-sm text-white/42">{t[currentMeta.subtitleKey]}</p>
             </div>
 
-            <div className="flex shrink-0 flex-wrap items-center justify-start gap-2 lg:max-w-[560px] lg:justify-end xl:flex-nowrap 2xl:max-w-none">
+            <div className="-mx-1 flex w-full min-w-0 shrink-0 items-center gap-2 overflow-x-auto px-1 pb-1 lg:mx-0 lg:w-auto lg:flex-wrap lg:justify-end lg:overflow-visible lg:pb-0 xl:flex-nowrap 2xl:max-w-none">
               <div className="hidden h-11 min-w-[220px] items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.055] px-3 text-white/40 2xl:flex">
                 <Search className="h-4 w-4" />
                 <span className="text-sm">{t.searchPlaceholder}</span>
               </div>
 
-              <div className="flex items-center gap-1 rounded-2xl border border-white/10 bg-white/[0.055] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+              <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-white/10 bg-white/[0.055] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                 <div className="hidden items-center gap-1 px-2 text-xs font-semibold text-white/45 sm:flex">
                   <Languages className="h-4 w-4" />
                   {t.globalLanguage}
@@ -386,7 +532,7 @@ function AdminShellInner({
                 ))}
               </div>
 
-              <div className="flex items-center gap-1 rounded-2xl border border-white/10 bg-white/[0.055] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+              <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-white/10 bg-white/[0.055] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                 <div className="hidden items-center gap-1 px-2 text-xs font-semibold text-white/45 sm:flex">
                   {theme === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
                   {t.theme}
@@ -415,7 +561,7 @@ function AdminShellInner({
 
               <button
                 type="button"
-                className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.055] text-white/55 transition hover:bg-white/[0.08] hover:text-white"
+                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.055] text-white/55 transition hover:bg-white/[0.08] hover:text-white"
                 aria-label="Notifications"
               >
                 <Bell className="h-4 w-4" />
@@ -425,7 +571,7 @@ function AdminShellInner({
           </div>
         </header>
 
-        <main className="bp-page-enter bp-content-shell min-h-screen px-4 py-5 sm:px-6 lg:px-8">
+        <main className="bp-page-enter bp-content-shell min-h-screen px-3 py-4 sm:px-6 lg:px-8 lg:py-5">
           <div className="bp-content-wrap mx-auto w-full max-w-[1680px]">{children}</div>
         </main>
       </div>
