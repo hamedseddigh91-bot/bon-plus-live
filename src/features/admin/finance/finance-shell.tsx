@@ -7,20 +7,20 @@ import { financeText, type FinanceCopy, type FinanceLanguage } from "@/features/
 import { useAdminLanguage } from "@/lib/admin-language";
 
 type FinanceShellProps = {
-  active: "dashboard" | "closing" | "invoices" | "cash";
+  active: "closing" | "invoices" | "cash" | "costing";
   intro: keyof FinanceCopy;
   children: (props: { language: FinanceLanguage; t: FinanceCopy }) => ReactNode;
 };
 
 const tabs: Array<{
-  key: "dashboard" | "closing" | "invoices" | "cash";
+  key: "closing" | "invoices" | "cash" | "costing";
   href: string;
   labelKey: keyof FinanceCopy;
 }> = [
-  { key: "dashboard", href: "/admin/finance", labelKey: "dashboard" },
   { key: "closing", href: "/admin/finance/closing", labelKey: "closing" },
   { key: "invoices", href: "/admin/finance/invoices", labelKey: "invoices" },
   { key: "cash", href: "/admin/finance/cash", labelKey: "cash" },
+  { key: "costing", href: "/admin/finance/costing", labelKey: "costing" },
 ];
 
 export function FinanceShell({ active, intro, children }: FinanceShellProps) {

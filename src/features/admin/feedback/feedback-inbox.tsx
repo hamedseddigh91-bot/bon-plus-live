@@ -10,13 +10,13 @@ import {
   Gift,
   Inbox,
   MessageSquareText,
+  MessageCircle,
   PhoneCall,
   RefreshCw,
   Search,
   SlidersHorizontal,
   Sparkles,
   Star,
-  TrendingUp,
   X,
 } from "lucide-react";
 import {
@@ -26,6 +26,7 @@ import {
   type FeedbackInboxState,
   getAdminFeedbackDetail,
   getAdminFeedbackInbox,
+  moveFeedbackWorkflow,
   startFeedbackRecovery,
   updateFeedbackRecoveryCase,
   updateFeedbackRecoveryTask,
@@ -99,6 +100,16 @@ const text = {
     notStarted: "شروع نشده",
     priority: "اولویت",
     language: "زبان",
+    whatsapp: "واتس‌اپ",
+    whatsappTitle: "پیام واتس‌اپ",
+    openWhatsapp: "باز کردن واتس‌اپ",
+    newFeedbacks: "فیدبک‌های جدید",
+    inFollowUp: "در حال پیگیری",
+    resolvedFeedbacks: "پایان‌یافته‌ها",
+    moveToFollowUp: "انتقال به پیگیری",
+    moveToResolved: "انتقال به پایان‌یافته‌ها",
+    moveToNew: "انتقال به فیدبک‌های جدید",
+    moving: "در حال انتقال...",
   },
   ar: {
     command: "مركز التحكم بالآراء",
@@ -159,6 +170,16 @@ const text = {
     notStarted: "لم يبدأ",
     priority: "الأولوية",
     language: "اللغة",
+    whatsapp: "واتساب",
+    whatsappTitle: "رسالة واتساب",
+    openWhatsapp: "فتح واتساب",
+    newFeedbacks: "آراء جديدة",
+    inFollowUp: "قيد المتابعة",
+    resolvedFeedbacks: "مكتملة",
+    moveToFollowUp: "نقل إلى المتابعة",
+    moveToResolved: "نقل إلى المكتملة",
+    moveToNew: "نقل إلى الآراء الجديدة",
+    moving: "جارٍ النقل...",
   },
   en: {
     command: "Feedback control center",
@@ -219,6 +240,16 @@ const text = {
     notStarted: "Not started",
     priority: "Priority",
     language: "Language",
+    whatsapp: "WhatsApp",
+    whatsappTitle: "WhatsApp message",
+    openWhatsapp: "Open WhatsApp",
+    newFeedbacks: "New feedbacks",
+    inFollowUp: "In follow-up",
+    resolvedFeedbacks: "Resolved",
+    moveToFollowUp: "Move to follow-up",
+    moveToResolved: "Move to resolved",
+    moveToNew: "Move to new feedbacks",
+    moving: "Moving...",
   },
 } as const;
 
@@ -299,19 +330,49 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
   const [isPending, startTransition] = useTransition();
   const [isDetailPending, startDetailTransition] = useTransition();
   const [isRecoveryPending, startRecoveryTransition] = useTransition();
+  const [whatsappOpen, setWhatsappOpen] = useState(false);
+  const [whatsappPhone, setWhatsappPhone] = useState("");
+  const [whatsappText, setWhatsappText] = useState("");
+  const [movingFeedbackId, setMovingFeedbackId] = useState<string | null>(null);
+
+  const defaultWhatsappText = (score: number, phone: string) => {
+    const name = phone || "Customer";
+    if (score <= 2) {
+      return language === "fa"
+        ? `${name} عزیز، از تجربه‌ای که داشتید متأسفیم. بازخورد شما را با دقت بررسی می‌کنیم و برای پیگیری با شما در ارتباط خواهیم بود.`
+        : language === "ar"
+          ? `عزيزي ${name}، نأسف لتجربتك. سنراجع ملاحظاتك بعناية ونتابع معك.`
+          : `Hi ${name}, we're sorry about your experience. We are reviewing your feedback carefully and will follow up with you.`;
+    }
+    if (score >= 4) {
+      return language === "fa"
+        ? `${name} عزیز، ممنون از بازخورد و همراهی شما. خوشحالیم که تجربه خوبی داشتید.`
+        : language === "ar"
+          ? `عزيزي ${name}، شكرًا لملاحظاتك ودعمك. يسعدنا أنك حظيت بتجربة جيدة.`
+          : `Hi ${name}, thank you for your feedback and support. We're glad you had a good experience.`;
+    }
+    return language === "fa"
+      ? `${name} عزیز، ممنون که تجربه‌تان را با ما در میان گذاشتید. بازخورد شما برای بهتر شدن ما ارزشمند است.`
+      : language === "ar"
+        ? `عزيزي ${name}، شكرًا لمشاركة تجربتك معنا. ملاحظاتك تساعدنا على التحسن.`
+        : `Hi ${name}, thank you for sharing your experience. Your feedback helps us improve.`;
+  };
+
+  const openWhatsappComposer = (phone: string, score: number) => {
+    setWhatsappPhone(phone);
+    setWhatsappText(defaultWhatsappText(score, phone));
+    setWhatsappOpen(true);
+  };
+
+  const launchWhatsapp = () => {
+    const normalized = whatsappPhone.replace(/[^0-9]/g, "");
+    const url = `https://wa.me/${normalized}?text=${encodeURIComponent(whatsappText)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+    setWhatsappOpen(false);
+  };
 
   const stats = state.stats;
   const pagination = state.pagination;
-  const urgentFeedback = useMemo(
-    () => state.feedback.filter((item) => item.segment === "unhappy" || item.alertCount > 0 || item.recoveryStatus === "open" || item.recoveryStatus === "in_progress").slice(0, 5),
-    [state.feedback],
-  );
-
-  const healthPercent = useMemo(() => {
-    const total = Math.max(Number(stats.totalFeedback || 0), 1);
-    return Math.round((Number(stats.satisfiedCount || 0) / total) * 100);
-  }, [stats.satisfiedCount, stats.totalFeedback]);
-
   useEffect(() => {
     const recovery = selectedDetail?.recoveryCase;
     setCaseReason(recovery?.complaintReason ?? "");
@@ -397,11 +458,93 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
     });
   };
 
+
+  const workflowCounts = useMemo(() => {
+    return state.feedback.reduce(
+      (counts, item) => {
+        counts[item.workflowStage ?? "new"] += 1;
+        return counts;
+      },
+      { new: 0, follow_up: 0, resolved: 0 },
+    );
+  }, [state.feedback]);
+
+  const feedbackBuckets = useMemo(() => ({
+    new: state.feedback.filter((item) => (item.workflowStage ?? "new") === "new"),
+    follow_up: state.feedback.filter((item) => item.workflowStage === "follow_up"),
+    resolved: state.feedback.filter((item) => item.workflowStage === "resolved"),
+  }), [state.feedback]);
+
+  const moveFeedback = (feedbackId: string, targetStage: "new" | "follow_up" | "resolved") => {
+    setMovingFeedbackId(feedbackId);
+    startTransition(async () => {
+      const result = await moveFeedbackWorkflow(feedbackId, targetStage);
+
+      if (!result.success) {
+        setMessage(result.message ?? "Could not move feedback.");
+        setMovingFeedbackId(null);
+        return;
+      }
+
+      setState((current) => ({
+        ...current,
+        feedback: current.feedback.map((item) =>
+          item.id === feedbackId ? { ...item, workflowStage: targetStage } : item,
+        ),
+      }));
+      setMessage(null);
+      setMovingFeedbackId(null);
+    });
+  };
+
+  const renderFeedbackTable = (items: typeof state.feedback, stage: "new" | "follow_up" | "resolved") => (
+    <Card className="overflow-hidden p-0">
+      <div className="grid grid-cols-[minmax(220px,1.5fr)_76px_104px_112px_84px_92px_minmax(240px,1fr)_28px] gap-2 border-b border-[color:var(--admin-border)] bg-black/5 px-4 py-3 text-[10px] font-black uppercase tracking-[0.12em] text-[color:var(--admin-muted)]">
+        <span>{t.phone}</span><span>{t.score}</span><span>{t.level}</span><span>{t.recovery}</span><span>{t.date}</span><span>{t.whatsapp}</span><span>{t.recovery}</span><span />
+      </div>
+      <div className="divide-y divide-[color:var(--admin-border)]">
+        {items.length === 0 && <div className="p-6 text-sm text-[color:var(--admin-muted)]">{t.noFeedback}</div>}
+        {items.map((item) => (
+          <div
+            key={item.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => openDetail(item.id)}
+            onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") openDetail(item.id); }}
+            className={`grid min-h-[58px] w-full cursor-pointer grid-cols-[minmax(220px,1.5fr)_76px_104px_112px_84px_92px_minmax(240px,1fr)_28px] items-center gap-2 px-4 py-2 text-start transition hover:bg-amber-300/[0.08] ${selectedId === item.id ? "bg-amber-300/[0.10]" : ""}`}
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm font-black text-[color:var(--admin-text)]">{item.phone}</p>
+              <p className="truncate text-xs text-[color:var(--admin-muted)]">{item.summary ?? item.customerMessage ?? "—"}</p>
+            </div>
+            <div className={`flex items-center gap-1 text-sm font-black ${scoreClass(item.overallScore)}`}><Star className="h-3.5 w-3.5" />{Number(item.overallScore || 0).toFixed(1)}</div>
+            <Badge variant={segmentVariant(item.segment)}>{item.segment}</Badge>
+            <Badge variant={recoveryVariant(item.recoveryStatus)}>{recoveryLabel(item.recoveryStatus, t)}</Badge>
+            <p className="text-xs text-[color:var(--admin-muted)]">{item.createdAt.slice(5, 10)}</p>
+            <button type="button" onClick={(event) => { event.stopPropagation(); openWhatsappComposer(item.phone, Number(item.overallScore || 0)); }} className="flex items-center justify-center gap-1 rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-2 py-2 text-xs font-bold text-emerald-200"><MessageCircle className="h-3.5 w-3.5" />{t.whatsapp}</button>
+            <div className="flex flex-wrap gap-2" onClick={(event) => event.stopPropagation()}>
+              {stage !== "new" && (
+                <button type="button" disabled={movingFeedbackId === item.id} onClick={() => moveFeedback(item.id, "new")} className="rounded-xl border border-[color:var(--admin-border)] bg-black/10 px-3 py-2 text-xs font-bold text-[color:var(--admin-text)] disabled:opacity-50">{movingFeedbackId === item.id ? t.moving : t.moveToNew}</button>
+              )}
+              {stage !== "follow_up" && (
+                <button type="button" disabled={movingFeedbackId === item.id} onClick={() => moveFeedback(item.id, "follow_up")} className="rounded-xl border border-sky-300/20 bg-sky-300/10 px-3 py-2 text-xs font-bold text-sky-100 disabled:opacity-50">{movingFeedbackId === item.id ? t.moving : t.moveToFollowUp}</button>
+              )}
+              {stage !== "resolved" && (
+                <button type="button" disabled={movingFeedbackId === item.id} onClick={() => moveFeedback(item.id, "resolved")} className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-3 py-2 text-xs font-bold text-emerald-100 disabled:opacity-50">{movingFeedbackId === item.id ? t.moving : t.moveToResolved}</button>
+              )}
+            </div>
+            <ChevronRight className="h-4 w-4 text-[color:var(--admin-muted)]" />
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+
   return (
     <div className="space-y-6">
       <section className="relative overflow-hidden rounded-[2.25rem] border border-[color:var(--admin-border)] bg-[color:var(--admin-card)] p-6 shadow-2xl shadow-black/10 backdrop-blur-2xl">
         <div className="absolute inset-y-0 right-0 w-2/5 bg-[radial-gradient(circle_at_top,rgba(251,191,36,0.22),transparent_55%)]" />
-        <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-end">
+        <div className="relative">
           <div>
             <div className="mb-3 flex items-center gap-2 text-amber-300">
               <Sparkles className="h-5 w-5" />
@@ -411,37 +554,20 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
             <p className="mt-3 max-w-3xl text-sm leading-7 text-[color:var(--admin-muted)]">{t.subtitle}</p>
           </div>
 
-          <Card className="p-5">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-[color:var(--admin-muted)]">{t.health}</p>
-                <p className="mt-2 text-4xl font-black text-[color:var(--admin-text)]">{healthPercent}%</p>
-              </div>
-              <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-300/[0.12] text-emerald-200">
-                <TrendingUp className="h-7 w-7" />
-              </div>
-            </div>
-            <div className="mt-4 h-3 overflow-hidden rounded-full bg-black/10">
-              <div className="h-full rounded-full bg-emerald-300" style={{ width: `${Math.max(4, healthPercent)}%` }} />
-            </div>
-          </Card>
         </div>
       </section>
 
       {message && <div className="rounded-3xl border border-amber-300/20 bg-amber-300/[0.10] p-4 text-sm font-semibold text-amber-100">{message}</div>}
 
-      <div className="grid gap-3 md:grid-cols-4 xl:grid-cols-8">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
         <StatCard label={t.total} value={stats.totalFeedback} tone="text-[color:var(--admin-text)]" icon={<Inbox className="h-5 w-5" />} />
         <StatCard label={t.filtered} value={stats.filteredFeedback ?? pagination.filteredTotal} tone="text-amber-200" icon={<Search className="h-5 w-5" />} />
         <StatCard label={t.avg} value={Number(stats.averageScore || 0).toFixed(1)} tone="text-amber-200" icon={<Star className="h-5 w-5" />} />
         <StatCard label={t.satisfied} value={stats.satisfiedCount} tone="text-emerald-200" icon={<CheckCircle2 className="h-5 w-5" />} />
-        <StatCard label={t.medium} value={stats.mediumCount} tone="text-[color:var(--admin-text)]" icon={<MessageSquareText className="h-5 w-5" />} />
         <StatCard label={t.unhappy} value={stats.unhappyCount} tone="text-red-200" icon={<AlertTriangle className="h-5 w-5" />} />
-        <StatCard label={t.rewards} value={stats.rewardCount} tone="text-amber-200" icon={<Gift className="h-5 w-5" />} />
-        <StatCard label={t.alerts} value={stats.alertCount} tone="text-red-200" icon={<AlertTriangle className="h-5 w-5" />} />
       </div>
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <section>
         <Card className="p-5">
           <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-2 text-[color:var(--admin-text)]">
@@ -483,55 +609,28 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
             </div>
           </div>
         </Card>
-
-        <Card className="p-5">
-          <div className="mb-4 flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-black text-[color:var(--admin-text)]">{t.riskQueue}</h2>
-              <p className="mt-1 text-xs text-[color:var(--admin-muted)]">{t.unhappy} / {t.alerts} / {t.recovery}</p>
-            </div>
-            <AlertTriangle className="h-5 w-5 text-red-200" />
-          </div>
-          <div className="space-y-2">
-            {urgentFeedback.length === 0 && <p className="rounded-2xl border border-[color:var(--admin-border)] bg-black/10 p-4 text-sm text-[color:var(--admin-muted)]">{t.noRisk}</p>}
-            {urgentFeedback.map((item) => (
-              <button key={item.id} onClick={() => openDetail(item.id)} className="w-full rounded-2xl border border-red-300/15 bg-red-400/10 p-3 text-start transition hover:bg-red-400/15">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="truncate text-sm font-black text-[color:var(--admin-text)]">{item.phone}</p>
-                  <Badge variant={recoveryVariant(item.recoveryStatus)}>{recoveryLabel(item.recoveryStatus, t)}</Badge>
-                </div>
-                <p className="mt-2 text-xs text-[color:var(--admin-muted)]">{formatDate(item.createdAt)}</p>
-              </button>
-            ))}
-          </div>
-        </Card>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_430px]">
-        <Card className="overflow-hidden p-0">
-          <div className="grid grid-cols-[minmax(110px,1fr)_76px_104px_112px_84px_28px] gap-2 border-b border-[color:var(--admin-border)] bg-black/5 px-4 py-3 text-[10px] font-black uppercase tracking-[0.12em] text-[color:var(--admin-muted)]">
-            <span>{t.phone}</span><span>{t.score}</span><span>{t.level}</span><span>{t.recovery}</span><span>{t.date}</span><span />
-          </div>
-          <div className="divide-y divide-[color:var(--admin-border)]">
-            {state.feedback.length === 0 && <div className="p-6 text-sm text-[color:var(--admin-muted)]">{t.noFeedback}</div>}
-            {state.feedback.map((item) => (
-              <button key={item.id} onClick={() => openDetail(item.id)} className={`grid min-h-[58px] w-full grid-cols-[minmax(110px,1fr)_76px_104px_112px_84px_28px] items-center gap-2 px-4 py-2 text-start transition hover:bg-amber-300/[0.08] ${selectedId === item.id ? "bg-amber-300/[0.10]" : ""}`}>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-black text-[color:var(--admin-text)]">{item.phone}</p>
-                  <p className="truncate text-xs text-[color:var(--admin-muted)]">{item.summary ?? item.customerMessage ?? "—"}</p>
-                </div>
-                <div className={`flex items-center gap-1 text-sm font-black ${scoreClass(item.overallScore)}`}><Star className="h-3.5 w-3.5" />{Number(item.overallScore || 0).toFixed(1)}</div>
-                <Badge variant={segmentVariant(item.segment)}>{item.segment}</Badge>
-                <Badge variant={recoveryVariant(item.recoveryStatus)}>{recoveryLabel(item.recoveryStatus, t)}</Badge>
-                <p className="text-xs text-[color:var(--admin-muted)]">{item.createdAt.slice(5, 10)}</p>
-                <ChevronRight className="h-4 w-4 text-[color:var(--admin-muted)]" />
-              </button>
-            ))}
-          </div>
-          {pagination.hasMore && <div className="border-t border-[color:var(--admin-border)] p-3"><Button variant="secondary" onClick={() => load(state.feedback.length)} disabled={isPending}>{t.loadMore}</Button></div>}
-        </Card>
+      <div className="space-y-8">
+        {[
+          { key: "new" as const, label: t.newFeedbacks, count: workflowCounts.new, items: feedbackBuckets.new },
+          { key: "follow_up" as const, label: t.inFollowUp, count: workflowCounts.follow_up, items: feedbackBuckets.follow_up },
+          { key: "resolved" as const, label: t.resolvedFeedbacks, count: workflowCounts.resolved, items: feedbackBuckets.resolved },
+        ].map((section) => (
+          <section key={section.key} className="space-y-3">
+            <Card className="p-5">
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-lg font-black text-[color:var(--admin-text)]">{section.label}</h2>
+                <span className="text-3xl font-black text-[color:var(--admin-text)]">{section.count}</span>
+              </div>
+            </Card>
+            {renderFeedbackTable(section.items, section.key)}
+          </section>
+        ))}
 
-        <Card className="min-h-[560px] p-5">
+        {pagination.hasMore && <div><Button variant="secondary" onClick={() => load(state.feedback.length)} disabled={isPending}>{t.loadMore}</Button></div>}
+
+        <Card className="min-h-[420px] p-5">
           {!selectedId && (
             <div className="flex h-full min-h-[500px] flex-col items-center justify-center text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-amber-300/[0.10] text-amber-200"><Inbox className="h-7 w-7" /></div>
@@ -592,6 +691,18 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
           )}
         </Card>
       </div>
+      {whatsappOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-xl rounded-[2rem] border border-[color:var(--admin-border)] bg-[color:var(--admin-card)] p-5 shadow-2xl">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-xl font-black text-[color:var(--admin-text)]">{t.whatsappTitle}</h3>
+              <button type="button" onClick={() => setWhatsappOpen(false)} className="rounded-xl border border-[color:var(--admin-border)] p-2 text-[color:var(--admin-muted)]"><X className="h-4 w-4" /></button>
+            </div>
+            <textarea rows={7} value={whatsappText} onChange={(event) => setWhatsappText(event.target.value)} className="mt-4 w-full resize-none rounded-2xl border border-[color:var(--admin-border)] bg-[#111318] p-4 text-sm leading-6 text-white outline-none shadow-inner" />
+            <div className="mt-4 flex justify-end gap-2"><Button variant="secondary" onClick={() => setWhatsappOpen(false)}>{t.clear}</Button><Button onClick={launchWhatsapp}><MessageCircle className="h-4 w-4" />{t.openWhatsapp}</Button></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

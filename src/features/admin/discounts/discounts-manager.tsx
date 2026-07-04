@@ -9,6 +9,9 @@ import {
   type DiscountStatusFilter,
   getDiscountCenter,
   redeemDiscountCode,
+  createManualDiscountCode,
+  validateDiscountCode,
+  type DiscountValidation,
 } from "@/app/admin/discounts/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,6 +61,8 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
   const [search, setSearch] = useState("");
   const [redeemCode, setRedeemCode] = useState("");
   const [redeemNote, setRedeemNote] = useState("");
+  const [validation, setValidation] = useState<DiscountValidation | null>(null);
+  const [createForm, setCreateForm] = useState({ phone: "", rewardType: "percentage" as "percentage" | "fixed" | "free_cafe_item" | "free_food_item", value: "10", acquisitionSource: "Talabat", usageLimit: "1", expiryDays: "7" });
   const [message, setMessage] = useState<string | null>(
     initialState.success ? null : initialState.message ?? "Failed to load discounts."
   );
@@ -113,6 +118,29 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
     });
   };
 
+  const createCode = () => {
+    startTransition(async () => {
+      const result = await createManualDiscountCode({
+        phone: createForm.phone,
+        rewardType: createForm.rewardType,
+        value: Number(createForm.value || 0),
+        acquisitionSource: createForm.acquisitionSource,
+        usageLimit: Number(createForm.usageLimit || 1),
+        expiryDays: Number(createForm.expiryDays || 7),
+      });
+      setMessage(result.message ?? null);
+      if (result.success) { setCreateForm((current) => ({ ...current, phone: "" })); load(0); }
+    });
+  };
+
+  const validateCode = () => {
+    startTransition(async () => {
+      const result = await validateDiscountCode(redeemCode);
+      setValidation(result);
+      setMessage(result.message ?? null);
+    });
+  };
+
   return (
     <>
       <div className="space-y-6">
@@ -150,6 +178,27 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
               <p className={`mt-1 text-2xl font-semibold ${cls}`}>{value}</p>
             </Card>
           ))}
+        </div>
+
+        <div className="grid gap-5 xl:grid-cols-2">
+          <Card className="p-5">
+            <div className="mb-4 flex items-center gap-2 text-white"><TicketPercent className="h-5 w-5 text-amber-200" /><h2 className="text-lg font-semibold">Create discount code</h2></div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <input value={createForm.phone} onChange={(e)=>setCreateForm((c)=>({...c,phone:e.target.value}))} placeholder="Phone number" className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" />
+              <select value={createForm.rewardType} onChange={(e)=>setCreateForm((c)=>({...c,rewardType:e.target.value as typeof c.rewardType}))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none"><option value="percentage">Percentage</option><option value="fixed">Fixed OMR</option><option value="free_cafe_item">Free café item</option><option value="free_food_item">Free food item</option></select>
+              <input type="number" step="0.001" value={createForm.value} onChange={(e)=>setCreateForm((c)=>({...c,value:e.target.value}))} placeholder="Value / quantity" className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" />
+              <select value={createForm.acquisitionSource} onChange={(e)=>setCreateForm((c)=>({...c,acquisitionSource:e.target.value}))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none"><option>Talabat</option><option>Social Media</option><option>Google</option><option>Other</option></select>
+              <input type="number" min="1" value={createForm.usageLimit} onChange={(e)=>setCreateForm((c)=>({...c,usageLimit:e.target.value}))} placeholder="Usage limit" className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" />
+              <input type="number" min="1" value={createForm.expiryDays} onChange={(e)=>setCreateForm((c)=>({...c,expiryDays:e.target.value}))} placeholder="Expiry days" className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" />
+            </div>
+            <Button className="mt-4" onClick={createCode} disabled={isPending || !createForm.phone.trim()}>Create code</Button>
+          </Card>
+
+          <Card className="p-5">
+            <div className="mb-4 flex items-center gap-2 text-white"><Gift className="h-5 w-5 text-amber-200" /><h2 className="text-lg font-semibold">Validate & redeem</h2></div>
+            <div className="grid gap-3 md:grid-cols-[1fr_auto]"><input value={redeemCode} onChange={(e)=>{setRedeemCode(e.target.value);setValidation(null);}} placeholder="Code" className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm uppercase text-white outline-none" /><Button variant="secondary" onClick={validateCode} disabled={isPending || !redeemCode.trim()}>Validate</Button></div>
+            {validation?.code && <div className={`mt-4 rounded-2xl border p-4 ${validation.valid ? "border-emerald-300/20 bg-emerald-300/10" : "border-red-300/20 bg-red-300/10"}`}><div className="flex items-center justify-between"><b className="text-white">{validation.code.code}</b><Badge variant={validation.valid?"success":"danger"}>{validation.valid?"Valid":"Invalid"}</Badge></div><p className="mt-2 text-sm text-white/60">Source: {validation.code.reason ?? "—"}</p><p className="text-sm text-white/60">Reward: {validation.code.rewardType} {validation.code.discountValue ?? validation.code.freeItemName ?? ""}</p><p className="text-sm text-white/60">Remaining: {validation.code.remainingUses} / {validation.code.usageLimit}</p><p className="text-sm text-white/60">Expires: {formatDate(validation.code.expiresAt)}</p>{validation.valid && <><input value={redeemNote} onChange={(e)=>setRedeemNote(e.target.value)} placeholder="Optional note" className="mt-3 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white outline-none"/><Button className="mt-3" onClick={redeem} disabled={isPending}>Use one time</Button></>}</div>}
+          </Card>
         </div>
 
         <Card className="p-5">
@@ -190,30 +239,7 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
           </div>
         </Card>
 
-        <Card className="p-5">
-          <div className="mb-4 flex items-center gap-2 text-white">
-            <Gift className="h-5 w-5 text-amber-200" />
-            <h2 className="text-lg font-semibold">Redeem code</h2>
-          </div>
 
-          <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)_120px]">
-            <input
-              value={redeemCode}
-              onChange={(event) => setRedeemCode(event.target.value)}
-              placeholder="Code"
-              className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm uppercase text-white outline-none placeholder:text-white/30"
-            />
-            <input
-              value={redeemNote}
-              onChange={(event) => setRedeemNote(event.target.value)}
-              placeholder="Optional note"
-              className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none placeholder:text-white/30"
-            />
-            <Button onClick={redeem} disabled={isPending || !redeemCode.trim()}>
-              Redeem
-            </Button>
-          </div>
-        </Card>
 
         <Card className="overflow-hidden p-0">
           <div className="grid grid-cols-[minmax(130px,1fr)_120px_110px_110px_120px_120px] gap-2 border-b border-white/10 bg-white/[0.03] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/30">

@@ -48,6 +48,7 @@ export type FeedbackInboxRow = {
   summary: string | null;
   recoveryStatus: "not_created" | "open" | "in_progress" | "resolved" | "closed" | null;
   recoveryCaseId: string | null;
+  workflowStage: "new" | "follow_up" | "resolved";
 };
 
 export type FeedbackInboxState = {
@@ -233,7 +234,41 @@ export async function getAdminFeedbackInbox(
     };
   }
 
-  return data as FeedbackInboxState;
+  const inbox = data as FeedbackInboxState;
+  const feedbackIds = inbox.feedback.map((item) => item.id);
+
+  if (feedbackIds.length > 0) {
+    const { data: workflowRows, error: workflowError } = await supabase
+      .from("feedback_submissions")
+      .select("id, workflow_stage")
+      .in("id", feedbackIds);
+
+    if (!workflowError && workflowRows) {
+      const workflowById = new Map(
+        workflowRows.map((row) => [
+          row.id as string,
+          (row.workflow_stage as "new" | "follow_up" | "resolved" | null) ?? "new",
+        ]),
+      );
+
+      inbox.feedback = inbox.feedback.map((item) => ({
+        ...item,
+        workflowStage: workflowById.get(item.id) ?? "new",
+      }));
+    } else {
+      inbox.feedback = inbox.feedback.map((item) => ({
+        ...item,
+        workflowStage:
+          item.recoveryStatus === "resolved" || item.recoveryStatus === "closed"
+            ? "resolved"
+            : item.recoveryStatus === "open" || item.recoveryStatus === "in_progress"
+              ? "follow_up"
+              : "new",
+      }));
+    }
+  }
+
+  return inbox;
 }
 
 export async function getAdminFeedbackDetail(
@@ -321,3 +356,70 @@ export async function updateFeedbackRecoveryCase(
 
   return data as FeedbackDetailState;
 }
+export type FeedbackWorkflowStage = "new" | "follow_up" | "resolved";
+
+export type MoveFeedbackWorkflowResult = {
+  success: boolean;
+  message?: string;
+};
+
+export async function moveFeedbackWorkflow(
+  feedbackId: string,
+  targetStage: FeedbackWorkflowStage,
+): Promise<MoveFeedbackWorkflowResult> {
+  const supabase = createSupabaseAdminClient();
+
+  if (targetStage === "follow_up") {
+    const { data: existingCase, error: caseLookupError } = await supabase
+      .from("feedback_recovery_cases")
+      .select("id")
+      .eq("feedback_submission_id", feedbackId)
+      .maybeSingle();
+
+    if (caseLookupError) {
+      return { success: false, message: caseLookupError.message };
+    }
+
+    if (!existingCase) {
+      const { error: startError } = await supabase.rpc("admin_start_feedback_recovery_fast", {
+        p_feedback_id: feedbackId,
+      });
+
+      if (startError) {
+        return { success: false, message: startError.message };
+      }
+    }
+
+    const { error: recoveryError } = await supabase
+      .from("feedback_recovery_cases")
+      .update({ status: "in_progress", resolved_at: null })
+      .eq("feedback_submission_id", feedbackId);
+
+    if (recoveryError) {
+      return { success: false, message: recoveryError.message };
+    }
+  }
+
+  if (targetStage === "resolved") {
+    const { error: recoveryError } = await supabase
+      .from("feedback_recovery_cases")
+      .update({ status: "resolved", resolved_at: new Date().toISOString() })
+      .eq("feedback_submission_id", feedbackId);
+
+    if (recoveryError) {
+      return { success: false, message: recoveryError.message };
+    }
+  }
+
+  const { error } = await supabase
+    .from("feedback_submissions")
+    .update({ workflow_stage: targetStage })
+    .eq("id", feedbackId);
+
+  if (error) {
+    return { success: false, message: error.message };
+  }
+
+  return { success: true };
+}
+

@@ -183,7 +183,7 @@ export function FinanceCashPage({ initialState }: FinanceCashPageProps) {
             </div>
           )}
 
-          <section className="grid gap-6 xl:grid-cols-3">
+          <section className="grid gap-6 xl:grid-cols-2">
             <Card className="p-5">
               <h2 className="text-xl font-semibold text-white">{t.pettyTopup}</h2>
               <div className="mt-5 grid gap-3">
@@ -268,47 +268,7 @@ export function FinanceCashPage({ initialState }: FinanceCashPageProps) {
               </div>
             </Card>
 
-            <Card className="p-5">
-              <h2 className="text-xl font-semibold text-white">{t.remainingCases}</h2>
-              <div className="mt-5 grid gap-3">
-                <input
-                  type="date"
-                  value={ownerPaidForm.entryDate}
-                  onChange={(event) => setOwnerPaidForm((current) => ({ ...current, entryDate: event.target.value }))}
-                  className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none [color-scheme:dark] focus:border-amber-200/50"
-                />
-                <input
-                  value={ownerPaidForm.title}
-                  onChange={(event) => setOwnerPaidForm((current) => ({ ...current, title: event.target.value }))}
-                  className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none [color-scheme:dark] focus:border-amber-200/50"
-                  placeholder={t.ownerPaid}
-                />
-                <input
-                  type="number"
-                  step="0.001"
-                  value={ownerPaidForm.amount}
-                  onChange={(event) => setOwnerPaidForm((current) => ({ ...current, amount: event.target.value }))}
-                  className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none [color-scheme:dark] focus:border-amber-200/50"
-                  placeholder={t.amount}
-                />
-                <input
-                  value={ownerPaidForm.referenceNo}
-                  onChange={(event) => setOwnerPaidForm((current) => ({ ...current, referenceNo: event.target.value }))}
-                  className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none [color-scheme:dark] focus:border-amber-200/50"
-                  placeholder={t.referenceNo}
-                />
-                <textarea
-                  value={ownerPaidForm.notes}
-                  onChange={(event) => setOwnerPaidForm((current) => ({ ...current, notes: event.target.value }))}
-                  className="min-h-20 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none [color-scheme:dark] focus:border-amber-200/50"
-                  placeholder={t.notes}
-                />
-                <Button onClick={saveOwnerPaid} disabled={isPending || !ownerPaidForm.amount}>
-                  <Save className="h-4 w-4" />
-                  {t.saveOwnerPaid}
-                </Button>
-              </div>
-            </Card>
+
           </section>
 
           <section className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">

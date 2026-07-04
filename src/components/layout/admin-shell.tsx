@@ -8,27 +8,23 @@ import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
   Bell,
-  ChefHat,
   ClipboardList,
   Crown,
   Database,
-  Gift,
   Grid2X2,
   History,
   Languages,
   LogOut,
   Menu,
   Moon,
-  MessageSquare,
+  HeartHandshake,
   Search,
   Settings,
   Settings2,
   Sparkles,
   Sun,
   X,
-  TicketPercent,
   UserCog,
-  Users,
   WalletCards,
 } from "lucide-react";
 import { signOut } from "@/app/login/actions";
@@ -57,14 +53,14 @@ type AdminShellProps = {
 type LabelKey =
   | "dashboard"
   | "finance"
-  | "financeDashboard"
   | "financeClosing"
   | "financeInvoices"
   | "financeCash"
-  | "recipes"
+  | "crm"
   | "feedback"
   | "recovery"
   | "customers"
+  | "recipes"
   | "settings"
   | "questions"
   | "rewards"
@@ -128,24 +124,30 @@ const navItems: NavItem[] = [
   { labelKey: "dashboard", href: "/admin", icon: Grid2X2, module: "dashboard", exact: true },
   {
     labelKey: "finance",
-    href: "/admin/finance",
+    href: "/admin/finance/closing",
     icon: WalletCards,
     module: "operations",
     children: [
-      { labelKey: "financeDashboard", href: "/admin/finance", exact: true },
       { labelKey: "financeClosing", href: "/admin/finance/closing" },
       { labelKey: "financeInvoices", href: "/admin/finance/invoices" },
       { labelKey: "financeCash", href: "/admin/finance/cash" },
+      { labelKey: "recipes", href: "/admin/finance/costing" },
     ],
   },
-  { labelKey: "recipes", href: "/admin/recipes", icon: ChefHat, module: "operations" },
-  { labelKey: "feedback", href: "/admin/feedback", icon: MessageSquare, module: "feedback" },
-  { labelKey: "recovery", href: "/admin/recovery", icon: ClipboardList, module: "recovery" },
-  { labelKey: "customers", href: "/admin/customers", icon: Users, module: "customers" },
+  {
+    labelKey: "crm",
+    href: "/admin/crm/feedback",
+    icon: HeartHandshake,
+    module: "feedback",
+    children: [
+      { labelKey: "feedback", href: "/admin/crm/feedback" },
+      { labelKey: "recovery", href: "/admin/crm/follow-ups" },
+      { labelKey: "customers", href: "/admin/crm/customers" },
+      { labelKey: "discounts", href: "/admin/crm/loyalty" },
+    ],
+  },
   { labelKey: "settings", href: "/admin/settings", icon: Settings2, module: "settings" },
   { labelKey: "questions", href: "/admin/questions", icon: Settings, module: "questions" },
-  { labelKey: "rewards", href: "/admin/rewards", icon: Gift, module: "rewards" },
-  { labelKey: "discounts", href: "/admin/discounts", icon: TicketPercent, module: "discounts" },
   { labelKey: "reports", href: "/admin/reports", icon: BarChart3, module: "reports" },
   { labelKey: "qa", href: "/admin/qa", icon: ClipboardList, module: "dashboard" },
   { labelKey: "activityLogs", href: "/admin/activity-logs", icon: History, module: "activity_logs" },
@@ -162,6 +164,7 @@ const pageMetaByPath: Array<{
 }> = [
   { test: (path) => path === "/admin", titleKey: "pageDashboardTitle", subtitleKey: "pageDashboardSubtitle" },
   { test: (path) => path.startsWith("/admin/finance"), titleKey: "pageFinanceTitle", subtitleKey: "pageFinanceSubtitle" },
+  { test: (path) => path.startsWith("/admin/crm"), titleKey: "pageCrmTitle", subtitleKey: "pageCrmSubtitle" },
   { test: (path) => path.startsWith("/admin/recipes"), titleKey: "pageRecipesTitle", subtitleKey: "pageRecipesSubtitle" },
   { test: (path) => path.startsWith("/admin/feedback"), titleKey: "pageFeedbackTitle", subtitleKey: "pageFeedbackSubtitle" },
   { test: (path) => path.startsWith("/admin/recovery"), titleKey: "pageRecoveryTitle", subtitleKey: "pageRecoverySubtitle" },
@@ -185,6 +188,7 @@ function isActivePath(pathname: string, item: { href: string; exact?: boolean })
 function pageKeyFromPath(pathname: string) {
   if (pathname === "/admin") return "dashboard";
   if (pathname.startsWith("/admin/finance")) return "finance";
+  if (pathname.startsWith("/admin/crm")) return "crm";
   if (pathname.startsWith("/admin/recipes")) return "recipes";
   if (pathname.startsWith("/admin/feedback")) return "feedback";
   if (pathname.startsWith("/admin/recovery")) return "recovery";

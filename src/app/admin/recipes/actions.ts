@@ -14,7 +14,7 @@ export type RecipeComponent = {
 export type RecipeCostingItem = {
   id: string;
   businessId: string;
-  itemType: "ingredient" | "menu_item";
+  itemType: "ingredient" | "prep_item" | "menu_item";
   name: string;
   category: string;
   unit: string;
@@ -48,6 +48,7 @@ export type RecipeCostingSummary = {
   success: boolean;
   message?: string;
   ingredientCount: number;
+  prepItemCount: number;
   menuItemCount: number;
   averageCost: number;
   averageSalePrice: number;
@@ -59,6 +60,7 @@ export type RecipeCostingState = {
   message?: string;
   items: RecipeCostingItem[];
   ingredients: RecipeCostingItem[];
+  prepItems: RecipeCostingItem[];
   menuItems: RecipeCostingItem[];
   recipeCosts: RecipeCostRow[];
   summary: RecipeCostingSummary;
@@ -139,17 +141,40 @@ function ingredientUnitCost(item: Pick<RecipeCostingItem, "purchaseQty" | "purch
 }
 
 function calculateRecipeCosts(items: RecipeCostingItem[]): RecipeCostRow[] {
-  const ingredientMap = new Map(
-    items
-      .filter((item) => item.active && item.itemType === "ingredient")
-      .map((item) => [item.id, ingredientUnitCost(item)]),
-  );
+  const byId = new Map(items.filter((item) => item.active).map((item) => [item.id, item]));
+  const memo = new Map<string, number>();
+
+  const unitCostFor = (itemId: string, path = new Set<string>()): number => {
+    if (memo.has(itemId)) return memo.get(itemId) ?? 0;
+    const item = byId.get(itemId);
+    if (!item || path.has(itemId)) return 0;
+
+    if (item.itemType === "ingredient") {
+      const cost = ingredientUnitCost(item);
+      memo.set(itemId, cost);
+      return cost;
+    }
+
+    if (item.itemType === "prep_item") {
+      const nextPath = new Set(path);
+      nextPath.add(itemId);
+      const batchCost = item.components.reduce((sum, component) => {
+        return sum + unitCostFor(component.itemId, nextPath) * numberValue(component.qty);
+      }, 0);
+      const outputQty = numberValue(item.purchaseQty);
+      const unitCost = outputQty > 0 ? batchCost / outputQty : 0;
+      memo.set(itemId, unitCost);
+      return unitCost;
+    }
+
+    return 0;
+  };
 
   return items
     .filter((item) => item.active && item.itemType === "menu_item")
     .map((item) => {
       const recipeCost = item.components.reduce((sum, component) => {
-        return sum + (ingredientMap.get(component.itemId) ?? 0) * numberValue(component.qty);
+        return sum + unitCostFor(component.itemId) * numberValue(component.qty);
       }, 0);
       const salePrice = numberValue(item.salePrice);
       const grossProfit = salePrice - recipeCost;
@@ -181,11 +206,13 @@ function calculateRecipeCosts(items: RecipeCostingItem[]): RecipeCostRow[] {
 function buildState(items: RecipeCostingItem[], message?: string): RecipeCostingState {
   const activeItems = items.filter((item) => item.active);
   const ingredients = activeItems.filter((item) => item.itemType === "ingredient");
+  const prepItems = activeItems.filter((item) => item.itemType === "prep_item");
   const menuItems = activeItems.filter((item) => item.itemType === "menu_item");
   const recipeCosts = calculateRecipeCosts(activeItems);
   const summary: RecipeCostingSummary = {
     success: true,
     ingredientCount: ingredients.length,
+    prepItemCount: prepItems.length,
     menuItemCount: menuItems.length,
     averageCost: recipeCosts.length
       ? recipeCosts.reduce((sum, row) => sum + row.recipeCost, 0) / recipeCosts.length
@@ -201,6 +228,7 @@ function buildState(items: RecipeCostingItem[], message?: string): RecipeCosting
     message,
     items: activeItems,
     ingredients,
+    prepItems,
     menuItems,
     recipeCosts,
     summary,
@@ -260,12 +288,14 @@ export async function getRecipeCostingState(): Promise<RecipeCostingState> {
       message: context.message ?? "Recipe costing access failed.",
       items: [],
       ingredients: [],
+      prepItems: [],
       menuItems: [],
       recipeCosts: [],
       summary: {
         success: false,
         message: context.message,
         ingredientCount: 0,
+        prepItemCount: 0,
         menuItemCount: 0,
         averageCost: 0,
         averageSalePrice: 0,
@@ -290,12 +320,14 @@ export async function getRecipeCostingState(): Promise<RecipeCostingState> {
       message: error.message,
       items: [],
       ingredients: [],
+      prepItems: [],
       menuItems: [],
       recipeCosts: [],
       summary: {
         success: false,
         message: error.message,
         ingredientCount: 0,
+        prepItemCount: 0,
         menuItemCount: 0,
         averageCost: 0,
         averageSalePrice: 0,
@@ -309,7 +341,7 @@ export async function getRecipeCostingState(): Promise<RecipeCostingState> {
 
 export async function saveRecipeCostingItem(input: {
   id?: string | null;
-  itemType: "ingredient" | "menu_item";
+  itemType: "ingredient" | "prep_item" | "menu_item";
   name: string;
   category?: string;
   unit?: string;
@@ -351,7 +383,7 @@ export async function saveRecipeCostingItem(input: {
     waste_percent: Math.min(99.99, Math.max(0, numberValue(input.wastePercent))),
     sale_price: Math.max(0, numberValue(input.salePrice)),
     target_profit_percent: Math.min(100, Math.max(0, numberValue(input.targetProfitPercent || 65))),
-    components: input.itemType === "menu_item" ? normalizeComponents(input.components ?? []) : [],
+    components: input.itemType === "ingredient" ? [] : normalizeComponents(input.components ?? []),
     notes: input.notes?.trim() || null,
     active: true,
     created_by: context.actor.id,

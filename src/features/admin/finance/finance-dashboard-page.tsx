@@ -142,7 +142,7 @@ export function FinanceDashboardPage({ initialState }: FinanceDashboardPageProps
   };
 
   return (
-    <FinanceShell active="dashboard" intro="dashboardIntro">
+    <FinanceShell active="closing" intro="dashboardIntro">
       {({ language, t }) => {
         const l = pageText[language];
 

@@ -115,11 +115,13 @@ export type OperationsPageState = {
   closings: CashClosing[];
   documents: OperationDocument[];
   periods?: FinancePeriod[];
+  previousOverdueTotal?: number;
 };
 
 export type ActionResult = {
   success: boolean;
   message?: string;
+  entryId?: string;
 };
 
 function currentMonthRange() {
@@ -392,7 +394,11 @@ export async function getFinanceInvoicesPageState(input?: {
   }
 
   const supabase = createSupabaseAdminClient();
-  const [entriesResult, suppliersResult, documents] = await Promise.all([
+  const previousMonthEnd = new Date(`${dateFrom}T00:00:00Z`);
+  previousMonthEnd.setUTCDate(previousMonthEnd.getUTCDate() - 1);
+  const previousDateTo = previousMonthEnd.toISOString().slice(0, 10);
+
+  const [entriesResult, previousEntriesResult, suppliersResult, documents] = await Promise.all([
     supabase.rpc("admin_list_finance_entries_fast", {
       p_slug: context.businessSlug,
       p_date_from: dateFrom,
@@ -400,7 +406,16 @@ export async function getFinanceInvoicesPageState(input?: {
       p_status: "active",
       p_actor_auth_user_id: context.actor.id,
       p_actor_email: context.actor.email,
-      p_limit: 150,
+      p_limit: 500,
+    }),
+    supabase.rpc("admin_list_finance_entries_fast", {
+      p_slug: context.businessSlug,
+      p_date_from: "2000-01-01",
+      p_date_to: previousDateTo,
+      p_status: "active",
+      p_actor_auth_user_id: context.actor.id,
+      p_actor_email: context.actor.email,
+      p_limit: 2000,
     }),
     supabase.rpc("admin_list_operation_suppliers_fast", {
       p_slug: context.businessSlug,
@@ -410,10 +425,10 @@ export async function getFinanceInvoicesPageState(input?: {
     listDocumentsForBusiness(context.businessId),
   ]);
 
-  if (entriesResult.error || suppliersResult.error) {
+  if (entriesResult.error || previousEntriesResult.error || suppliersResult.error) {
     return {
       success: false,
-      message: entriesResult.error?.message ?? suppliersResult.error?.message ?? "Invoices could not load.",
+      message: entriesResult.error?.message ?? previousEntriesResult.error?.message ?? suppliersResult.error?.message ?? "Invoices could not load.",
       dateFrom,
       dateTo,
       overview: null,
@@ -433,6 +448,9 @@ export async function getFinanceInvoicesPageState(input?: {
     suppliers: (suppliersResult.data?.suppliers ?? []) as OperationSupplier[],
     closings: [],
     documents,
+    previousOverdueTotal: ((previousEntriesResult.data?.entries ?? []) as FinanceEntry[])
+      .filter((entry) => (entry.entryType === "expense" || entry.entryType === "cash_drawer_expense") && entry.paymentStatus !== "paid")
+      .reduce((sum, entry) => sum + Number(entry.amount || 0), 0),
   };
 }
 
@@ -603,6 +621,7 @@ export async function saveFinanceEntry(input: {
   return {
     success: true,
     message: data.message ?? "Finance entry saved.",
+    entryId: data.entryId ?? input.id ?? undefined,
   };
 }
 

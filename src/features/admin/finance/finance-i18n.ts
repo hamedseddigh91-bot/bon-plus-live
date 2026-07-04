@@ -17,6 +17,7 @@ export const financeText = {
     closing: "بستن صندوق",
     invoices: "فاکتورها",
     cash: "تنخواه و دوره‌ها",
+    costing: "رسپی و قیمت تمام‌شده",
 
     dashboardIntro: "نمای کلی از وضعیت مالی، فروش روزانه، فاکتورها، تنخواه و نمودارها.",
     closingIntro: "ثبت بستن صندوق، نقد، کارت، طلبات و تیپ کارت.",
@@ -138,6 +139,7 @@ export const financeText = {
     closing: "إغلاق الصندوق",
     invoices: "الفواتير",
     cash: "العهدة والفترات",
+    costing: "الوصفات والتكلفة",
 
     dashboardIntro: "نظرة عامة على المالية، المبيعات اليومية، الفواتير، العهدة والرسوم البيانية.",
     closingIntro: "تسجيل إغلاق الصندوق: النقد، البطاقة، طلبات، وتيب البطاقة.",
@@ -259,6 +261,7 @@ export const financeText = {
     closing: "Cash closing",
     invoices: "Invoices",
     cash: "Petty cash & periods",
+    costing: "Recipes & costing",
 
     dashboardIntro: "Overview of finance, daily sales, invoices, petty cash and charts.",
     closingIntro: "Record cash closing: cash, card, Talabat and card-machine tips.",

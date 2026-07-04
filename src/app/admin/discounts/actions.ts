@@ -1,8 +1,11 @@
 "use server";
 
+import crypto from "crypto";
+
 import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getCurrentBusinessSlug } from "@/lib/business-context";
+import { requireAuthenticatedUser } from "@/lib/auth-session";
 import type { FeedbackSegment, RewardType } from "@/types/feedback";
 
 export type DiscountStatusFilter = "all" | "available" | "used_up" | "expired" | string;
@@ -107,4 +110,112 @@ export async function redeemDiscountCode(input: {
   }
 
   return data as { success: boolean; message?: string; code?: string };
+}
+
+
+export type DiscountValidation = {
+  success: boolean;
+  message?: string;
+  valid?: boolean;
+  code?: {
+    code: string;
+    phone: string | null;
+    reason: string | null;
+    rewardType: RewardType;
+    discountValue: number | null;
+    freeItemName: string | null;
+    expiresAt: string | null;
+    usageLimit: number;
+    usedCount: number;
+    remainingUses: number;
+    status: string;
+  } | null;
+};
+
+async function discountContext() {
+  const actor = await requireAuthenticatedUser();
+  const businessSlug = await getCurrentBusinessSlug();
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase.rpc("_operations_get_context", {
+    p_slug: businessSlug,
+    p_actor_auth_user_id: actor.id,
+    p_actor_email: actor.email,
+  });
+  const context = Array.isArray(data) ? data[0] : null;
+  if (error || !context?.business_id) throw new Error(error?.message ?? "Business access was not found.");
+  return { actor, supabase, businessId: context.business_id as string };
+}
+
+function makeManualCode() {
+  return `BP-${crypto.randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase()}`;
+}
+
+export async function createManualDiscountCode(input: {
+  phone: string;
+  rewardType: "percentage" | "fixed" | "free_cafe_item" | "free_food_item";
+  value: number;
+  acquisitionSource: string;
+  usageLimit: number;
+  expiryDays: number;
+}) {
+  try {
+    const { actor, supabase, businessId } = await discountContext();
+    const phone = input.phone.trim();
+    const { data: customer } = await supabase.from("customers").select("id").eq("business_id", businessId).eq("phone", phone).maybeSingle();
+    const code = makeManualCode();
+    const expiresAt = new Date(Date.now() + Math.max(1, input.expiryDays || 7) * 86400000).toISOString();
+    const freeItem = input.rewardType === "free_cafe_item" ? `Cafe item × ${Math.max(1, input.value || 1)}` : input.rewardType === "free_food_item" ? `Food item × ${Math.max(1, input.value || 1)}` : null;
+    const rewardType: RewardType = input.rewardType === "free_cafe_item" || input.rewardType === "free_food_item" ? "free_item" : input.rewardType;
+    const { error } = await supabase.from("discount_codes").insert({
+      business_id: businessId,
+      customer_id: customer?.id ?? null,
+      code,
+      source: "manual",
+      reason: input.acquisitionSource.trim() || "Other",
+      reward_type: rewardType,
+      discount_value: rewardType === "free_item" ? null : Number(input.value || 0),
+      free_item_name: freeItem,
+      expires_at: expiresAt,
+      usage_limit: Math.max(1, Math.floor(input.usageLimit || 1)),
+      used_count: 0,
+      status: "active",
+      created_by: actor.id,
+    });
+    if (error) return { success: false, message: error.message };
+    revalidatePath("/admin/crm/loyalty");
+    return { success: true, message: "Discount code created.", code };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Could not create discount code." };
+  }
+}
+
+export async function validateDiscountCode(codeInput: string): Promise<DiscountValidation> {
+  try {
+    const { supabase, businessId } = await discountContext();
+    const codeText = codeInput.trim().toUpperCase();
+    const { data, error } = await supabase.from("discount_codes")
+      .select("code,reason,reward_type,discount_value,free_item_name,expires_at,usage_limit,used_count,status,customer_id,customers(phone)")
+      .eq("business_id", businessId).eq("code", codeText).maybeSingle();
+    if (error) return { success: false, message: error.message, valid: false, code: null };
+    if (!data) return { success: true, valid: false, message: "Code not found.", code: null };
+    const expired = Boolean(data.expires_at && new Date(data.expires_at).getTime() < Date.now());
+    const remaining = Math.max(0, Number(data.usage_limit || 0) - Number(data.used_count || 0));
+    const valid = data.status === "active" && !expired && remaining > 0;
+    const customerRel = data.customers as unknown as { phone?: string } | null;
+    return { success: true, valid, message: valid ? "Code is valid." : expired ? "Code has expired." : remaining <= 0 ? "Code usage limit reached." : "Code is not active.", code: {
+      code: data.code,
+      phone: customerRel?.phone ?? null,
+      reason: data.reason,
+      rewardType: data.reward_type,
+      discountValue: data.discount_value,
+      freeItemName: data.free_item_name,
+      expiresAt: data.expires_at,
+      usageLimit: data.usage_limit,
+      usedCount: data.used_count,
+      remainingUses: remaining,
+      status: data.status,
+    }};
+  } catch (error) {
+    return { success: false, valid: false, message: error instanceof Error ? error.message : "Validation failed.", code: null };
+  }
 }
