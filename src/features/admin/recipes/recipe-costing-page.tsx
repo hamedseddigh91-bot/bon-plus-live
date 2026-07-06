@@ -43,7 +43,9 @@ const text: Record<Language, Record<string, string>> = {
     outputQty: "مقدار خروجی نهایی",
     ingredientCount: "مواد اولیه",
     menuItemCount: "آیتم‌های منو",
-    lowMargin: "کم‌سود",
+    averageSale: "میانگین قیمت فروش",
+    averageProfit: "میانگین سود",
+    saleMultiple: "چند برابر کاست",
     averageCost: "میانگین هزینه",
     ingredientForm: "ثبت ماده اولیه",
     menuItemForm: "ثبت آیتم منو",
@@ -58,17 +60,12 @@ const text: Record<Language, Record<string, string>> = {
     purchasePrice: "قیمت خرید OMR",
     wastePercent: "ضایعات %",
     salePrice: "قیمت فروش OMR",
-    targetProfit: "سود هدف %",
     notes: "یادداشت",
     costPerUnit: "هزینه هر واحد",
     recipeCost: "هزینه رسپی",
     profit: "سود",
     margin: "مارجین",
     foodCost: "فودکاست",
-    status: "وضعیت",
-    good: "خوب",
-    watch: "بررسی",
-    danger: "خطر",
     saveIngredient: "ذخیره ماده",
     updateIngredient: "به‌روزرسانی ماده",
     saveMenuItem: "ذخیره آیتم",
@@ -98,7 +95,9 @@ const text: Record<Language, Record<string, string>> = {
     outputQty: "كمية الناتج النهائي",
     ingredientCount: "المواد",
     menuItemCount: "عناصر المنيو",
-    lowMargin: "هامش منخفض",
+    averageSale: "متوسط سعر البيع",
+    averageProfit: "متوسط الربح",
+    saleMultiple: "مضاعف سعر البيع",
     averageCost: "متوسط التكلفة",
     ingredientForm: "تسجيل مادة",
     menuItemForm: "تسجيل عنصر منيو",
@@ -113,17 +112,12 @@ const text: Record<Language, Record<string, string>> = {
     purchasePrice: "سعر الشراء OMR",
     wastePercent: "الهدر %",
     salePrice: "سعر البيع OMR",
-    targetProfit: "الربح المستهدف %",
     notes: "ملاحظات",
     costPerUnit: "تكلفة الوحدة",
     recipeCost: "تكلفة الوصفة",
     profit: "الربح",
     margin: "الهامش",
     foodCost: "تكلفة الطعام",
-    status: "الحالة",
-    good: "جيد",
-    watch: "مراجعة",
-    danger: "خطر",
     saveIngredient: "حفظ المادة",
     updateIngredient: "تحديث المادة",
     saveMenuItem: "حفظ العنصر",
@@ -153,7 +147,9 @@ const text: Record<Language, Record<string, string>> = {
     outputQty: "Final output quantity",
     ingredientCount: "Ingredients",
     menuItemCount: "Menu items",
-    lowMargin: "Low margin",
+    averageSale: "Average sale price",
+    averageProfit: "Average profit",
+    saleMultiple: "Sale ÷ cost",
     averageCost: "Average cost",
     ingredientForm: "Ingredient",
     menuItemForm: "Menu item",
@@ -168,17 +164,12 @@ const text: Record<Language, Record<string, string>> = {
     purchasePrice: "Purchase price OMR",
     wastePercent: "Waste %",
     salePrice: "Sale price OMR",
-    targetProfit: "Target profit %",
     notes: "Notes",
     costPerUnit: "Cost per unit",
     recipeCost: "Recipe cost",
     profit: "Profit",
     margin: "Margin",
     foodCost: "Food cost",
-    status: "Status",
-    good: "Good",
-    watch: "Watch",
-    danger: "Danger",
     saveIngredient: "Save ingredient",
     updateIngredient: "Update ingredient",
     saveMenuItem: "Save item",
@@ -257,7 +248,6 @@ function emptyMenuForm() {
     name: "",
     category: "Coffee",
     salePrice: "",
-    targetProfitPercent: "65",
     notes: "",
   };
 }
@@ -284,7 +274,7 @@ export function RecipeCostingPage({ initialState }: RecipeCostingPageProps) {
     if (!normalized) return initialState.recipeCosts;
 
     return initialState.recipeCosts.filter((row) =>
-      [row.name, row.category, row.status].join(" ").toLowerCase().includes(normalized),
+      [row.name, row.category].join(" ").toLowerCase().includes(normalized),
     );
   }, [initialState.recipeCosts, query]);
 
@@ -333,6 +323,7 @@ export function RecipeCostingPage({ initialState }: RecipeCostingPageProps) {
   const liveProfit = liveSalePrice - liveRecipeCost;
   const liveMargin = liveSalePrice > 0 ? (liveProfit / liveSalePrice) * 100 : 0;
   const liveFoodCost = liveSalePrice > 0 ? (liveRecipeCost / liveSalePrice) * 100 : 0;
+  const liveSaleMultiple = liveRecipeCost > 0 ? liveSalePrice / liveRecipeCost : 0;
 
   const submitIngredient = () => {
     startTransition(async () => {
@@ -396,7 +387,6 @@ export function RecipeCostingPage({ initialState }: RecipeCostingPageProps) {
         category: menuForm.category,
         unit: "piece",
         salePrice: menuForm.salePrice,
-        targetProfitPercent: menuForm.targetProfitPercent,
         components,
         notes: menuForm.notes,
       });
@@ -426,7 +416,6 @@ export function RecipeCostingPage({ initialState }: RecipeCostingPageProps) {
       name: item.name,
       category: item.category,
       salePrice: String(item.salePrice ?? ""),
-      targetProfitPercent: String(item.targetProfitPercent ?? "65"),
       notes: item.notes ?? "",
     });
     setComponents(item.components ?? []);
@@ -452,16 +441,16 @@ export function RecipeCostingPage({ initialState }: RecipeCostingPageProps) {
 
   const exportCsv = () => {
     const rows = [
-      ["Name", "Category", "Sale Price", "Recipe Cost", "Profit", "Margin %", "Food Cost %", "Status"],
+      ["Name", "Category", "Recipe Cost", "Sale Price", "Gross Profit", "Margin %", "Food Cost %", "Sale / Cost"],
       ...filteredCosts.map((row) => [
         row.name,
         row.category,
-        row.salePrice.toFixed(3),
         row.recipeCost.toFixed(3),
+        row.salePrice.toFixed(3),
         row.grossProfit.toFixed(3),
         row.marginPercent.toFixed(1),
         row.foodCostPercent.toFixed(1),
-        row.status,
+        row.saleMultiple.toFixed(2),
       ]),
     ];
     const csv = rows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(",")).join("\n");
@@ -481,27 +470,14 @@ export function RecipeCostingPage({ initialState }: RecipeCostingPageProps) {
       lang={language}
       style={{ fontFamily: language === "fa" ? "var(--font-persian)" : undefined }}
     >
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5" data-module-section="recipe-kpis">
-        <Card className="p-5">
-          <p className="text-sm text-white/45">{t.ingredientCount}</p>
-          <p className="mt-3 text-3xl font-black text-white">{initialState.summary.ingredientCount}</p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-sm text-white/45">{t.prepItemCount}</p>
-          <p className="mt-3 text-3xl font-black text-white">{initialState.summary.prepItemCount}</p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-sm text-white/45">{t.menuItemCount}</p>
-          <p className="mt-3 text-3xl font-black text-white">{initialState.summary.menuItemCount}</p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-sm text-white/45">{t.averageCost}</p>
-          <p className="mt-3 text-3xl font-black text-white">{money(initialState.summary.averageCost)}</p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-sm text-white/45">{t.lowMargin}</p>
-          <p className="mt-3 text-3xl font-black text-white">{initialState.summary.lowMarginCount}</p>
-        </Card>
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" data-module-section="recipe-kpis">
+        <Card className="p-5"><p className="text-sm text-white/45">{t.ingredientCount}</p><p className="mt-3 text-3xl font-black text-white">{initialState.summary.ingredientCount}</p></Card>
+        <Card className="p-5"><p className="text-sm text-white/45">{t.prepItemCount}</p><p className="mt-3 text-3xl font-black text-white">{initialState.summary.prepItemCount}</p></Card>
+        <Card className="p-5"><p className="text-sm text-white/45">{t.menuItemCount}</p><p className="mt-3 text-3xl font-black text-white">{initialState.summary.menuItemCount}</p></Card>
+        <Card className="p-5"><p className="text-sm text-white/45">{t.averageCost}</p><p className="mt-3 text-3xl font-black text-white">{money(initialState.summary.averageCost)}</p></Card>
+        <Card className="p-5"><p className="text-sm text-white/45">{t.averageSale}</p><p className="mt-3 text-3xl font-black text-white">{money(initialState.summary.averageSalePrice)}</p></Card>
+        <Card className="p-5"><p className="text-sm text-white/45">{t.averageProfit}</p><p className="mt-3 text-3xl font-black text-white">{money(initialState.summary.averageGrossProfit)}</p></Card>
+        <Card className="p-5"><p className="text-sm text-white/45">{t.saleMultiple}</p><p className="mt-3 text-3xl font-black text-white">{initialState.summary.averageSaleMultiple.toFixed(2)}×</p></Card>
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
@@ -540,7 +516,6 @@ export function RecipeCostingPage({ initialState }: RecipeCostingPageProps) {
             <input className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" placeholder={t.name} value={menuForm.name} onChange={(event) => setMenuForm((current) => ({ ...current, name: event.target.value }))} />
             <select className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" value={menuForm.category} onChange={(event) => setMenuForm((current) => ({ ...current, category: event.target.value }))}>{menuCategoryOptions.map((option) => <option key={option.value} value={option.value}>{option[language]}</option>)}</select>
             <input type="number" step="0.001" className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" placeholder={t.salePrice} value={menuForm.salePrice} onChange={(event) => setMenuForm((current) => ({ ...current, salePrice: event.target.value }))} />
-            <input type="number" step="0.01" className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" placeholder={t.targetProfit} value={menuForm.targetProfitPercent} onChange={(event) => setMenuForm((current) => ({ ...current, targetProfitPercent: event.target.value }))} />
             <textarea className="min-h-20 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none md:col-span-2" placeholder={t.notes} value={menuForm.notes} onChange={(event) => setMenuForm((current) => ({ ...current, notes: event.target.value }))} />
           </div>
 
@@ -575,11 +550,12 @@ export function RecipeCostingPage({ initialState }: RecipeCostingPageProps) {
             </div>
           </div>
 
-          <div className="mt-5 grid gap-3 md:grid-cols-4">
+          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             <div className="rounded-2xl border border-white/10 bg-black/20 p-3"><p className="text-xs text-white/40">{t.recipeCost}</p><p className="mt-1 font-black text-white">{money(liveRecipeCost)}</p></div>
             <div className="rounded-2xl border border-white/10 bg-black/20 p-3"><p className="text-xs text-white/40">{t.profit}</p><p className="mt-1 font-black text-white">{money(liveProfit)}</p></div>
             <div className="rounded-2xl border border-white/10 bg-black/20 p-3"><p className="text-xs text-white/40">{t.margin}</p><p className="mt-1 font-black text-white">{percent(liveMargin)}</p></div>
             <div className="rounded-2xl border border-white/10 bg-black/20 p-3"><p className="text-xs text-white/40">{t.foodCost}</p><p className="mt-1 font-black text-white">{percent(liveFoodCost)}</p></div>
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-3"><p className="text-xs text-white/40">{t.saleMultiple}</p><p className="mt-1 font-black text-white">{liveSaleMultiple.toFixed(2)}×</p></div>
           </div>
 
           <div className="mt-5 flex flex-wrap gap-3">
@@ -636,9 +612,10 @@ export function RecipeCostingPage({ initialState }: RecipeCostingPageProps) {
                 <th className="px-4 py-3">{t.category}</th>
                 <th className="px-4 py-3">{t.recipeCost}</th>
                 <th className="px-4 py-3">{t.salePrice}</th>
+                <th className="px-4 py-3">{t.profit}</th>
                 <th className="px-4 py-3">{t.margin}</th>
                 <th className="px-4 py-3">{t.foodCost}</th>
-                <th className="px-4 py-3">{t.status}</th>
+                <th className="px-4 py-3">{t.saleMultiple}</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -652,16 +629,17 @@ export function RecipeCostingPage({ initialState }: RecipeCostingPageProps) {
                     <td className="px-4 py-4">{row.category}</td>
                     <td className="px-4 py-4">{money(row.recipeCost)}</td>
                     <td className="px-4 py-4">{money(row.salePrice)}</td>
+                    <td className="px-4 py-4">{money(row.grossProfit)}</td>
                     <td className="px-4 py-4">{percent(row.marginPercent)}</td>
                     <td className="px-4 py-4">{percent(row.foodCostPercent)}</td>
-                    <td className="px-4 py-4">{t[row.status]}</td>
+                    <td className="px-4 py-4 font-black text-white">{row.saleMultiple.toFixed(2)}×</td>
                     <td className="px-4 py-4 text-right">
                       {item && <button type="button" onClick={() => editMenuItem(item)} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/65 hover:bg-white/10">{t.edit}</button>}
                     </td>
                   </tr>
                 );
               })}
-              {filteredCosts.length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-white/35">{t.noData}</td></tr>}
+              {filteredCosts.length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-white/35">{t.noData}</td></tr>}
             </tbody>
           </table>
         </div>

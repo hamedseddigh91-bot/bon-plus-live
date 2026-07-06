@@ -9,7 +9,7 @@ export default async function Page() {
   const initialState = await getActivityLogs();
 
   return (
-    <AdminShellServer>
+    <AdminShellServer requiredModule="activity_logs">
       <ActivityLogViewer initialState={initialState} />
     </AdminShellServer>
   );

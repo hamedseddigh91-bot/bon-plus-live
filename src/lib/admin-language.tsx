@@ -47,6 +47,7 @@ export const adminText = {
     currentBusiness: "بیزینس فعال",
 
     dashboard: "داشبورد",
+    actionCenter: "مرکز اقدامات",
     finance: "مالی",
     crm: "CRM",
     financeDashboard: "داشبورد مالی",
@@ -69,6 +70,8 @@ export const adminText = {
 
     pageDashboardTitle: "داشبورد مدیریتی",
     pageDashboardSubtitle: "نمای کلی عملکرد، بازخوردها و عملیات روزانه.",
+    pageActionCenterTitle: "مرکز اقدامات",
+    pageActionCenterSubtitle: "همه کارهای باز و نیازمند پیگیری در یک صفحه.",
     pageFinanceTitle: "مالی",
     pageFinanceSubtitle: "صندوق، فاکتورها، تنخواه، دوره‌ها و قیمت تمام‌شده.",
     pageCrmTitle: "CRM",
@@ -118,6 +121,7 @@ export const adminText = {
     currentBusiness: "النشاط الحالي",
 
     dashboard: "لوحة المعلومات",
+    actionCenter: "مركز الإجراءات",
     finance: "المالية",
     crm: "CRM",
     financeDashboard: "لوحة المالية",
@@ -140,6 +144,8 @@ export const adminText = {
 
     pageDashboardTitle: "لوحة الإدارة",
     pageDashboardSubtitle: "نظرة عامة على الأداء، الآراء والعمليات اليومية.",
+    pageActionCenterTitle: "مركز الإجراءات",
+    pageActionCenterSubtitle: "جميع المهام المفتوحة والمتابعات المطلوبة في مكان واحد.",
     pageFinanceTitle: "المالية",
     pageFinanceSubtitle: "الصندوق، الفواتير، العهدة، الفترات والتكلفة.",
     pageCrmTitle: "CRM",
@@ -189,6 +195,7 @@ export const adminText = {
     currentBusiness: "Current business",
 
     dashboard: "Dashboard",
+    actionCenter: "Action Center",
     finance: "Finance",
     crm: "CRM",
     financeDashboard: "Finance dashboard",
@@ -211,6 +218,8 @@ export const adminText = {
 
     pageDashboardTitle: "Management dashboard",
     pageDashboardSubtitle: "Overview of performance, feedback and daily operations.",
+    pageActionCenterTitle: "Action Center",
+    pageActionCenterSubtitle: "All open work and required follow-ups in one place.",
     pageFinanceTitle: "Finance",
     pageFinanceSubtitle: "Cash closing, invoices, petty cash, periods and costing.",
     pageCrmTitle: "CRM",

@@ -2,6 +2,7 @@
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getCurrentBusinessSlug } from "@/lib/business-context";
+import { requireModulePermission } from "@/lib/user-permissions";
 import type { FeedbackSegment, LanguageCode } from "@/types/feedback";
 
 export type RecoveryStatus = "open" | "in_progress" | "resolved" | "closed";
@@ -142,6 +143,7 @@ const emptyPagination: RecoveryBoardPagination = {
 export async function getRecoveryBoard(
   input: GetRecoveryBoardInput = {}
 ): Promise<RecoveryBoardState> {
+  await requireModulePermission("followups", "view");
   const supabase = createSupabaseAdminClient();
   const businessSlug = await getCurrentBusinessSlug();
 
@@ -171,6 +173,7 @@ export async function getRecoveryBoard(
 export async function getRecoveryCaseDetail(
   caseId: string
 ): Promise<RecoveryCaseDetailState> {
+  await requireModulePermission("followups", "view");
   const supabase = createSupabaseAdminClient();
 
   const { data, error } = await supabase.rpc("admin_get_recovery_case_detail_fast", {
@@ -193,6 +196,7 @@ export async function updateRecoveryTask(input: {
   status: RecoveryTaskStatus;
   note?: string | null;
 }): Promise<RecoveryCaseDetailState> {
+  await requireModulePermission("followups", "edit");
   const supabase = createSupabaseAdminClient();
 
   const { data, error } = await supabase.rpc("admin_update_recovery_task_fast", {
@@ -227,6 +231,7 @@ export async function updateRecoveryCase(input: {
   resolutionSummary?: string | null;
   assignedTo?: string | null;
 }): Promise<RecoveryCaseDetailState> {
+  await requireModulePermission("followups", "edit");
   const supabase = createSupabaseAdminClient();
 
   const { data, error } = await supabase.rpc("admin_update_recovery_case_fast", {

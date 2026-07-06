@@ -2,6 +2,7 @@
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getCurrentBusinessSlug } from "@/lib/business-context";
+import { requireModulePermission } from "@/lib/user-permissions";
 import type { FeedbackSegment, LanguageCode, RewardType } from "@/types/feedback";
 
 export type FeedbackInboxSegmentFilter = FeedbackSegment | "all";
@@ -206,6 +207,7 @@ const emptyPagination: FeedbackInboxPagination = {
 export async function getAdminFeedbackInbox(
   input: GetFeedbackInboxInput = {}
 ): Promise<FeedbackInboxState> {
+  await requireModulePermission("feedback", "view");
   const supabase = createSupabaseAdminClient();
   const businessSlug = await getCurrentBusinessSlug();
 
@@ -274,6 +276,7 @@ export async function getAdminFeedbackInbox(
 export async function getAdminFeedbackDetail(
   feedbackId: string
 ): Promise<FeedbackDetailState> {
+  await requireModulePermission("feedback", "view");
   const supabase = createSupabaseAdminClient();
 
   const { data, error } = await supabase.rpc("admin_get_feedback_detail_fast", {
@@ -294,6 +297,7 @@ export async function getAdminFeedbackDetail(
 export async function startFeedbackRecovery(
   feedbackId: string
 ): Promise<FeedbackDetailState> {
+  await requireModulePermission("feedback", "edit");
   const supabase = createSupabaseAdminClient();
 
   const { data, error } = await supabase.rpc("admin_start_feedback_recovery_fast", {
@@ -314,6 +318,7 @@ export async function startFeedbackRecovery(
 export async function updateFeedbackRecoveryTask(
   input: UpdateRecoveryTaskInput
 ): Promise<FeedbackDetailState> {
+  await requireModulePermission("followups", "edit");
   const supabase = createSupabaseAdminClient();
 
   const { data, error } = await supabase.rpc("admin_update_recovery_task_fast", {
@@ -336,6 +341,7 @@ export async function updateFeedbackRecoveryTask(
 export async function updateFeedbackRecoveryCase(
   input: UpdateRecoveryCaseInput
 ): Promise<FeedbackDetailState> {
+  await requireModulePermission("followups", "edit");
   const supabase = createSupabaseAdminClient();
 
   const { data, error } = await supabase.rpc("admin_update_recovery_case_fast", {
@@ -367,6 +373,7 @@ export async function moveFeedbackWorkflow(
   feedbackId: string,
   targetStage: FeedbackWorkflowStage,
 ): Promise<MoveFeedbackWorkflowResult> {
+  await requireModulePermission("feedback", "edit");
   const supabase = createSupabaseAdminClient();
 
   if (targetStage === "follow_up") {

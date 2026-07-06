@@ -2,6 +2,7 @@
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getCurrentBusinessSlug } from "@/lib/business-context";
+import { requireModulePermission } from "@/lib/user-permissions";
 
 export type ReportsState = {
   success: boolean;
@@ -38,6 +39,7 @@ export async function getReports(input: {
   dateFrom?: string;
   dateTo?: string;
 } = {}): Promise<ReportsState> {
+  await requireModulePermission("reports", "view");
   const supabase = createSupabaseAdminClient();
   const businessSlug = await getCurrentBusinessSlug();
 

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getCurrentBusinessSlug } from "@/lib/business-context";
 import { requireAuthenticatedUser } from "@/lib/auth-session";
+import { requireAnyModulePermission, requireModulePermission } from "@/lib/user-permissions";
 
 export type OperationSupplier = {
   id: string;
@@ -315,6 +316,7 @@ export async function getFinanceClosingPageState(input?: {
   dateFrom?: string;
   dateTo?: string;
 }): Promise<OperationsPageState> {
+  await requireModulePermission("finance_closing", "view");
   const context = await getOperationsContext();
   const defaultRange = currentMonthRange();
   const dateFrom = input?.dateFrom || defaultRange.dateFrom;
@@ -374,6 +376,7 @@ export async function getFinanceInvoicesPageState(input?: {
   dateFrom?: string;
   dateTo?: string;
 }): Promise<OperationsPageState> {
+  await requireModulePermission("finance_invoices", "view");
   const context = await getOperationsContext();
   const defaultRange = currentMonthRange();
   const dateFrom = input?.dateFrom || defaultRange.dateFrom;
@@ -458,6 +461,7 @@ export async function getFinanceCashPageState(input?: {
   dateFrom?: string;
   dateTo?: string;
 }): Promise<OperationsPageState> {
+  await requireModulePermission("finance_cash", "view");
   const context = await getOperationsContext();
   const defaultRange = currentMonthRange();
   const dateFrom = input?.dateFrom || defaultRange.dateFrom;
@@ -544,6 +548,7 @@ export async function saveSupplier(input: {
   notes?: string;
   active?: boolean;
 }): Promise<ActionResult> {
+  await requireAnyModulePermission(["finance_invoices", "finance_cash"], "edit");
   const { actor, businessSlug } = await actorAndSlug();
   const supabase = createSupabaseAdminClient();
 
@@ -587,6 +592,7 @@ export async function saveFinanceEntry(input: {
   referenceNo?: string;
   description?: string;
 }): Promise<ActionResult> {
+  await requireAnyModulePermission(["finance_invoices", "finance_cash"], "edit");
   const { actor, businessSlug } = await actorAndSlug();
   const supabase = createSupabaseAdminClient();
 
@@ -629,6 +635,7 @@ export async function voidFinanceEntry(input: {
   id: string;
   reason?: string;
 }): Promise<ActionResult> {
+  await requireAnyModulePermission(["finance_invoices", "finance_cash"], "edit");
   const { actor, businessSlug } = await actorAndSlug();
   const supabase = createSupabaseAdminClient();
 
@@ -664,6 +671,7 @@ export async function saveCashClosing(input: {
   otherAmount: string;
   notes?: string;
 }): Promise<ActionResult> {
+  await requireModulePermission("finance_closing", "edit");
   const { actor, businessSlug } = await actorAndSlug();
   const supabase = createSupabaseAdminClient();
 
@@ -706,6 +714,10 @@ export async function uploadOperationDocument(formData: FormData): Promise<Actio
   }
 
   const ownerType = String(formData.get("ownerType") ?? "");
+  await requireAnyModulePermission(
+    ownerType === "cash_closing" ? ["finance_closing"] : ["finance_invoices", "finance_cash"],
+    "edit",
+  );
   const ownerId = String(formData.get("ownerId") ?? "");
   const file = formData.get("file");
 
@@ -810,6 +822,7 @@ export async function uploadOperationDocument(formData: FormData): Promise<Actio
 export async function getOperationDocumentSignedUrl(input: {
   documentId: string;
 }): Promise<{ success: boolean; message?: string; url?: string }> {
+  await requireAnyModulePermission(["finance_invoices", "finance_closing", "finance_cash"], "view");
   const context = await getOperationsContext();
 
   if (!context.success || !context.businessId) {
@@ -859,6 +872,7 @@ export async function saveFinancePeriod(input: {
   openingPettyCash: string;
   notes?: string;
 }): Promise<ActionResult> {
+  await requireModulePermission("finance_cash", "edit");
   const { actor, businessSlug } = await actorAndSlug();
   const supabase = createSupabaseAdminClient();
 
@@ -891,6 +905,7 @@ export async function closeFinancePeriod(input: {
   closingPettyCash: string;
   notes?: string;
 }): Promise<ActionResult> {
+  await requireModulePermission("finance_cash", "edit");
   const { actor, businessSlug } = await actorAndSlug();
   const supabase = createSupabaseAdminClient();
 
@@ -922,6 +937,7 @@ export async function reopenFinancePeriod(input: {
   periodId: string;
   reason?: string;
 }): Promise<ActionResult> {
+  await requireModulePermission("finance_cash", "edit");
   const { actor, businessSlug } = await actorAndSlug();
   const supabase = createSupabaseAdminClient();
 

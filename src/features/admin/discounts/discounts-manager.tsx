@@ -1,7 +1,9 @@
 "use client";
 
+import { getWhatsAppTemplateText } from "@/app/admin/settings/whatsapp-messages/actions";
+
 import { useMemo, useState, useTransition } from "react";
-import { Gift, RefreshCw, Search, TicketPercent } from "lucide-react";
+import { CheckCircle2, Gift, MessageCircle, RefreshCw, Search, TicketPercent } from "lucide-react";
 import {
   type DiscountCenterState,
   type DiscountRewardFilter,
@@ -11,11 +13,13 @@ import {
   redeemDiscountCode,
   createManualDiscountCode,
   validateDiscountCode,
+  markDiscountReminderSent,
   type DiscountValidation,
 } from "@/app/admin/discounts/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useAdminLanguage } from "@/lib/admin-language";
 
 type DiscountsManagerProps = {
   initialState: DiscountCenterState;
@@ -53,7 +57,25 @@ function codeStatus(row: DiscountCenterState["codes"][number]) {
   return { label: "Available", variant: "success" as const };
 }
 
+
+function daysUntil(value: string | null | undefined) {
+  if (!value) return Number.POSITIVE_INFINITY;
+  return Math.ceil((new Date(value).getTime() - Date.now()) / 86_400_000);
+}
+
+function reminderMessage(row: DiscountCenterState["codes"][number], stage: "early" | "expiry") {
+  const reward = row.rewardType === "percentage"
+    ? `${row.discountValue ?? 0}% discount`
+    : row.rewardType === "fixed"
+      ? `${row.discountValue ?? 0} OMR discount`
+      : row.freeItemName ?? "your Bon Plus reward";
+  const phone = row.feedbackPhone ?? "Dear customer";
+  return stage === "expiry"
+    ? `${phone}, your Bon Plus discount code ${row.code} is expiring soon. Your reward is ${reward}. We would love to see you again before it expires.`
+    : `${phone}, a friendly reminder that your Bon Plus discount code ${row.code} is active. Your reward is ${reward}. We look forward to welcoming you again.`;
+}
 export function DiscountsManager({ initialState }: DiscountsManagerProps) {
+  const { language } = useAdminLanguage();
   const [state, setState] = useState(initialState);
   const [status, setStatus] = useState<DiscountStatusFilter>("all");
   const [source, setSource] = useState<DiscountSourceFilter>("all");
@@ -76,6 +98,22 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
       search.trim().length > 0,
     ].filter(Boolean).length;
   }, [rewardType, search, source, status]);
+
+  const groupedCodes = useMemo(() => {
+    const activeLong: DiscountCenterState["codes"] = [];
+    const urgent: DiscountCenterState["codes"] = [];
+    const closed: DiscountCenterState["codes"] = [];
+
+    for (const row of state.codes) {
+      const left = daysUntil(row.expiresAt);
+      const finished = row.isExpired || row.isUsedUp || row.status !== "active" || left < 0;
+      if (finished) closed.push(row);
+      else if (left <= 3) urgent.push(row);
+      else activeLong.push(row);
+    }
+
+    return { activeLong, urgent, closed };
+  }, [state.codes]);
 
   const load = (offset = 0) => {
     startTransition(async () => {
@@ -138,6 +176,31 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
       const result = await validateDiscountCode(redeemCode);
       setValidation(result);
       setMessage(result.message ?? null);
+    });
+  };
+
+  const openReminder = async (row: DiscountCenterState["codes"][number], stage: "early" | "expiry") => {
+    const saved = await getWhatsAppTemplateText(stage === "early" ? "discount_early" : "discount_expiry", language);
+    const messageText = (saved || reminderMessage(row, stage)).replaceAll("{code}", row.code).replaceAll("{expiry_date}", row.expiresAt ? new Date(row.expiresAt).toLocaleDateString() : "—").replaceAll("{remaining_days}", String(daysUntil(row.expiresAt)));
+    const phone = (row.feedbackPhone ?? "").replace(/\D/g, "");
+    const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(messageText)}` : `https://wa.me/?text=${encodeURIComponent(messageText)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const confirmReminder = (rowId: string, stage: "early" | "expiry") => {
+    startTransition(async () => {
+      const result = await markDiscountReminderSent({ codeId: rowId, stage });
+      setMessage(result.message ?? null);
+      if (result.success) {
+        const sentAt = result.sentAt ?? new Date().toISOString();
+        setState((current) => ({
+          ...current,
+          codes: current.codes.map((row) => row.id === rowId ? {
+            ...row,
+            ...(stage === "early" ? { earlyReminderSentAt: sentAt } : { expiryReminderSentAt: sentAt }),
+          } : row),
+        }));
+      }
     });
   };
 
@@ -241,45 +304,62 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
 
 
 
-        <Card className="overflow-hidden p-0">
-          <div className="grid grid-cols-[minmax(130px,1fr)_120px_110px_110px_120px_120px] gap-2 border-b border-white/10 bg-white/[0.03] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/30">
-            <span>Code</span>
-            <span>Status</span>
-            <span>Reward</span>
-            <span>Usage</span>
-            <span>Customer</span>
-            <span>Expires</span>
-          </div>
-
-          <div className="divide-y divide-white/10">
-            {state.codes.length === 0 && (
-              <div className="p-6 text-sm text-white/45">No discount code found.</div>
-            )}
-
-            {state.codes.map((row) => {
-              const statusInfo = codeStatus(row);
-
-              return (
-                <div key={row.id} className="grid min-h-[48px] grid-cols-[minmax(130px,1fr)_120px_110px_110px_120px_120px] items-center gap-2 px-4 py-2">
-                  <p className="truncate text-sm font-semibold tracking-[0.12em] text-white">{row.code}</p>
-                  <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
-                  <p className="text-sm text-white/60">{row.rewardType}</p>
-                  <p className="text-sm text-white/60">{row.usedCount}/{row.usageLimit}</p>
-                  <p className="truncate text-sm text-white/45">{row.feedbackPhone ?? "—"}</p>
-                  <p className="text-xs text-white/35">{formatDate(row.expiresAt)}</p>
+        <div className="space-y-6">
+          {[
+            { key: "urgent" as const, title: "Urgent follow-up — 3 days or less", rows: groupedCodes.urgent, stage: "expiry" as const },
+            { key: "active" as const, title: "Active codes — more than 3 days left", rows: groupedCodes.activeLong, stage: "early" as const },
+            { key: "closed" as const, title: "Used, expired or closed codes", rows: groupedCodes.closed, stage: null },
+          ].map((group) => (
+            <Card key={group.key} className="overflow-hidden p-0">
+              <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+                <h2 className="font-semibold text-white">{group.title}</h2>
+                <Badge>{group.rows.length}</Badge>
+              </div>
+              <div className="overflow-x-auto">
+                <div className="min-w-[900px]">
+                  <div className="grid grid-cols-[minmax(150px,1fr)_130px_130px_130px_150px_minmax(220px,1.2fr)] gap-2 border-b border-white/10 bg-white/[0.03] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/30">
+                    <span>Code</span><span>Status</span><span>Reward</span><span>Usage</span><span>Expires</span><span>Actions</span>
+                  </div>
+                  <div className="divide-y divide-white/10">
+                    {group.rows.length === 0 && <div className="p-6 text-sm text-white/45">No code in this section.</div>}
+                    {group.rows.map((row) => {
+                      const statusInfo = codeStatus(row);
+                      const sent = group.stage === "early" ? row.earlyReminderSentAt : group.stage === "expiry" ? row.expiryReminderSentAt : null;
+                      return (
+                        <div key={row.id} className="grid min-h-[58px] grid-cols-[minmax(150px,1fr)_130px_130px_130px_150px_minmax(220px,1.2fr)] items-center gap-2 px-4 py-3">
+                          <div><p className="truncate text-sm font-semibold tracking-[0.1em] text-white">{row.code}</p><p className="mt-1 text-xs text-white/35">{row.feedbackPhone ?? "No phone"}</p></div>
+                          <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+                          <p className="text-sm text-white/60">{row.rewardType}</p>
+                          <p className="text-sm text-white/60">{row.usedCount}/{row.usageLimit}</p>
+                          <p className="text-xs text-white/45">{formatDate(row.expiresAt)}</p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {group.stage && (
+                              <>
+                                <button type="button" disabled={Boolean(sent)} onClick={() => openReminder(row, group.stage!)} className="inline-flex items-center gap-2 rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-300/20 disabled:cursor-not-allowed disabled:opacity-35">
+                                  <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                                </button>
+                                <button type="button" disabled={Boolean(sent) || isPending} onClick={() => confirmReminder(row.id, group.stage!)} className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/65 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35">
+                                  <CheckCircle2 className="h-3.5 w-3.5" /> {sent ? "Message already sent" : "Confirm sent"}
+                                </button>
+                              </>
+                            )}
+                            {!group.stage && <span className="text-xs text-white/35">No follow-up required</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            </Card>
+          ))}
 
           {state.pagination.hasMore && (
-            <div className="border-t border-white/10 p-3">
-              <Button variant="secondary" onClick={() => load(state.codes.length)} disabled={isPending}>
-                Load more
-              </Button>
+            <div>
+              <Button variant="secondary" onClick={() => load(state.codes.length)} disabled={isPending}>Load more</Button>
             </div>
           )}
-        </Card>
+        </div>
       </div>
     </>
   );

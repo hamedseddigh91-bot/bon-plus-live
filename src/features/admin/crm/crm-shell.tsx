@@ -2,22 +2,23 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { MessageSquareText, ClipboardList, Users, BadgePercent } from "lucide-react";
+import { MessageSquareText, ClipboardList, Users, BadgePercent, Gift } from "lucide-react";
 import { useAdminLanguage } from "@/lib/admin-language";
 
-type CrmTab = "feedback" | "follow-ups" | "customers" | "loyalty";
+type CrmTab = "feedback" | "follow-ups" | "customers" | "discounts" | "loyalty";
 
 const copy = {
-  fa: { title: "CRM", subtitle: "فیدبک‌ها، پیگیری مشتریان ناراضی، مشتریان و وفاداری در یک مرکز عملیاتی.", feedback: "فیدبک‌ها", followups: "پیگیری‌ها", customers: "مشتریان", loyalty: "وفاداری و تخفیف" },
-  ar: { title: "CRM", subtitle: "الآراء، متابعة العملاء غير الراضين، العملاء والولاء في مركز تشغيلي واحد.", feedback: "الآراء", followups: "المتابعات", customers: "العملاء", loyalty: "الولاء والخصومات" },
-  en: { title: "CRM", subtitle: "Feedback, unhappy-customer follow-up, customers and loyalty in one operational center.", feedback: "Feedback", followups: "Follow-ups", customers: "Customers", loyalty: "Loyalty & discounts" },
+  fa: { title: "CRM", subtitle: "فیدبک‌ها، پیگیری مشتریان ناراضی، مشتریان، تخفیف‌ها و وفاداری در یک مرکز عملیاتی.", feedback: "فیدبک‌ها", followups: "پیگیری‌ها", customers: "مشتریان", discounts: "تخفیف‌ها", loyalty: "وفاداری" },
+  ar: { title: "CRM", subtitle: "الآراء، المتابعات، العملاء، الخصومات والولاء في مركز تشغيلي واحد.", feedback: "الآراء", followups: "المتابعات", customers: "العملاء", discounts: "الخصومات", loyalty: "الولاء" },
+  en: { title: "CRM", subtitle: "Feedback, follow-ups, customers, discounts and loyalty in one operational center.", feedback: "Feedback", followups: "Follow-ups", customers: "Customers", discounts: "Discounts", loyalty: "Loyalty" },
 } as const;
 
 const tabs = [
   { key: "feedback" as const, href: "/admin/crm/feedback", label: "feedback" as const, icon: MessageSquareText },
   { key: "follow-ups" as const, href: "/admin/crm/follow-ups", label: "followups" as const, icon: ClipboardList },
   { key: "customers" as const, href: "/admin/crm/customers", label: "customers" as const, icon: Users },
-  { key: "loyalty" as const, href: "/admin/crm/loyalty", label: "loyalty" as const, icon: BadgePercent },
+  { key: "discounts" as const, href: "/admin/crm/discounts", label: "discounts" as const, icon: BadgePercent },
+  { key: "loyalty" as const, href: "/admin/crm/loyalty", label: "loyalty" as const, icon: Gift },
 ];
 
 export function CrmShell({ active, children }: { active: CrmTab; children: ReactNode }) {
@@ -30,7 +31,7 @@ export function CrmShell({ active, children }: { active: CrmTab; children: React
         <div className="relative z-10">
           <h1 className="text-3xl font-black tracking-[-0.04em] text-[color:var(--admin-text)] sm:text-4xl">{t.title}</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[color:var(--admin-muted)]">{t.subtitle}</p>
-          <div className="mt-6 grid gap-3 md:grid-cols-4">
+          <div className="mt-6 grid gap-3 md:grid-cols-5">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const selected = active === tab.key;

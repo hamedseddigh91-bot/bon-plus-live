@@ -2,6 +2,7 @@
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getCurrentBusinessSlug } from "@/lib/business-context";
+import { requireModulePermission } from "@/lib/user-permissions";
 import type { FeedbackSegment, LanguageCode, RewardType } from "@/types/feedback";
 
 export type CustomerRiskFilter = "all" | "repeat" | "low_score" | "unhappy";
@@ -122,6 +123,7 @@ const emptyPagination: CustomerDirectoryPagination = {
 export async function getCustomerDirectory(
   input: GetCustomerDirectoryInput = {}
 ): Promise<CustomerDirectoryState> {
+  await requireModulePermission("customers", "view");
   const supabase = createSupabaseAdminClient();
   const businessSlug = await getCurrentBusinessSlug();
 
@@ -152,6 +154,7 @@ export async function getCustomerDirectory(
 export async function getCustomerProfile(
   customerId: string
 ): Promise<CustomerProfileState> {
+  await requireModulePermission("customers", "view");
   const supabase = createSupabaseAdminClient();
 
   const { data, error } = await supabase.rpc("admin_get_customer_profile_fast", {

@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getCurrentBusinessSlug } from "@/lib/business-context";
 import { requireAuthenticatedUser } from "@/lib/auth-session";
+import { requireModulePermission } from "@/lib/user-permissions";
 import type { FeedbackSegment, RewardType } from "@/types/feedback";
 
 export type DiscountStatusFilter = "all" | "available" | "used_up" | "expired" | string;
@@ -30,6 +31,9 @@ export type DiscountCodeRow = {
   feedbackSegment: FeedbackSegment | null;
   isExpired: boolean;
   isUsedUp: boolean;
+  reason?: string | null;
+  earlyReminderSentAt?: string | null;
+  expiryReminderSentAt?: string | null;
 };
 
 export type DiscountCenterState = {
@@ -60,6 +64,7 @@ export async function getDiscountCenter(input: {
   limit?: number;
   offset?: number;
 } = {}): Promise<DiscountCenterState> {
+  await requireModulePermission("discounts", "view");
   const supabase = createSupabaseAdminClient();
   const businessSlug = await getCurrentBusinessSlug();
 
@@ -84,13 +89,47 @@ export async function getDiscountCenter(input: {
     };
   }
 
-  return data as DiscountCenterState;
+  const state = data as DiscountCenterState;
+  const ids = state.codes.map((row) => row.id);
+
+  if (ids.length > 0) {
+    const { data: reminderRows } = await supabase
+      .from("discount_codes")
+      .select("id,reason,early_reminder_sent_at,expiry_reminder_sent_at,customer_id,customers(phone)")
+      .in("id", ids);
+
+    const reminders = new Map(
+      (reminderRows ?? []).map((row) => {
+        const customerRel = row.customers as unknown as { phone?: string } | null;
+        return [row.id, {
+          reason: row.reason ?? null,
+          phone: customerRel?.phone ?? null,
+          earlyReminderSentAt: row.early_reminder_sent_at ?? null,
+          expiryReminderSentAt: row.expiry_reminder_sent_at ?? null,
+        }];
+      }),
+    );
+
+    state.codes = state.codes.map((row) => {
+      const extra = reminders.get(row.id);
+      return extra ? {
+        ...row,
+        reason: extra.reason,
+        feedbackPhone: row.feedbackPhone ?? extra.phone,
+        earlyReminderSentAt: extra.earlyReminderSentAt,
+        expiryReminderSentAt: extra.expiryReminderSentAt,
+      } : row;
+    });
+  }
+
+  return state;
 }
 
 export async function redeemDiscountCode(input: {
   code: string;
   note?: string;
 }) {
+  await requireModulePermission("discounts", "edit");
   const supabase = createSupabaseAdminClient();
   const businessSlug = await getCurrentBusinessSlug();
 
@@ -158,6 +197,7 @@ export async function createManualDiscountCode(input: {
   usageLimit: number;
   expiryDays: number;
 }) {
+  await requireModulePermission("discounts", "edit");
   try {
     const { actor, supabase, businessId } = await discountContext();
     const phone = input.phone.trim();
@@ -190,6 +230,7 @@ export async function createManualDiscountCode(input: {
 }
 
 export async function validateDiscountCode(codeInput: string): Promise<DiscountValidation> {
+  await requireModulePermission("discounts", "view");
   try {
     const { supabase, businessId } = await discountContext();
     const codeText = codeInput.trim().toUpperCase();
@@ -217,5 +258,38 @@ export async function validateDiscountCode(codeInput: string): Promise<DiscountV
     }};
   } catch (error) {
     return { success: false, valid: false, message: error instanceof Error ? error.message : "Validation failed.", code: null };
+  }
+}
+
+export async function markDiscountReminderSent(input: { codeId: string; stage: "early" | "expiry" }) {
+  await requireModulePermission("discounts", "edit");
+  try {
+    const { actor, supabase, businessId } = await discountContext();
+    const column = input.stage === "early" ? "early_reminder_sent_at" : "expiry_reminder_sent_at";
+    const byColumn = input.stage === "early" ? "early_reminder_sent_by" : "expiry_reminder_sent_by";
+    const now = new Date().toISOString();
+
+    const { error } = await supabase
+      .from("discount_codes")
+      .update({ [column]: now, [byColumn]: actor.id, updated_at: now })
+      .eq("id", input.codeId)
+      .eq("business_id", businessId);
+
+    if (error) return { success: false, message: error.message };
+
+    await supabase.from("activity_logs").insert({
+      business_id: businessId,
+      actor_user_id: actor.id,
+      action: "discount_reminder_confirmed",
+      entity_type: "discount_code",
+      entity_id: input.codeId,
+      metadata: { stage: input.stage, confirmed_at: now },
+    });
+
+    revalidatePath("/admin/crm/loyalty");
+    revalidatePath("/admin/action-center");
+    return { success: true, message: "Reminder marked as sent.", sentAt: now };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Could not confirm reminder." };
   }
 }

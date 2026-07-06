@@ -1,0 +1,9 @@
+"use server";
+import { revalidatePath } from "next/cache";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { requireUserContext } from "@/lib/auth-session";
+import { requireModulePermission } from "@/lib/user-permissions";
+export type WhatsAppTemplate={id:string;template_key:string;label:string;message_fa:string;message_ar:string;message_en:string;is_active:boolean};
+export async function getWhatsAppTemplates(){const ctx=await requireModulePermission("settings_whatsapp","view");const db:any=createSupabaseAdminClient();const {data,error}=await db.from("whatsapp_message_templates").select("id,template_key,label,message_fa,message_ar,message_en,is_active").eq("business_id",ctx.currentBusiness.id).order("sort_order");return{success:!error,message:error?.message,templates:(data||[]) as WhatsAppTemplate[]}}
+export async function saveWhatsAppTemplate(input:WhatsAppTemplate){const ctx=await requireModulePermission("settings_whatsapp","edit");const db:any=createSupabaseAdminClient();const {error}=await db.from("whatsapp_message_templates").update({message_fa:input.message_fa,message_ar:input.message_ar,message_en:input.message_en,is_active:input.is_active,updated_at:new Date().toISOString()}).eq("id",input.id).eq("business_id",ctx.currentBusiness.id);if(error)return{success:false,message:error.message};revalidatePath("/admin/settings/whatsapp-messages");return{success:true,message:"Saved"}}
+export async function getWhatsAppTemplateText(templateKey:string,language:"fa"|"ar"|"en"="en"){const ctx=await requireUserContext();const db:any=createSupabaseAdminClient();const {data}=await db.from("whatsapp_message_templates").select("message_fa,message_ar,message_en,is_active").eq("business_id",ctx.currentBusiness.id).eq("template_key",templateKey).maybeSingle();if(!data?.is_active)return null;return data[`message_${language}`]||data.message_en||data.message_ar||data.message_fa||null}

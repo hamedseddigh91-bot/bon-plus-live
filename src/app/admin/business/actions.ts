@@ -7,7 +7,7 @@ import {
   BUSINESS_COOKIE_NAME,
   getCurrentBusinessSlug,
 } from "@/lib/business-context";
-import { getAuthenticatedUser } from "@/lib/auth-session";
+import { getAuthenticatedUser, getPlatformAdminContext } from "@/lib/auth-session";
 
 export type BusinessListItem = {
   id: string;
@@ -32,36 +32,40 @@ export async function listBusinesses(input: { search?: string } = {}): Promise<B
   const user = await getAuthenticatedUser();
   const currentSlug = await getCurrentBusinessSlug();
 
-  if (user) {
-    const supabase = createSupabaseAdminClient();
-
-    const { data, error } = await supabase.rpc("admin_get_user_context_fast", {
-      p_auth_user_id: user.id,
-      p_email: user.email,
-      p_current_slug: currentSlug,
-    });
-
-    if (!error && data?.success) {
-      return {
-        success: true,
-        businesses: data.businesses ?? [],
-        currentSlug: data.currentBusiness?.slug ?? currentSlug,
-      };
-    }
+  if (!user) {
+    return { success: false, message: "Authentication required.", businesses: [], currentSlug };
   }
 
   const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase.rpc("admin_get_user_context_fast", {
+    p_auth_user_id: user.id,
+    p_email: user.email,
+    p_current_slug: currentSlug,
+  });
 
-  const { data, error } = await supabase.rpc("admin_list_businesses_fast", {
+  if (!error && data?.success) {
+    return {
+      success: true,
+      businesses: data.businesses ?? [],
+      currentSlug: data.currentBusiness?.slug ?? currentSlug,
+    };
+  }
+
+  const platformAdmin = await getPlatformAdminContext();
+  if (!platformAdmin) {
+    return { success: false, message: "Business access denied.", businesses: [], currentSlug };
+  }
+
+  const { data: adminData, error: adminError } = await supabase.rpc("admin_list_businesses_fast", {
     p_search: input.search?.trim() || null,
   });
 
-  if (error) {
-    return { success: false, message: error.message, businesses: [], currentSlug };
+  if (adminError) {
+    return { success: false, message: adminError.message, businesses: [], currentSlug };
   }
 
   return {
-    ...(data as Omit<BusinessListState, "currentSlug">),
+    ...(adminData as Omit<BusinessListState, "currentSlug">),
     currentSlug,
   };
 }
@@ -74,6 +78,10 @@ export async function setCurrentBusiness(slug: string) {
   }
 
   const user = await getAuthenticatedUser();
+
+  if (!user) {
+    return { success: false, message: "Authentication required." };
+  }
 
   if (user) {
     const supabase = createSupabaseAdminClient();

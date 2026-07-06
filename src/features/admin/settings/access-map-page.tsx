@@ -1,0 +1,4 @@
+"use client";
+import { Card } from "@/components/ui/card";
+const roles=["Owner","Manager","Accountant","Staff","Read only"];const modules=[{m:"Dashboard",a:[1,1,1,1,1]},{m:"CRM",a:[1,1,0,1,0]},{m:"Finance",a:[1,1,1,0,0]},{m:"Costing",a:[1,1,1,0,0]},{m:"Users",a:[1,0,0,0,0]},{m:"Settings",a:[1,1,0,0,0]},{m:"Sensitive approvals",a:[1,1,0,0,0]}];
+export function AccessMapPage(){return <Card className="overflow-x-auto p-6"><h1 className="text-2xl font-black text-[color:var(--admin-text)]">Access Map</h1><table className="mt-5 min-w-[760px] w-full text-sm"><thead><tr><th className="p-3 text-left">Module / Role</th>{roles.map(r=><th className="p-3 text-center" key={r}>{r}</th>)}</tr></thead><tbody>{modules.map(row=><tr key={row.m} className="border-t border-[color:var(--admin-border)]"><td className="p-3 font-bold text-[color:var(--admin-text)]">{row.m}</td>{row.a.map((v,i)=><td key={i} className="p-3 text-center">{v?"✓":"—"}</td>)}</tr>)}</tbody></table></Card>}

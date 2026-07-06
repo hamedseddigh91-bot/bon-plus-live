@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getCurrentBusinessSlug } from "@/lib/business-context";
-import { requireAuthenticatedUser } from "@/lib/auth-session";
 import type { BusinessRole } from "@/lib/auth-session";
+import { requireModulePermission } from "@/lib/user-permissions";
 
 export type BusinessUser = {
   id: string;
@@ -88,7 +88,7 @@ async function createOrUpdateAuthUser(input: {
 }
 
 export async function getBusinessUsers(): Promise<UsersState> {
-  const actor = await requireAuthenticatedUser();
+  const actor = (await requireModulePermission("settings_users", "view")).user;
   const businessSlug = await getCurrentBusinessSlug();
   const supabase = createSupabaseAdminClient();
 
@@ -116,7 +116,7 @@ export async function createBusinessUserDirect(input: {
   role: BusinessRole;
   active: boolean;
 }) {
-  const actor = await requireAuthenticatedUser();
+  const actor = (await requireModulePermission("settings_users", "edit")).user;
   const businessSlug = await getCurrentBusinessSlug();
   const supabase = createSupabaseAdminClient();
 
@@ -192,7 +192,7 @@ export async function saveBusinessUser(input: {
   role: BusinessRole;
   active: boolean;
 }) {
-  const actor = await requireAuthenticatedUser();
+  const actor = (await requireModulePermission("settings_users", "edit")).user;
   const businessSlug = await getCurrentBusinessSlug();
   const supabase = createSupabaseAdminClient();
 

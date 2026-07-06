@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { requireUserContext } from "@/lib/auth-session";
 import type { BusinessRole } from "@/lib/auth-session";
 import type { LanguageCode } from "@/types/feedback";
+import { requireModulePermission, userHasModulePermission } from "@/lib/user-permissions";
 
 type AdminLanguage = "fa" | "ar" | "en";
 type AdminTheme = "dark" | "light";
@@ -278,7 +278,8 @@ function mapSettings(params: {
 }
 
 export async function getCoreControlState(): Promise<CoreControlState> {
-  const context = await requireUserContext();
+  const context = await requireModulePermission("settings_general", "view");
+  const canEdit = await userHasModulePermission(context, "settings_general", "edit");
   const supabase = createSupabaseAdminClient();
 
   const { data: business, error: businessError } = await supabase
@@ -305,7 +306,7 @@ export async function getCoreControlState(): Promise<CoreControlState> {
       success: true,
       settings: mapSettings({ business, appSettings }),
       role: context.role,
-      canEdit: context.role === "owner" || context.role === "manager",
+      canEdit,
       permissions: rolePermissions,
     };
   } catch (error) {
@@ -321,18 +322,7 @@ export async function getCoreControlState(): Promise<CoreControlState> {
 }
 
 export async function saveCoreControlSettings(input: SaveCoreControlInput): Promise<CoreControlState> {
-  const context = await requireUserContext();
-
-  if (context.role !== "owner" && context.role !== "manager") {
-    return {
-      success: false,
-      message: "Only owner or manager can update core settings.",
-      settings: null,
-      role: context.role,
-      canEdit: false,
-      permissions: rolePermissions,
-    };
-  }
+  const context = await requireModulePermission("settings_general", "edit");
 
   const businessName = cleanText(input.businessName);
 
@@ -541,4 +531,57 @@ export async function saveBusinessSettings(input: SaveBusinessSettingsInput): Pr
       qrImageUrl: result.settings.qrImageUrl,
     },
   };
+}
+
+export async function uploadBusinessLogo(formData: FormData): Promise<{ success: boolean; message: string; logoUrl?: string | null }> {
+  const context = await requireModulePermission("settings_general", "edit");
+
+  const file = formData.get("logo");
+  if (!(file instanceof File) || file.size === 0) {
+    return { success: false, message: "Please choose a logo file." };
+  }
+  if (!file.type.startsWith("image/")) {
+    return { success: false, message: "Logo must be an image file." };
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    return { success: false, message: "Logo must be 5 MB or smaller." };
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const extension = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
+  const path = `${context.currentBusiness.id}/logo-${Date.now()}.${extension}`;
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const { error: uploadError } = await supabase.storage
+    .from("business-assets")
+    .upload(path, bytes, { contentType: file.type, upsert: false, cacheControl: "3600" });
+
+  if (uploadError) return { success: false, message: uploadError.message };
+  const { data } = supabase.storage.from("business-assets").getPublicUrl(path);
+  const logoUrl = data.publicUrl;
+  const { error: updateError } = await supabase
+    .from("businesses")
+    .update({ logo_url: logoUrl, updated_at: new Date().toISOString() })
+    .eq("id", context.currentBusiness.id);
+
+  if (updateError) {
+    await supabase.storage.from("business-assets").remove([path]);
+    return { success: false, message: updateError.message };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/settings/general");
+  return { success: true, message: "Logo uploaded.", logoUrl };
+}
+
+export async function removeBusinessLogo(): Promise<{ success: boolean; message: string; logoUrl?: null }> {
+  const context = await requireModulePermission("settings_general", "edit");
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase
+    .from("businesses")
+    .update({ logo_url: null, updated_at: new Date().toISOString() })
+    .eq("id", context.currentBusiness.id);
+  if (error) return { success: false, message: error.message };
+  revalidatePath("/admin");
+  revalidatePath("/admin/settings/general");
+  return { success: true, message: "Logo removed.", logoUrl: null };
 }

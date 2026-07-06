@@ -7,7 +7,6 @@ import { useMemo, useState, useTransition } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
-  Bell,
   ClipboardList,
   Crown,
   Database,
@@ -19,12 +18,10 @@ import {
   Moon,
   HeartHandshake,
   Search,
-  Settings,
   Settings2,
   Sparkles,
   Sun,
   X,
-  UserCog,
   WalletCards,
 } from "lucide-react";
 import { signOut } from "@/app/login/actions";
@@ -38,6 +35,7 @@ import {
   type AdminLanguage,
   useAdminLanguage,
 } from "@/lib/admin-language";
+import { AdminPermissionsProvider } from "@/lib/admin-permissions";
 
 type BusinessRole = "owner" | "manager" | "accountant" | "staff" | "read_only";
 
@@ -48,10 +46,12 @@ type AdminShellProps = {
   role?: BusinessRole;
   userEmail?: string;
   isPlatformAdmin?: boolean;
+  modulePermissions?: Record<string, { view: boolean; edit: boolean }>;
 };
 
 type LabelKey =
   | "dashboard"
+  | "actionCenter"
   | "finance"
   | "financeClosing"
   | "financeInvoices"
@@ -121,7 +121,19 @@ const roleModules: Record<BusinessRole, string[]> = {
 };
 
 const navItems: NavItem[] = [
-  { labelKey: "dashboard", href: "/admin", icon: Grid2X2, module: "dashboard", exact: true },
+  {
+    labelKey: "dashboard",
+    href: "/admin",
+    icon: Grid2X2,
+    module: "dashboard",
+    exact: true,
+  },
+  {
+    labelKey: "actionCenter",
+    href: "/admin/action-center",
+    icon: ClipboardList,
+    module: "action_center",
+  },
   {
     labelKey: "finance",
     href: "/admin/finance/closing",
@@ -143,16 +155,40 @@ const navItems: NavItem[] = [
       { labelKey: "feedback", href: "/admin/crm/feedback" },
       { labelKey: "recovery", href: "/admin/crm/follow-ups" },
       { labelKey: "customers", href: "/admin/crm/customers" },
-      { labelKey: "discounts", href: "/admin/crm/loyalty" },
+      { labelKey: "discounts", href: "/admin/crm/discounts" },
+      { labelKey: "rewards", href: "/admin/crm/loyalty" },
     ],
   },
-  { labelKey: "settings", href: "/admin/settings", icon: Settings2, module: "settings" },
-  { labelKey: "questions", href: "/admin/questions", icon: Settings, module: "questions" },
-  { labelKey: "reports", href: "/admin/reports", icon: BarChart3, module: "reports" },
-  { labelKey: "qa", href: "/admin/qa", icon: ClipboardList, module: "dashboard" },
-  { labelKey: "activityLogs", href: "/admin/activity-logs", icon: History, module: "activity_logs" },
-  { labelKey: "users", href: "/admin/users", icon: UserCog, module: "users" },
-  { labelKey: "system", href: "/admin/system-status", icon: Database, module: "system" },
+  {
+    labelKey: "settings",
+    href: "/admin/settings",
+    icon: Settings2,
+    module: "settings",
+  },
+  {
+    labelKey: "reports",
+    href: "/admin/reports",
+    icon: BarChart3,
+    module: "reports",
+  },
+  {
+    labelKey: "qa",
+    href: "/admin/qa",
+    icon: ClipboardList,
+    module: "dashboard",
+  },
+  {
+    labelKey: "activityLogs",
+    href: "/admin/activity-logs",
+    icon: History,
+    module: "activity_logs",
+  },
+  {
+    labelKey: "system",
+    href: "/admin/system-status",
+    icon: Database,
+    module: "system",
+  },
 ];
 
 type AdminCopy = (typeof adminText)[AdminLanguage];
@@ -162,31 +198,99 @@ const pageMetaByPath: Array<{
   titleKey: keyof AdminCopy;
   subtitleKey: keyof AdminCopy;
 }> = [
-  { test: (path) => path === "/admin", titleKey: "pageDashboardTitle", subtitleKey: "pageDashboardSubtitle" },
-  { test: (path) => path.startsWith("/admin/finance"), titleKey: "pageFinanceTitle", subtitleKey: "pageFinanceSubtitle" },
-  { test: (path) => path.startsWith("/admin/crm"), titleKey: "pageCrmTitle", subtitleKey: "pageCrmSubtitle" },
-  { test: (path) => path.startsWith("/admin/recipes"), titleKey: "pageRecipesTitle", subtitleKey: "pageRecipesSubtitle" },
-  { test: (path) => path.startsWith("/admin/feedback"), titleKey: "pageFeedbackTitle", subtitleKey: "pageFeedbackSubtitle" },
-  { test: (path) => path.startsWith("/admin/recovery"), titleKey: "pageRecoveryTitle", subtitleKey: "pageRecoverySubtitle" },
-  { test: (path) => path.startsWith("/admin/customers"), titleKey: "pageCustomersTitle", subtitleKey: "pageCustomersSubtitle" },
-  { test: (path) => path.startsWith("/admin/settings"), titleKey: "pageSettingsTitle", subtitleKey: "pageSettingsSubtitle" },
-  { test: (path) => path.startsWith("/admin/questions"), titleKey: "pageQuestionsTitle", subtitleKey: "pageQuestionsSubtitle" },
-  { test: (path) => path.startsWith("/admin/rewards"), titleKey: "pageRewardsTitle", subtitleKey: "pageRewardsSubtitle" },
-  { test: (path) => path.startsWith("/admin/discounts"), titleKey: "pageDiscountsTitle", subtitleKey: "pageDiscountsSubtitle" },
-  { test: (path) => path.startsWith("/admin/reports"), titleKey: "pageReportsTitle", subtitleKey: "pageReportsSubtitle" },
-  { test: (path) => path.startsWith("/admin/qa"), titleKey: "pageQaTitle", subtitleKey: "pageQaSubtitle" },
-  { test: (path) => path.startsWith("/admin/activity-logs"), titleKey: "pageActivityLogsTitle", subtitleKey: "pageActivityLogsSubtitle" },
-  { test: (path) => path.startsWith("/admin/users"), titleKey: "pageUsersTitle", subtitleKey: "pageUsersSubtitle" },
-  { test: (path) => path.startsWith("/admin/system-status"), titleKey: "pageSystemTitle", subtitleKey: "pageSystemSubtitle" },
+  {
+    test: (path) => path === "/admin",
+    titleKey: "pageDashboardTitle",
+    subtitleKey: "pageDashboardSubtitle",
+  },
+  {
+    test: (path) => path.startsWith("/admin/finance"),
+    titleKey: "pageFinanceTitle",
+    subtitleKey: "pageFinanceSubtitle",
+  },
+  {
+    test: (path) => path.startsWith("/admin/crm"),
+    titleKey: "pageCrmTitle",
+    subtitleKey: "pageCrmSubtitle",
+  },
+  {
+    test: (path) => path.startsWith("/admin/recipes"),
+    titleKey: "pageRecipesTitle",
+    subtitleKey: "pageRecipesSubtitle",
+  },
+  {
+    test: (path) => path.startsWith("/admin/feedback"),
+    titleKey: "pageFeedbackTitle",
+    subtitleKey: "pageFeedbackSubtitle",
+  },
+  {
+    test: (path) => path.startsWith("/admin/recovery"),
+    titleKey: "pageRecoveryTitle",
+    subtitleKey: "pageRecoverySubtitle",
+  },
+  {
+    test: (path) => path.startsWith("/admin/customers"),
+    titleKey: "pageCustomersTitle",
+    subtitleKey: "pageCustomersSubtitle",
+  },
+  {
+    test: (path) => path.startsWith("/admin/settings"),
+    titleKey: "pageSettingsTitle",
+    subtitleKey: "pageSettingsSubtitle",
+  },
+  {
+    test: (path) => path.startsWith("/admin/questions"),
+    titleKey: "pageQuestionsTitle",
+    subtitleKey: "pageQuestionsSubtitle",
+  },
+  {
+    test: (path) => path.startsWith("/admin/rewards"),
+    titleKey: "pageRewardsTitle",
+    subtitleKey: "pageRewardsSubtitle",
+  },
+  {
+    test: (path) => path.startsWith("/admin/discounts"),
+    titleKey: "pageDiscountsTitle",
+    subtitleKey: "pageDiscountsSubtitle",
+  },
+  {
+    test: (path) => path.startsWith("/admin/reports"),
+    titleKey: "pageReportsTitle",
+    subtitleKey: "pageReportsSubtitle",
+  },
+  {
+    test: (path) => path.startsWith("/admin/qa"),
+    titleKey: "pageQaTitle",
+    subtitleKey: "pageQaSubtitle",
+  },
+  {
+    test: (path) => path.startsWith("/admin/activity-logs"),
+    titleKey: "pageActivityLogsTitle",
+    subtitleKey: "pageActivityLogsSubtitle",
+  },
+  {
+    test: (path) => path.startsWith("/admin/users"),
+    titleKey: "pageUsersTitle",
+    subtitleKey: "pageUsersSubtitle",
+  },
+  {
+    test: (path) => path.startsWith("/admin/system-status"),
+    titleKey: "pageSystemTitle",
+    subtitleKey: "pageSystemSubtitle",
+  },
 ];
 
-function isActivePath(pathname: string, item: { href: string; exact?: boolean }) {
+function isActivePath(
+  pathname: string,
+  item: { href: string; exact?: boolean },
+) {
   if (item.exact) return pathname === item.href;
   return pathname === item.href || pathname.startsWith(`${item.href}/`);
 }
 
 function pageKeyFromPath(pathname: string) {
   if (pathname === "/admin") return "dashboard";
+  if (pathname.startsWith("/admin/action-center")) return "action-center";
   if (pathname.startsWith("/admin/finance")) return "finance";
   if (pathname.startsWith("/admin/crm")) return "crm";
   if (pathname.startsWith("/admin/recipes")) return "recipes";
@@ -212,6 +316,7 @@ function AdminShellInner({
   role = "owner",
   userEmail = "",
   isPlatformAdmin = false,
+  modulePermissions = {},
 }: AdminShellProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -219,11 +324,25 @@ function AdminShellInner({
   const [isSigningOut, startSignOut] = useTransition();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const visibleModules = roleModules[role] ?? roleModules.read_only;
-  const visibleNavItems = useMemo(
-    () => navItems.filter((item) => visibleModules.includes(item.module)),
-    [visibleModules],
-  );
-  const currentMeta = pageMetaByPath.find((item) => item.test(pathname)) ?? pageMetaByPath[0];
+  const permissionKeysForNav = (item: NavItem) => {
+    if (item.href === "/admin") return ["dashboard"];
+    if (item.href.startsWith("/admin/action-center")) return ["action_center"];
+    if (item.href.startsWith("/admin/finance")) return ["finance_closing", "finance_invoices", "finance_cash", "costing"];
+    if (item.href.startsWith("/admin/crm")) return ["feedback", "followups", "customers", "discounts", "loyalty"];
+    if (item.href.startsWith("/admin/settings")) return ["settings_general", "settings_feedback", "settings_users", "settings_whatsapp"];
+    if (item.href.startsWith("/admin/reports")) return ["reports"];
+    if (item.href.startsWith("/admin/activity-logs")) return ["activity_logs"];
+    if (item.href.startsWith("/admin/system-status")) return ["system"];
+    return [item.module];
+  };
+  const visibleNavItems = useMemo(() => navItems.filter((item) => {
+    const keys = permissionKeysForNav(item);
+    const explicitRows = keys.map((key) => modulePermissions[key]).filter(Boolean);
+    if (explicitRows.length > 0) return explicitRows.some((permission) => permission.view);
+    return visibleModules.includes(item.module);
+  }), [visibleModules, modulePermissions]);
+  const currentMeta =
+    pageMetaByPath.find((item) => item.test(pathname)) ?? pageMetaByPath[0];
   const currentPageKey = pageKeyFromPath(pathname);
 
   const warmRoute = (href: string) => {
@@ -231,13 +350,16 @@ function AdminShellInner({
   };
 
   return (
+    <AdminPermissionsProvider permissions={modulePermissions} role={role} isPlatformAdmin={isPlatformAdmin}>
     <div
       className="bp-admin-shell min-h-screen overflow-hidden bg-[#06070b] text-white transition-colors duration-500"
       dir={dir}
       lang={language}
       data-admin-theme={theme}
       data-admin-page={currentPageKey}
-      style={{ fontFamily: language === "fa" ? "var(--font-persian)" : undefined }}
+      style={{
+        fontFamily: language === "fa" ? "var(--font-persian)" : undefined,
+      }}
     >
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div className="bp-orb bp-orb-1" />
@@ -245,7 +367,6 @@ function AdminShellInner({
         <div className="bp-orb bp-orb-3" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.03),transparent_30%)]" />
       </div>
-
 
       {mobileNavOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
@@ -257,8 +378,16 @@ function AdminShellInner({
           />
 
           <aside
-            className="absolute top-0 h-full w-[min(88vw,360px)] overflow-y-auto overscroll-contain border-white/10 bg-[#080a10]/96 px-4 py-4 shadow-[0_24px_90px_rgba(0,0,0,0.45)] backdrop-blur-2xl"
-            style={dir === "rtl" ? { right: 0, borderLeftWidth: 1 } : { left: 0, borderRightWidth: 1 }}
+            className={`absolute top-0 h-full w-[min(88vw,360px)] overflow-y-auto overscroll-contain px-4 py-4 shadow-[0_24px_90px_rgba(0,0,0,0.45)] backdrop-blur-2xl ${
+              theme === "light"
+                ? "border-slate-200 bg-white/98 text-slate-900"
+                : "border-white/10 bg-[#080a10]/96 text-white"
+            }`}
+            style={
+              dir === "rtl"
+                ? { right: 0, borderLeftWidth: 1 }
+                : { left: 0, borderRightWidth: 1 }
+            }
           >
             <div className="mb-4 flex items-center justify-between gap-3">
               <Link
@@ -271,15 +400,23 @@ function AdminShellInner({
                   BP
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-base font-bold text-white">{t.appName}</p>
-                  <p className="truncate text-xs text-white/42">{t.appSubtitle}</p>
+                  <p
+                    className={`truncate text-base font-bold ${theme === "light" ? "text-slate-950" : "text-white"}`}
+                  >
+                    {t.appName}
+                  </p>
+                  <p
+                    className={`truncate text-xs ${theme === "light" ? "text-slate-500" : "text-white/42"}`}
+                  >
+                    {t.appSubtitle}
+                  </p>
                 </div>
               </Link>
 
               <button
                 type="button"
                 onClick={() => setMobileNavOpen(false)}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-white/70"
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border ${theme === "light" ? "border-slate-200 bg-slate-100 text-slate-700" : "border-white/10 bg-white/[0.06] text-white/70"}`}
                 aria-label="Close menu"
               >
                 <X className="h-5 w-5" />
@@ -288,12 +425,21 @@ function AdminShellInner({
 
             {businesses.length > 0 && (
               <div className="mb-4 overflow-hidden rounded-[1.25rem] border border-white/10 bg-white/[0.04] p-2">
-                <BusinessSwitcher businesses={businesses} currentSlug={currentBusinessSlug} />
+                <BusinessSwitcher
+                  businesses={businesses}
+                  currentSlug={currentBusinessSlug}
+                />
               </div>
             )}
 
-            <div className="mb-4 rounded-[1.25rem] border border-white/10 bg-white/[0.045] px-4 py-3">
-              <p className="truncate text-xs text-white/40">{userEmail}</p>
+            <div
+              className={`mb-4 rounded-[1.25rem] border px-4 py-3 ${theme === "light" ? "border-slate-200 bg-slate-50" : "border-white/10 bg-white/[0.045]"}`}
+            >
+              <p
+                className={`truncate text-xs ${theme === "light" ? "text-slate-500" : "text-white/40"}`}
+              >
+                {userEmail}
+              </p>
               <div className="mt-2 flex items-center justify-between gap-3">
                 <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-200">
                   {role.replace("_", " ")}
@@ -313,7 +459,9 @@ function AdminShellInner({
                   className={`group flex h-12 items-center gap-4 rounded-[1.15rem] px-4 text-[15px] font-semibold transition ${
                     pathname.startsWith("/platform")
                       ? "bg-gradient-to-r from-amber-200 to-yellow-300 text-black shadow-[0_18px_50px_rgba(251,191,36,0.20)]"
-                      : "text-white/58 hover:bg-white/[0.07] hover:text-white"
+                      : theme === "light"
+                        ? "text-slate-700 hover:bg-slate-100 hover:text-slate-950"
+                        : "text-white/58 hover:bg-white/[0.07] hover:text-white"
                   }`}
                 >
                   <Crown className="h-5 w-5 shrink-0" />
@@ -334,18 +482,29 @@ function AdminShellInner({
                     className={`group relative flex h-12 items-center gap-4 overflow-hidden rounded-[1.15rem] px-4 text-[15px] font-semibold transition duration-300 ${
                       active
                         ? "bg-gradient-to-r from-amber-200 to-yellow-300 text-black shadow-[0_18px_50px_rgba(251,191,36,0.20)]"
-                        : "text-white/58 hover:bg-white/[0.07] hover:text-white"
+                        : theme === "light"
+                          ? "text-slate-700 hover:bg-slate-100 hover:text-slate-950"
+                          : "text-white/58 hover:bg-white/[0.07] hover:text-white"
                     }`}
                   >
                     <span
                       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition ${
-                        active ? "bg-black/10 text-black" : "bg-white/[0.06] text-white/55 group-hover:text-white"
+                        active
+                          ? "bg-black/10 text-black"
+                          : theme === "light"
+                            ? "bg-slate-100 text-slate-600 group-hover:text-slate-950"
+                            : "bg-white/[0.06] text-white/55 group-hover:text-white"
                       }`}
                     >
-                      <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 2} />
+                      <Icon
+                        className="h-5 w-5"
+                        strokeWidth={active ? 2.4 : 2}
+                      />
                     </span>
                     <span className="truncate">{t[item.labelKey]}</span>
-                    {active && <span className="ms-auto h-2 w-2 rounded-full bg-black/50" />}
+                    {active && (
+                      <span className="ms-auto h-2 w-2 rounded-full bg-black/50" />
+                    )}
                   </Link>
                 );
               })}
@@ -354,7 +513,7 @@ function AdminShellInner({
                 type="button"
                 onClick={() => startSignOut(async () => signOut())}
                 disabled={isSigningOut}
-                className="mt-4 flex h-12 w-full items-center gap-4 rounded-[1.15rem] px-4 text-[15px] font-semibold text-white/58 transition hover:bg-red-400/10 hover:text-red-100 disabled:opacity-40"
+                className={`mt-4 flex h-12 w-full items-center gap-4 rounded-[1.15rem] px-4 text-[15px] font-semibold transition hover:bg-red-400/10 hover:text-red-600 disabled:opacity-40 ${theme === "light" ? "text-slate-700" : "text-white/58"}`}
               >
                 <LogOut className="h-5 w-5 shrink-0" />
                 <span>{isSigningOut ? t.signingOut : t.signOut}</span>
@@ -382,19 +541,32 @@ function AdminShellInner({
               <Sparkles className="h-3.5 w-3.5" />
               {t.topLabel}
             </div>
-            <div className="truncate text-xl font-semibold text-white">{t.appName}</div>
-            <div className="truncate text-xs text-white/40">{t.appSubtitle}</div>
+            <div className="truncate text-xl font-semibold text-white">
+              {t.appName}
+            </div>
+            <div
+              className={`truncate text-xs ${theme === "light" ? "text-slate-500" : "text-white/40"}`}
+            >
+              {t.appSubtitle}
+            </div>
           </div>
         </Link>
 
         {businesses.length > 0 && (
           <div className="mb-4 overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.04] p-2">
-            <BusinessSwitcher businesses={businesses} currentSlug={currentBusinessSlug} />
+            <BusinessSwitcher
+              businesses={businesses}
+              currentSlug={currentBusinessSlug}
+            />
           </div>
         )}
 
         <div className="mb-4 rounded-[1.35rem] border border-white/10 bg-white/[0.045] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-          <p className="truncate text-xs text-white/40">{userEmail}</p>
+          <p
+            className={`truncate text-xs ${theme === "light" ? "text-slate-500" : "text-white/40"}`}
+          >
+            {userEmail}
+          </p>
           <div className="mt-2 flex items-center justify-between gap-3">
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-200">
               {role.replace("_", " ")}
@@ -444,15 +616,18 @@ function AdminShellInner({
                 >
                   <span
                     className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition ${
-                      active ? "bg-black/10 text-black" : "bg-white/[0.06] text-white/45 group-hover:text-white"
+                      active
+                        ? "bg-black/10 text-black"
+                        : "bg-white/[0.06] text-white/45 group-hover:text-white"
                     }`}
                   >
                     <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 2} />
                   </span>
                   <span className="truncate">{t[item.labelKey]}</span>
-                  {active && <span className="ms-auto h-2 w-2 rounded-full bg-black/50" />}
+                  {active && (
+                    <span className="ms-auto h-2 w-2 rounded-full bg-black/50" />
+                  )}
                 </Link>
-
               </div>
             );
           })}
@@ -481,8 +656,12 @@ function AdminShellInner({
                 BP
               </span>
               <span className="min-w-0">
-                <span className="block truncate text-sm font-bold text-white">{t.appName}</span>
-                <span className="block truncate text-[11px] text-white/40">{t.ready}</span>
+                <span className="block truncate text-sm font-bold text-white">
+                  {t.appName}
+                </span>
+                <span className="block truncate text-[11px] text-white/40">
+                  {t.ready}
+                </span>
               </span>
             </Link>
 
@@ -505,7 +684,9 @@ function AdminShellInner({
               <h1 className="mt-1 truncate text-2xl font-black tracking-[-0.04em] text-white sm:text-3xl">
                 {t[currentMeta.titleKey]}
               </h1>
-              <p className="mt-1 max-w-full truncate text-sm text-white/42">{t[currentMeta.subtitleKey]}</p>
+              <p className="mt-1 max-w-full truncate text-sm text-white/42">
+                {t[currentMeta.subtitleKey]}
+              </p>
             </div>
 
             <div className="-mx-1 flex w-full min-w-0 shrink-0 items-center gap-2 overflow-x-auto px-1 pb-1 lg:mx-0 lg:w-auto lg:flex-wrap lg:justify-end lg:overflow-visible lg:pb-0 xl:flex-nowrap 2xl:max-w-none">
@@ -538,7 +719,11 @@ function AdminShellInner({
 
               <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-white/10 bg-white/[0.055] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                 <div className="hidden items-center gap-1 px-2 text-xs font-semibold text-white/45 sm:flex">
-                  {theme === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                  {theme === "dark" ? (
+                    <Moon className="h-4 w-4" />
+                  ) : (
+                    <Sun className="h-4 w-4" />
+                  )}
                   {t.theme}
                 </div>
                 {adminThemeOptions.map((item) => {
@@ -557,83 +742,25 @@ function AdminShellInner({
                       title={item.value === "dark" ? t.darkTheme : t.lightTheme}
                     >
                       <Icon className="h-4 w-4" />
-                      <span className="hidden sm:inline">{item.value === "dark" ? t.darkTheme : t.lightTheme}</span>
+                      <span className="hidden sm:inline">
+                        {item.value === "dark" ? t.darkTheme : t.lightTheme}
+                      </span>
                     </button>
                   );
                 })}
               </div>
-
-              <button
-                type="button"
-                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.055] text-white/55 transition hover:bg-white/[0.08] hover:text-white"
-                aria-label="Notifications"
-              >
-                <Bell className="h-4 w-4" />
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-amber-300" />
-              </button>
             </div>
           </div>
-
-          <nav className="mt-3 flex gap-2 overflow-x-auto pb-1 lg:hidden" aria-label="Mobile admin sections">
-            {visibleNavItems.map((item) => {
-              const active = isActivePath(pathname, item);
-              const Icon = item.icon;
-
-              return (
-                <Link
-                  key={`mobile-row-${item.href}`}
-                  href={item.href}
-                  prefetch
-                  className={`flex h-11 shrink-0 items-center gap-2 rounded-2xl border px-3 text-xs font-black transition ${
-                    active
-                      ? "border-amber-200 bg-amber-200 text-black shadow-[0_10px_28px_rgba(251,191,36,0.18)]"
-                      : "border-white/10 bg-white/[0.055] text-white/58 hover:bg-white/[0.09] hover:text-white"
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{t[item.labelKey]}</span>
-                </Link>
-              );
-            })}
-          </nav>
         </header>
 
-        <nav className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-5 gap-1 rounded-[1.35rem] border border-white/10 bg-[#080a10]/95 p-1.5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-2xl lg:hidden" aria-label="Mobile quick navigation">
-          {visibleNavItems.slice(0, 4).map((item) => {
-            const active = isActivePath(pathname, item);
-            const Icon = item.icon;
-
-            return (
-              <Link
-                key={`mobile-bottom-${item.href}`}
-                href={item.href}
-                prefetch
-                className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-black transition ${
-                  active ? "bg-amber-200 text-black" : "text-white/55 hover:bg-white/[0.08] hover:text-white"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                <span className="max-w-full truncate">{t[item.labelKey]}</span>
-              </Link>
-            );
-          })}
-
-          <button
-            type="button"
-            onClick={() => setMobileNavOpen(true)}
-            className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-black text-white/55 transition hover:bg-white/[0.08] hover:text-white"
-            aria-label="Open all menu items"
-          >
-            <Menu className="h-4 w-4" />
-            <span>Menu</span>
-          </button>
-        </nav>
-
-        <main className="bp-page-enter bp-content-shell min-h-screen px-3 py-4 pb-28 sm:px-6 lg:px-8 lg:py-5 lg:pb-5">
-          <div className="bp-content-wrap mx-auto w-full max-w-[1680px]">{children}</div>
+        <main className="bp-page-enter bp-content-shell min-h-screen px-3 py-4 sm:px-6 lg:px-8 lg:py-5 lg:pb-5">
+          <div className="bp-content-wrap mx-auto w-full max-w-[1680px]">
+            {children}
+          </div>
         </main>
       </div>
     </div>
+    </AdminPermissionsProvider>
   );
 }
 

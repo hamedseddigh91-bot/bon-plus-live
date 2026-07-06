@@ -9,7 +9,7 @@ export default async function InvoicesPage() {
   const initialState = await getFinanceInvoicesPageState();
 
   return (
-    <AdminShellServer requiredModule="operations">
+    <AdminShellServer requiredModule="finance_invoices">
       <FinanceInvoicesPage initialState={initialState} />
     </AdminShellServer>
   );

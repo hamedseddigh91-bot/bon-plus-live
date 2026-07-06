@@ -1,16 +1,27 @@
-import { AdminShellServer } from "@/components/layout/admin-shell-server";
-import { getCoreControlState } from "@/app/admin/settings/actions";
-import { AppControlCenter } from "@/features/admin/settings/app-control-center";
+import { redirect } from "next/navigation";
+import { requireUserContext } from "@/lib/auth-session";
+import { getCurrentUserPermissionMap } from "@/lib/user-permissions";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+const settingsRoutes = [
+  ["settings_general", "/admin/settings/general"],
+  ["settings_feedback", "/admin/settings/feedback"],
+  ["settings_users", "/admin/settings/users"],
+  ["settings_whatsapp", "/admin/settings/whatsapp-messages"],
+] as const;
 
 export default async function SettingsPage() {
-  const initialState = await getCoreControlState();
+  const context = await requireUserContext();
 
-  return (
-    <AdminShellServer requiredModule="settings">
-      <AppControlCenter initialState={initialState} />
-    </AdminShellServer>
-  );
+  if (context.role === "owner" || context.isPlatformAdmin) {
+    redirect("/admin/settings/general");
+  }
+
+  const permissions = await getCurrentUserPermissionMap(context);
+  const firstAllowed = settingsRoutes.find(([key]) => permissions[key]?.view);
+
+  if (firstAllowed) {
+    redirect(firstAllowed[1]);
+  }
+
+  redirect("/admin");
 }

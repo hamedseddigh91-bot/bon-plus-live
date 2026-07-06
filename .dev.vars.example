@@ -1,0 +1,3 @@
+# Cloudflare local preview only.
+# Keep secrets out of Git. Copy this file to .dev.vars when needed.
+NEXTJS_ENV=development

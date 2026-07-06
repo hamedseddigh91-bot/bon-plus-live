@@ -1,5 +1,7 @@
 "use client";
 
+import { getWhatsAppTemplateText } from "@/app/admin/settings/whatsapp-messages/actions";
+
 import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import {
   AlertTriangle,
@@ -9,7 +11,6 @@ import {
   ClipboardList,
   Gift,
   Inbox,
-  MessageSquareText,
   MessageCircle,
   PhoneCall,
   RefreshCw,
@@ -358,9 +359,14 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
         : `Hi ${name}, thank you for sharing your experience. Your feedback helps us improve.`;
   };
 
-  const openWhatsappComposer = (phone: string, score: number) => {
+  const openWhatsappComposer = async (phone: string, score: number) => {
     setWhatsappPhone(phone);
-    setWhatsappText(defaultWhatsappText(score, phone));
+    const key = score >= 4 ? "feedback_high" : score <= 2 ? "feedback_low" : "feedback_mid";
+    const saved = await getWhatsAppTemplateText(key, language);
+    const text = (saved || defaultWhatsappText(score, phone))
+      .replaceAll("{customer_name}", phone)
+      .replaceAll("{score}", String(score));
+    setWhatsappText(text);
     setWhatsappOpen(true);
   };
 
@@ -498,8 +504,8 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
   };
 
   const renderFeedbackTable = (items: typeof state.feedback, stage: "new" | "follow_up" | "resolved") => (
-    <Card className="overflow-hidden p-0">
-      <div className="grid grid-cols-[minmax(220px,1.5fr)_76px_104px_112px_84px_92px_minmax(240px,1fr)_28px] gap-2 border-b border-[color:var(--admin-border)] bg-black/5 px-4 py-3 text-[10px] font-black uppercase tracking-[0.12em] text-[color:var(--admin-muted)]">
+    <Card className="overflow-x-auto p-0">
+      <div className="grid min-w-[1180px] grid-cols-[minmax(220px,1.5fr)_76px_104px_112px_84px_92px_minmax(240px,1fr)_28px] gap-2 border-b border-[color:var(--admin-border)] bg-black/5 px-4 py-3 text-[10px] font-black uppercase tracking-[0.12em] text-[color:var(--admin-muted)]">
         <span>{t.phone}</span><span>{t.score}</span><span>{t.level}</span><span>{t.recovery}</span><span>{t.date}</span><span>{t.whatsapp}</span><span>{t.recovery}</span><span />
       </div>
       <div className="divide-y divide-[color:var(--admin-border)]">
@@ -511,7 +517,7 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
             tabIndex={0}
             onClick={() => openDetail(item.id)}
             onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") openDetail(item.id); }}
-            className={`grid min-h-[58px] w-full cursor-pointer grid-cols-[minmax(220px,1.5fr)_76px_104px_112px_84px_92px_minmax(240px,1fr)_28px] items-center gap-2 px-4 py-2 text-start transition hover:bg-amber-300/[0.08] ${selectedId === item.id ? "bg-amber-300/[0.10]" : ""}`}
+            className={`grid min-h-[58px] min-w-[1180px] w-full cursor-pointer grid-cols-[minmax(220px,1.5fr)_76px_104px_112px_84px_92px_minmax(240px,1fr)_28px] items-center gap-2 px-4 py-2 text-start transition hover:bg-amber-300/[0.08] ${selectedId === item.id ? "bg-amber-300/[0.10]" : ""}`}
           >
             <div className="min-w-0">
               <p className="truncate text-sm font-black text-[color:var(--admin-text)]">{item.phone}</p>
@@ -521,16 +527,16 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
             <Badge variant={segmentVariant(item.segment)}>{item.segment}</Badge>
             <Badge variant={recoveryVariant(item.recoveryStatus)}>{recoveryLabel(item.recoveryStatus, t)}</Badge>
             <p className="text-xs text-[color:var(--admin-muted)]">{item.createdAt.slice(5, 10)}</p>
-            <button type="button" onClick={(event) => { event.stopPropagation(); openWhatsappComposer(item.phone, Number(item.overallScore || 0)); }} className="flex items-center justify-center gap-1 rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-2 py-2 text-xs font-bold text-emerald-200"><MessageCircle className="h-3.5 w-3.5" />{t.whatsapp}</button>
-            <div className="flex flex-wrap gap-2" onClick={(event) => event.stopPropagation()}>
+            <button type="button" onClick={(event) => { event.stopPropagation(); openWhatsappComposer(item.phone, Number(item.overallScore || 0)); }} className="flex items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-2 py-2 text-xs font-bold text-emerald-200"><MessageCircle className="h-3.5 w-3.5" />{t.whatsapp}</button>
+            <div className="flex flex-nowrap items-center gap-2" onClick={(event) => event.stopPropagation()}>
               {stage !== "new" && (
-                <button type="button" disabled={movingFeedbackId === item.id} onClick={() => moveFeedback(item.id, "new")} className="rounded-xl border border-[color:var(--admin-border)] bg-black/10 px-3 py-2 text-xs font-bold text-[color:var(--admin-text)] disabled:opacity-50">{movingFeedbackId === item.id ? t.moving : t.moveToNew}</button>
+                <button type="button" disabled={movingFeedbackId === item.id} onClick={() => moveFeedback(item.id, "new")} className="whitespace-nowrap rounded-xl border border-[color:var(--admin-border)] bg-black/10 px-3 py-2 text-xs font-bold text-[color:var(--admin-text)] disabled:opacity-50">{movingFeedbackId === item.id ? t.moving : t.moveToNew}</button>
               )}
               {stage !== "follow_up" && (
-                <button type="button" disabled={movingFeedbackId === item.id} onClick={() => moveFeedback(item.id, "follow_up")} className="rounded-xl border border-sky-300/20 bg-sky-300/10 px-3 py-2 text-xs font-bold text-sky-100 disabled:opacity-50">{movingFeedbackId === item.id ? t.moving : t.moveToFollowUp}</button>
+                <button type="button" disabled={movingFeedbackId === item.id} onClick={() => moveFeedback(item.id, "follow_up")} className="whitespace-nowrap rounded-xl border border-sky-300/20 bg-sky-300/10 px-3 py-2 text-xs font-bold text-sky-100 disabled:opacity-50">{movingFeedbackId === item.id ? t.moving : t.moveToFollowUp}</button>
               )}
               {stage !== "resolved" && (
-                <button type="button" disabled={movingFeedbackId === item.id} onClick={() => moveFeedback(item.id, "resolved")} className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-3 py-2 text-xs font-bold text-emerald-100 disabled:opacity-50">{movingFeedbackId === item.id ? t.moving : t.moveToResolved}</button>
+                <button type="button" disabled={movingFeedbackId === item.id} onClick={() => moveFeedback(item.id, "resolved")} className="whitespace-nowrap rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-3 py-2 text-xs font-bold text-emerald-100 disabled:opacity-50">{movingFeedbackId === item.id ? t.moving : t.moveToResolved}</button>
               )}
             </div>
             <ChevronRight className="h-4 w-4 text-[color:var(--admin-muted)]" />
@@ -696,7 +702,7 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
           <div className="w-full max-w-xl rounded-[2rem] border border-[color:var(--admin-border)] bg-[color:var(--admin-card)] p-5 shadow-2xl">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-xl font-black text-[color:var(--admin-text)]">{t.whatsappTitle}</h3>
-              <button type="button" onClick={() => setWhatsappOpen(false)} className="rounded-xl border border-[color:var(--admin-border)] p-2 text-[color:var(--admin-muted)]"><X className="h-4 w-4" /></button>
+              <button type="button" onClick={() => setWhatsappOpen(false)} className="whitespace-nowrap rounded-xl border border-[color:var(--admin-border)] p-2 text-[color:var(--admin-muted)]"><X className="h-4 w-4" /></button>
             </div>
             <textarea rows={7} value={whatsappText} onChange={(event) => setWhatsappText(event.target.value)} className="mt-4 w-full resize-none rounded-2xl border border-[color:var(--admin-border)] bg-[#111318] p-4 text-sm leading-6 text-white outline-none shadow-inner" />
             <div className="mt-4 flex justify-end gap-2"><Button variant="secondary" onClick={() => setWhatsappOpen(false)}>{t.clear}</Button><Button onClick={launchWhatsapp}><MessageCircle className="h-4 w-4" />{t.openWhatsapp}</Button></div>

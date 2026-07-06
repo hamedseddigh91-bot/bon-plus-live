@@ -1,9 +1,12 @@
 "use client";
 
+import { getWhatsAppTemplateText } from "@/app/admin/settings/whatsapp-messages/actions";
+
 import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   CheckCircle2,
   ClipboardList,
+  MessageCircle,
   RefreshCw,
   Search,
   Star,
@@ -23,6 +26,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useAdminLanguage } from "@/lib/admin-language";
 
 type RecoveryBoardProps = {
   initialState: RecoveryBoardState;
@@ -73,6 +77,7 @@ function priorityVariant(priority: string) {
 }
 
 export function RecoveryBoard({ initialState }: RecoveryBoardProps) {
+  const { language } = useAdminLanguage();
   const [state, setState] = useState(initialState);
   const [status, setStatus] = useState<RecoveryBoardStatusFilter>("all");
   const [priority, setPriority] = useState<RecoveryBoardPriorityFilter>("all");
@@ -88,6 +93,8 @@ export function RecoveryBoard({ initialState }: RecoveryBoardProps) {
   const [isPending, startTransition] = useTransition();
   const [isDetailPending, startDetailTransition] = useTransition();
   const [isSavePending, startSaveTransition] = useTransition();
+  const [whatsappOpen, setWhatsappOpen] = useState(false);
+  const [whatsappText, setWhatsappText] = useState("");
 
   const stats = state.stats;
   const pagination = state.pagination;
@@ -142,6 +149,22 @@ export function RecoveryBoard({ initialState }: RecoveryBoardProps) {
       setDetail(result.case);
       setMessage(null);
     });
+  };
+
+
+  const openWhatsAppComposer = async () => {
+    if (!detail) return;
+    const defaultMessage = `Hello, we are following up regarding your recent experience with Bon Plus. We would like to understand the issue better and make things right.`;
+    const saved = await getWhatsAppTemplateText("followup", language);
+    setWhatsappText((saved || defaultMessage).replaceAll("{customer_name}", detail.phone).replaceAll("{score}", ""));
+    setWhatsappOpen(true);
+  };
+
+  const launchWhatsApp = () => {
+    if (!detail || !whatsappText.trim()) return;
+    const phone = detail.phone.replace(/[^0-9]/g, "");
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(whatsappText.trim())}`, "_blank", "noopener,noreferrer");
+    setWhatsappOpen(false);
   };
 
   const saveCase = (nextStatus?: "open" | "in_progress" | "resolved" | "closed") => {
@@ -361,6 +384,11 @@ export function RecoveryBoard({ initialState }: RecoveryBoardProps) {
                   </button>
                 </div>
 
+                <Button onClick={openWhatsAppComposer} className="w-full">
+                  <MessageCircle className="h-4 w-4" />
+                  WhatsApp follow-up
+                </Button>
+
                 <div className="rounded-3xl border border-red-300/10 bg-red-400/[0.08] p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-white/45">Feedback score</span>
@@ -441,6 +469,41 @@ export function RecoveryBoard({ initialState }: RecoveryBoardProps) {
           </Card>
         </div>
       </div>
+
+      {whatsappOpen && detail && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-xl rounded-[2rem] border border-white/15 bg-[#12151b] p-5 shadow-2xl">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-xl font-semibold text-white">WhatsApp follow-up</h3>
+                <p className="mt-1 text-sm text-white/45">{detail.phone}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setWhatsappOpen(false)}
+                className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white/60 hover:bg-white/10"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <textarea
+              rows={7}
+              value={whatsappText}
+              onChange={(event) => setWhatsappText(event.target.value)}
+              className="mt-4 w-full resize-none rounded-2xl border border-white/15 bg-black/35 px-4 py-3 text-sm leading-6 text-white outline-none focus:border-amber-200/50"
+            />
+
+            <div className="mt-4 flex flex-wrap justify-end gap-2">
+              <Button variant="secondary" onClick={() => setWhatsappOpen(false)}>Cancel</Button>
+              <Button onClick={launchWhatsApp} disabled={!whatsappText.trim()}>
+                <MessageCircle className="h-4 w-4" />
+                Open WhatsApp
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

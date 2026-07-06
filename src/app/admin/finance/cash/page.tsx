@@ -9,7 +9,7 @@ export default async function CashPage() {
   const initialState = await getFinanceCashPageState();
 
   return (
-    <AdminShellServer requiredModule="operations">
+    <AdminShellServer requiredModule="finance_cash">
       <FinanceCashPage initialState={initialState} />
     </AdminShellServer>
   );

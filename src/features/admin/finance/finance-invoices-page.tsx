@@ -1,9 +1,12 @@
 "use client";
 
+import { getWhatsAppTemplateText } from "@/app/admin/settings/whatsapp-messages/actions";
+
 import { useMemo, useState, useTransition } from "react";
-import { Download, MessageCircle, PackagePlus, Printer, Save, Search } from "lucide-react";
-import type { FinanceEntry, OperationSupplier, OperationsPageState } from "@/app/admin/operations/actions";
+import { Download, FileUp, MessageCircle, PackagePlus, Printer, Save, Search } from "lucide-react";
+import type { FinanceEntry, OperationDocument, OperationSupplier, OperationsPageState } from "@/app/admin/operations/actions";
 import {
+  getOperationDocumentSignedUrl,
   saveFinanceEntry,
   saveSupplier,
   uploadOperationDocument,
@@ -12,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { FinanceShell } from "@/features/admin/finance/finance-shell";
 import type { FinanceLanguage } from "@/features/admin/finance/finance-i18n";
-import { documentsFor, getInvoiceEntries, money, numberValue, today } from "@/features/admin/finance/finance-utils";
+import { documentsFor, fileSize, getInvoiceEntries, money, numberValue, today } from "@/features/admin/finance/finance-utils";
 
 type FinanceInvoicesPageProps = {
   initialState: OperationsPageState;
@@ -115,7 +118,9 @@ function printHtml(title: string, body: string) {
 
 export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) {
   const [message, setMessage] = useState<string | null>(initialState.message ?? null);
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [invoiceFiles, setInvoiceFiles] = useState<File[]>([]);
+  const [selectedDocumentEntryId, setSelectedDocumentEntryId] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [supplierFilter, setSupplierFilter] = useState("all");
@@ -212,6 +217,7 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
       referenceNo: entry.referenceNo ?? "",
       description: entry.description ?? "",
     });
+    setSelectedDocumentEntryId(entry.id);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -251,6 +257,45 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
     });
   };
 
+  const submitDocument = () => {
+    if (!selectedDocumentEntryId) {
+      setMessage("Please select a saved invoice first.");
+      return;
+    }
+
+    if (!documentFile) {
+      setMessage("Please select a document first.");
+      return;
+    }
+
+    startTransition(async () => {
+      const formData = new FormData();
+      formData.set("ownerType", "finance_entry");
+      formData.set("ownerId", selectedDocumentEntryId);
+      formData.set("file", documentFile);
+
+      const result = await uploadOperationDocument(formData);
+      setMessage(result.message ?? null);
+
+      if (result.success) {
+        window.location.reload();
+      }
+    });
+  };
+
+  const openDocument = (document: OperationDocument) => {
+    startTransition(async () => {
+      const result = await getOperationDocumentSignedUrl({ documentId: document.id });
+
+      if (!result.success || !result.url) {
+        setMessage(result.message ?? "Could not open document.");
+        return;
+      }
+
+      window.open(result.url, "_blank", "noopener,noreferrer");
+    });
+  };
+
   const exportInvoices = () => {
     downloadCsv("finance-invoices.csv", [
       ["Date", "Title", "Supplier", "Status", "Payer", "Usage", "Reference", "Amount", "Documents", "Description"],
@@ -284,17 +329,10 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
     );
   };
 
-  const shareInvoice = (entry: FinanceEntry) => {
-    const text = [
-      `Invoice: ${entry.title}`,
-      `Date: ${entry.entryDate}`,
-      `Supplier: ${entry.supplierName ?? "—"}`,
-      `Amount: ${money(entry.amount)} OMR`,
-      `Status: ${entry.paymentStatus}`,
-      entry.referenceNo ? `Ref: ${entry.referenceNo}` : "",
-    ]
-      .filter(Boolean)
-      .join("\n");
+  const shareInvoice = async (entry: FinanceEntry, language: FinanceLanguage) => {
+    const saved = await getWhatsAppTemplateText("invoice", language);
+    const fallback = [`Invoice: ${entry.title}`, `Date: ${entry.entryDate}`, `Supplier: ${entry.supplierName ?? "—"}`, `Amount: ${money(entry.amount)} OMR`, `Status: ${entry.paymentStatus}`].join("\n");
+    const text = (saved || fallback).replaceAll("{invoice_no}", entry.referenceNo || entry.title).replaceAll("{date}", entry.entryDate).replaceAll("{supplier}", entry.supplierName ?? "—").replaceAll("{amount}", `${money(entry.amount)} OMR`).replaceAll("{status}", entry.paymentStatus);
 
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
   };
@@ -451,37 +489,10 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
                       type="file"
                       multiple
                       accept="image/*,application/pdf"
-                      onChange={(event) => {
-                        const nextFiles = Array.from(event.target.files ?? []);
-                        setInvoiceFiles((current) => {
-                          const merged = [...current];
-                          for (const file of nextFiles) {
-                            const exists = merged.some((item) => item.name === file.name && item.size === file.size && item.lastModified === file.lastModified);
-                            if (!exists) merged.push(file);
-                          }
-                          return merged;
-                        });
-                        event.currentTarget.value = "";
-                      }}
+                      onChange={(event) => setInvoiceFiles(Array.from(event.target.files ?? []))}
                       className="mt-2 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white file:mr-4 file:rounded-xl file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white"
                     />
-                    {invoiceFiles.length > 0 && (
-                      <div className="mt-3 space-y-2">
-                        {invoiceFiles.map((file, index) => (
-                          <div key={`${file.name}-${file.lastModified}-${index}`} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/15 px-3 py-2 text-xs text-white/70">
-                            <span className="min-w-0 truncate">{file.name}</span>
-                            <button
-                              type="button"
-                              onClick={() => setInvoiceFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))}
-                              className="shrink-0 rounded-lg border border-white/10 px-2 py-1 text-white/60 hover:bg-white/10"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                        <p className="text-xs text-white/40">{invoiceFiles.length} file(s) selected</p>
-                      </div>
-                    )}
+                    {invoiceFiles.length > 0 && <p className="mt-2 text-xs text-white/40">{invoiceFiles.length} file(s) selected</p>}
                   </label>
                 </div>
 
@@ -507,6 +518,7 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
                           referenceNo: "",
                           description: "",
                         });
+                        setSelectedDocumentEntryId("");
                         setInvoiceFiles([]);
                       }}
                     >
@@ -531,6 +543,38 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
                   </div>
                 </Card>
 
+                <Card className="p-5">
+                  <h2 className="text-xl font-semibold text-white">{t.invoiceDocuments}</h2>
+                  <p className="mt-2 text-xs text-white/35">{l.selectedInvoiceHelp}</p>
+                  <div className="mt-5 grid gap-3">
+                    <select value={selectedDocumentEntryId} onChange={(event) => setSelectedDocumentEntryId(event.target.value)} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none [color-scheme:dark] focus:border-amber-200/50">
+                      <option value="">{t.selectInvoice}</option>
+                      {invoices.map((entry) => (
+                        <option key={entry.id} value={entry.id}>{entry.entryDate} — {entry.title} — {money(entry.amount)}</option>
+                      ))}
+                    </select>
+
+                    <input type="file" accept="image/*,application/pdf" onChange={(event) => setDocumentFile(event.target.files?.[0] ?? null)} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white file:mr-4 file:rounded-xl file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white" />
+
+                    <Button onClick={submitDocument} disabled={isPending || !selectedDocumentEntryId || !documentFile}>
+                      <FileUp className="h-4 w-4" />
+                      {t.uploadDocument}
+                    </Button>
+                  </div>
+
+                  <div className="mt-5 space-y-2">
+                    {initialState.documents.filter((document) => document.ownerType === "finance_entry").slice(0, 8).map((document) => (
+                      <button key={document.id} type="button" onClick={() => openDocument(document)} className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/15 px-4 py-3 text-left text-sm text-white/70 hover:bg-white/10">
+                        <span className="min-w-0">
+                          <span className="block truncate font-semibold text-white">{document.fileName}</span>
+                          <span className="block text-xs text-white/35">{document.createdAt.slice(0, 10)}</span>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-2 text-xs text-white/35">{fileSize(document.sizeBytes)}<Download className="h-3.5 w-3.5" /></span>
+                      </button>
+                    ))}
+                    {initialState.documents.filter((document) => document.ownerType === "finance_entry").length === 0 && <p className="text-sm text-white/35">{t.noDocuments}</p>}
+                  </div>
+                </Card>
               </div>
             </section>
 
@@ -610,7 +654,7 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
                               <div className="flex justify-end gap-2">
                                 <button type="button" onClick={() => editEntry(entry)} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/65 hover:bg-white/10">{t.edit}</button>
                                 <button type="button" onClick={() => printInvoice(entry, l.invoicePreview)} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/65 hover:bg-white/10"><Printer className="h-3.5 w-3.5" /></button>
-                                <button type="button" onClick={() => shareInvoice(entry)} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/65 hover:bg-white/10"><MessageCircle className="h-3.5 w-3.5" /></button>
+                                <button type="button" onClick={() => shareInvoice(entry, language)} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/65 hover:bg-white/10"><MessageCircle className="h-3.5 w-3.5" /></button>
                               </div>
                             </td>
                           </tr>

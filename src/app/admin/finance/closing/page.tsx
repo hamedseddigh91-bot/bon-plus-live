@@ -9,7 +9,7 @@ export default async function ClosingPage() {
   const initialState = await getFinanceClosingPageState();
 
   return (
-    <AdminShellServer requiredModule="operations">
+    <AdminShellServer requiredModule="finance_closing">
       <FinanceClosingPage initialState={initialState} />
     </AdminShellServer>
   );

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getCurrentBusinessSlug } from "@/lib/business-context";
+import { requireModulePermission } from "@/lib/user-permissions";
 import type { FeedbackQuestionType } from "@/types/feedback";
 
 export type AdminQuestion = {
@@ -45,6 +46,7 @@ export type SaveQuestionInput = {
 };
 
 export async function getAdminQuestions(): Promise<AdminQuestionsState> {
+  await requireModulePermission("settings_feedback", "view");
   const supabase = createSupabaseAdminClient();
   const businessSlug = await getCurrentBusinessSlug();
 
@@ -65,6 +67,7 @@ export async function getAdminQuestions(): Promise<AdminQuestionsState> {
 }
 
 export async function saveAdminQuestion(input: SaveQuestionInput) {
+  await requireModulePermission("settings_feedback", "edit");
   const supabase = createSupabaseAdminClient();
 
   const { data, error } = await supabase.rpc("admin_save_feedback_question_fast", {
@@ -101,6 +104,7 @@ export async function toggleAdminQuestion(
   questionId: string,
   active: boolean
 ) {
+  await requireModulePermission("settings_feedback", "edit");
   const supabase = createSupabaseAdminClient();
 
   const { data, error } = await supabase.rpc("admin_toggle_feedback_question_fast", {
@@ -130,6 +134,7 @@ export async function reorderAdminQuestions(
   businessId: string,
   orderedQuestions: { id: string; order: number }[]
 ) {
+  await requireModulePermission("settings_feedback", "edit");
   const supabase = createSupabaseAdminClient();
 
   const { data, error } = await supabase.rpc(

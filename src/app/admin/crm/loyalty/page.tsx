@@ -1,22 +1,17 @@
-import { getDiscountCenter } from "@/app/admin/discounts/actions";
 import { getLoyaltyCounterState } from "@/app/admin/crm/loyalty/actions";
 import { AdminShellServer } from "@/components/layout/admin-shell-server";
 import { CrmShell } from "@/features/admin/crm/crm-shell";
-import { LoyaltyWorkspace } from "@/features/admin/crm/loyalty-workspace";
+import { LoyaltyCounter } from "@/features/admin/crm/loyalty-counter";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function Page() {
-  const [discounts, counter] = await Promise.all([
-    getDiscountCenter(),
-    getLoyaltyCounterState(),
-  ]);
-
+  const counter = await getLoyaltyCounterState();
   return (
-    <AdminShellServer>
+    <AdminShellServer requiredModule="loyalty">
       <CrmShell active="loyalty">
-        <LoyaltyWorkspace discountState={discounts} counterState={counter} />
+        <LoyaltyCounter initialState={counter} />
       </CrmShell>
     </AdminShellServer>
   );

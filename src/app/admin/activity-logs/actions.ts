@@ -2,6 +2,7 @@
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getCurrentBusinessSlug } from "@/lib/business-context";
+import { requireModulePermission } from "@/lib/user-permissions";
 
 export type ActivityLogRow = {
   id: string;
@@ -30,6 +31,7 @@ export async function getActivityLogs(input: {
   limit?: number;
   offset?: number;
 } = {}): Promise<ActivityLogsState> {
+  await requireModulePermission("activity_logs", "view");
   const supabase = createSupabaseAdminClient();
   const businessSlug = await getCurrentBusinessSlug();
 

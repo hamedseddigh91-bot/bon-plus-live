@@ -3,13 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentBusinessSlug } from "@/lib/business-context";
 import { requireAuthenticatedUser } from "@/lib/auth-session";
+import { requireModulePermission } from "@/lib/user-permissions";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
-export type RecipeComponent = {
-  itemId: string;
-  qty: number;
-  notes?: string;
-};
+export type RecipeComponent = { itemId: string; qty: number; notes?: string };
 
 export type RecipeCostingItem = {
   id: string;
@@ -40,8 +37,8 @@ export type RecipeCostRow = {
   grossProfit: number;
   marginPercent: number;
   foodCostPercent: number;
+  saleMultiple: number;
   componentCount: number;
-  status: "good" | "watch" | "danger";
 };
 
 export type RecipeCostingSummary = {
@@ -52,7 +49,8 @@ export type RecipeCostingSummary = {
   menuItemCount: number;
   averageCost: number;
   averageSalePrice: number;
-  lowMarginCount: number;
+  averageGrossProfit: number;
+  averageSaleMultiple: number;
 };
 
 export type RecipeCostingState = {
@@ -66,10 +64,7 @@ export type RecipeCostingState = {
   summary: RecipeCostingSummary;
 };
 
-export type ActionResult = {
-  success: boolean;
-  message?: string;
-};
+export type ActionResult = { success: boolean; message?: string };
 
 type CostingContext = {
   success: boolean;
@@ -87,24 +82,15 @@ function numberValue(value: number | string | null | undefined) {
 
 function normalizeComponents(value: unknown): RecipeComponent[] {
   if (!Array.isArray(value)) return [];
-
-  return value
-    .map((component) => {
-      if (!component || typeof component !== "object") return null;
-      const row = component as Record<string, unknown>;
-      const itemId = String(row.itemId ?? row.item_id ?? "").trim();
-      const qty = numberValue(row.qty as number | string | null | undefined);
-      const notes = String(row.notes ?? "").trim();
-
-      if (!itemId || qty <= 0) return null;
-
-      return {
-        itemId,
-        qty,
-        ...(notes ? { notes } : {}),
-      };
-    })
-    .filter((component): component is RecipeComponent => Boolean(component));
+  return value.map((component) => {
+    if (!component || typeof component !== "object") return null;
+    const row = component as Record<string, unknown>;
+    const itemId = String(row.itemId ?? row.item_id ?? "").trim();
+    const qty = numberValue(row.qty as number | string | null | undefined);
+    const notes = String(row.notes ?? "").trim();
+    if (!itemId || qty <= 0) return null;
+    return { itemId, qty, ...(notes ? { notes } : {}) };
+  }).filter((component): component is RecipeComponent => Boolean(component));
 }
 
 function mapItem(row: any): RecipeCostingItem {
@@ -134,13 +120,10 @@ function ingredientUnitCost(item: Pick<RecipeCostingItem, "purchaseQty" | "purch
   const price = numberValue(item.purchasePrice);
   const waste = numberValue(item.wastePercent);
   const usableQty = qty * (1 - waste / 100);
-
-  if (usableQty <= 0) return 0;
-
-  return price / usableQty;
+  return usableQty > 0 ? price / usableQty : 0;
 }
 
-function calculateRecipeCosts(items: RecipeCostingItem[]): RecipeCostRow[] {
+function buildUnitCostResolver(items: RecipeCostingItem[]) {
   const byId = new Map(items.filter((item) => item.active).map((item) => [item.id, item]));
   const memo = new Map<string, number>();
 
@@ -148,59 +131,37 @@ function calculateRecipeCosts(items: RecipeCostingItem[]): RecipeCostRow[] {
     if (memo.has(itemId)) return memo.get(itemId) ?? 0;
     const item = byId.get(itemId);
     if (!item || path.has(itemId)) return 0;
-
     if (item.itemType === "ingredient") {
       const cost = ingredientUnitCost(item);
       memo.set(itemId, cost);
       return cost;
     }
-
     if (item.itemType === "prep_item") {
-      const nextPath = new Set(path);
-      nextPath.add(itemId);
-      const batchCost = item.components.reduce((sum, component) => {
-        return sum + unitCostFor(component.itemId, nextPath) * numberValue(component.qty);
-      }, 0);
+      const next = new Set(path);
+      next.add(itemId);
+      const batchCost = item.components.reduce((sum, component) => sum + unitCostFor(component.itemId, next) * numberValue(component.qty), 0);
       const outputQty = numberValue(item.purchaseQty);
-      const unitCost = outputQty > 0 ? batchCost / outputQty : 0;
-      memo.set(itemId, unitCost);
-      return unitCost;
+      const cost = outputQty > 0 ? batchCost / outputQty : 0;
+      memo.set(itemId, cost);
+      return cost;
     }
-
     return 0;
   };
 
-  return items
-    .filter((item) => item.active && item.itemType === "menu_item")
-    .map((item) => {
-      const recipeCost = item.components.reduce((sum, component) => {
-        return sum + unitCostFor(component.itemId) * numberValue(component.qty);
-      }, 0);
-      const salePrice = numberValue(item.salePrice);
-      const grossProfit = salePrice - recipeCost;
-      const marginPercent = salePrice > 0 ? (grossProfit / salePrice) * 100 : 0;
-      const foodCostPercent = salePrice > 0 ? (recipeCost / salePrice) * 100 : 0;
-      const targetProfit = numberValue(item.targetProfitPercent);
-      const status: RecipeCostRow["status"] =
-        salePrice <= 0 || marginPercent < targetProfit - 15
-          ? "danger"
-          : marginPercent < targetProfit
-            ? "watch"
-            : "good";
+  return { unitCostFor, byId };
+}
 
-      return {
-        itemId: item.id,
-        name: item.name,
-        category: item.category,
-        salePrice,
-        recipeCost,
-        grossProfit,
-        marginPercent,
-        foodCostPercent,
-        componentCount: item.components.length,
-        status,
-      };
-    });
+function calculateRecipeCosts(items: RecipeCostingItem[]): RecipeCostRow[] {
+  const { unitCostFor } = buildUnitCostResolver(items);
+  return items.filter((item) => item.active && item.itemType === "menu_item").map((item) => {
+    const recipeCost = item.components.reduce((sum, component) => sum + unitCostFor(component.itemId) * numberValue(component.qty), 0);
+    const salePrice = numberValue(item.salePrice);
+    const grossProfit = salePrice - recipeCost;
+    const marginPercent = salePrice > 0 ? (grossProfit / salePrice) * 100 : 0;
+    const foodCostPercent = salePrice > 0 ? (recipeCost / salePrice) * 100 : 0;
+    const saleMultiple = recipeCost > 0 ? salePrice / recipeCost : 0;
+    return { itemId: item.id, name: item.name, category: item.category, salePrice, recipeCost, grossProfit, marginPercent, foodCostPercent, saleMultiple, componentCount: item.components.length };
+  });
 }
 
 function buildState(items: RecipeCostingItem[], message?: string): RecipeCostingState {
@@ -209,20 +170,7 @@ function buildState(items: RecipeCostingItem[], message?: string): RecipeCosting
   const prepItems = activeItems.filter((item) => item.itemType === "prep_item");
   const menuItems = activeItems.filter((item) => item.itemType === "menu_item");
   const recipeCosts = calculateRecipeCosts(activeItems);
-  const summary: RecipeCostingSummary = {
-    success: true,
-    ingredientCount: ingredients.length,
-    prepItemCount: prepItems.length,
-    menuItemCount: menuItems.length,
-    averageCost: recipeCosts.length
-      ? recipeCosts.reduce((sum, row) => sum + row.recipeCost, 0) / recipeCosts.length
-      : 0,
-    averageSalePrice: recipeCosts.length
-      ? recipeCosts.reduce((sum, row) => sum + row.salePrice, 0) / recipeCosts.length
-      : 0,
-    lowMarginCount: recipeCosts.filter((row) => row.status !== "good").length,
-  };
-
+  const average = (selector: (row: RecipeCostRow) => number) => recipeCosts.length ? recipeCosts.reduce((sum, row) => sum + selector(row), 0) / recipeCosts.length : 0;
   return {
     success: true,
     message,
@@ -231,7 +179,25 @@ function buildState(items: RecipeCostingItem[], message?: string): RecipeCosting
     prepItems,
     menuItems,
     recipeCosts,
-    summary,
+    summary: {
+      success: true,
+      ingredientCount: ingredients.length,
+      prepItemCount: prepItems.length,
+      menuItemCount: menuItems.length,
+      averageCost: average((row) => row.recipeCost),
+      averageSalePrice: average((row) => row.salePrice),
+      averageGrossProfit: average((row) => row.grossProfit),
+      averageSaleMultiple: average((row) => row.saleMultiple),
+    },
+  };
+}
+
+function emptyState(message: string): RecipeCostingState {
+  return {
+    success: false,
+    message,
+    items: [], ingredients: [], prepItems: [], menuItems: [], recipeCosts: [],
+    summary: { success: false, message, ingredientCount: 0, prepItemCount: 0, menuItemCount: 0, averageCost: 0, averageSalePrice: 0, averageGrossProfit: 0, averageSaleMultiple: 0 },
   };
 }
 
@@ -239,104 +205,33 @@ async function getCostingContext(): Promise<CostingContext> {
   const actor = await requireAuthenticatedUser();
   const businessSlug = await getCurrentBusinessSlug();
   const supabase = createSupabaseAdminClient();
-
-  const { data, error } = await supabase.rpc("_operations_get_context", {
-    p_slug: businessSlug,
-    p_actor_auth_user_id: actor.id,
-    p_actor_email: actor.email,
-  });
-
+  const { data, error } = await supabase.rpc("_operations_get_context", { p_slug: businessSlug, p_actor_auth_user_id: actor.id, p_actor_email: actor.email });
   const context = Array.isArray(data) ? data[0] : null;
-
-  if (error || !context?.business_id) {
-    return {
-      success: false,
-      message: error?.message ?? "Business access was not found.",
-      businessId: null,
-      businessSlug,
-      actor,
-      role: null,
-    };
-  }
-
-  if (!["owner", "manager", "accountant"].includes(context.actor_role)) {
-    return {
-      success: false,
-      message: "You do not have recipe costing access.",
-      businessId: context.business_id as string,
-      businessSlug,
-      actor,
-      role: context.actor_role as string,
-    };
-  }
-
-  return {
-    success: true,
-    businessId: context.business_id as string,
-    businessSlug,
-    actor,
-    role: context.actor_role as string,
-  };
+  if (error || !context?.business_id) return { success: false, message: error?.message ?? "Business access was not found.", businessId: null, businessSlug, actor, role: null };
+  if (!["owner", "manager", "accountant"].includes(context.actor_role)) return { success: false, message: "You do not have recipe costing access.", businessId: context.business_id as string, businessSlug, actor, role: context.actor_role as string };
+  return { success: true, businessId: context.business_id as string, businessSlug, actor, role: context.actor_role as string };
 }
 
 export async function getRecipeCostingState(): Promise<RecipeCostingState> {
+  await requireModulePermission("costing", "view");
   const context = await getCostingContext();
-
-  if (!context.success || !context.businessId) {
-    return {
-      success: false,
-      message: context.message ?? "Recipe costing access failed.",
-      items: [],
-      ingredients: [],
-      prepItems: [],
-      menuItems: [],
-      recipeCosts: [],
-      summary: {
-        success: false,
-        message: context.message,
-        ingredientCount: 0,
-        prepItemCount: 0,
-        menuItemCount: 0,
-        averageCost: 0,
-        averageSalePrice: 0,
-        lowMarginCount: 0,
-      },
-    };
-  }
-
+  if (!context.success || !context.businessId) return emptyState(context.message ?? "Recipe costing access failed.");
   const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase
-    .from("recipe_costing_items")
-    .select("*")
-    .eq("business_id", context.businessId)
-    .eq("active", true)
-    .order("item_type", { ascending: true })
-    .order("category", { ascending: true })
-    .order("name", { ascending: true });
-
-  if (error) {
-    return {
-      success: false,
-      message: error.message,
-      items: [],
-      ingredients: [],
-      prepItems: [],
-      menuItems: [],
-      recipeCosts: [],
-      summary: {
-        success: false,
-        message: error.message,
-        ingredientCount: 0,
-        prepItemCount: 0,
-        menuItemCount: 0,
-        averageCost: 0,
-        averageSalePrice: 0,
-        lowMarginCount: 0,
-      },
-    };
-  }
-
+  const { data, error } = await supabase.from("recipe_costing_items").select("*").eq("business_id", context.businessId).eq("active", true).order("item_type").order("category").order("name");
+  if (error) return emptyState(error.message);
   return buildState((data ?? []).map(mapItem));
+}
+
+function createsCycle(itemId: string, components: RecipeComponent[], items: RecipeCostingItem[]) {
+  const graph = new Map(items.filter((i) => i.itemType === "prep_item").map((i) => [i.id, i.components.map((c) => c.itemId)]));
+  graph.set(itemId, components.map((c) => c.itemId));
+  const visit = (node: string, path: Set<string>): boolean => {
+    if (node === itemId && path.size > 0) return true;
+    if (path.has(node)) return false;
+    const nextPath = new Set(path); nextPath.add(node);
+    return (graph.get(node) ?? []).some((next) => visit(next, nextPath));
+  };
+  return components.some((c) => visit(c.itemId, new Set<string>()));
 }
 
 export async function saveRecipeCostingItem(input: {
@@ -353,25 +248,22 @@ export async function saveRecipeCostingItem(input: {
   components?: RecipeComponent[];
   notes?: string;
 }): Promise<ActionResult> {
+  await requireModulePermission("costing", "edit");
   const context = await getCostingContext();
-
-  if (!context.success || !context.businessId) {
-    return {
-      success: false,
-      message: context.message ?? "Recipe costing access failed.",
-    };
-  }
-
+  if (!context.success || !context.businessId) return { success: false, message: context.message ?? "Recipe costing access failed." };
   const name = input.name.trim();
-
-  if (!name) {
-    return {
-      success: false,
-      message: "Name is required.",
-    };
-  }
+  if (!name) return { success: false, message: "Name is required." };
 
   const supabase = createSupabaseAdminClient();
+  const components = input.itemType === "ingredient" ? [] : normalizeComponents(input.components ?? []);
+  if (input.itemType !== "ingredient") {
+    const { data } = await supabase.from("recipe_costing_items").select("*").eq("business_id", context.businessId).eq("active", true);
+    const items = (data ?? []).map(mapItem);
+    const allowed = new Set(items.filter((item) => item.itemType === "ingredient" || item.itemType === "prep_item").map((item) => item.id));
+    if (components.some((component) => !allowed.has(component.itemId))) return { success: false, message: "Recipes can only contain ingredients and prep items." };
+    if (input.itemType === "prep_item" && input.id && createsCycle(input.id, components, items)) return { success: false, message: "Circular prep dependency is not allowed." };
+  }
+
   const payload = {
     business_id: context.businessId,
     item_type: input.itemType,
@@ -382,8 +274,8 @@ export async function saveRecipeCostingItem(input: {
     purchase_price: Math.max(0, numberValue(input.purchasePrice)),
     waste_percent: Math.min(99.99, Math.max(0, numberValue(input.wastePercent))),
     sale_price: Math.max(0, numberValue(input.salePrice)),
-    target_profit_percent: Math.min(100, Math.max(0, numberValue(input.targetProfitPercent || 65))),
-    components: input.itemType === "ingredient" ? [] : normalizeComponents(input.components ?? []),
+    target_profit_percent: 0,
+    components,
     notes: input.notes?.trim() || null,
     active: true,
     created_by: context.actor.id,
@@ -393,52 +285,20 @@ export async function saveRecipeCostingItem(input: {
   const query = input.id
     ? supabase.from("recipe_costing_items").update(payload).eq("id", input.id).eq("business_id", context.businessId)
     : supabase.from("recipe_costing_items").insert(payload);
-
   const { error } = await query;
-
   revalidatePath("/admin/recipes");
-
-  if (error) {
-    return {
-      success: false,
-      message: error.message,
-    };
-  }
-
-  return {
-    success: true,
-    message: input.itemType === "ingredient" ? "Ingredient saved." : "Menu item saved.",
-  };
+  revalidatePath("/admin/finance/costing");
+  if (error) return { success: false, message: error.message };
+  return { success: true, message: input.itemType === "ingredient" ? "Ingredient saved." : input.itemType === "prep_item" ? "Prep item saved." : "Menu item saved." };
 }
 
 export async function archiveRecipeCostingItem(input: { id: string }): Promise<ActionResult> {
+  await requireModulePermission("costing", "edit");
   const context = await getCostingContext();
-
-  if (!context.success || !context.businessId) {
-    return {
-      success: false,
-      message: context.message ?? "Recipe costing access failed.",
-    };
-  }
-
+  if (!context.success || !context.businessId) return { success: false, message: context.message ?? "Recipe costing access failed." };
   const supabase = createSupabaseAdminClient();
-  const { error } = await supabase
-    .from("recipe_costing_items")
-    .update({ active: false })
-    .eq("id", input.id)
-    .eq("business_id", context.businessId);
-
+  const { error } = await supabase.from("recipe_costing_items").update({ active: false }).eq("id", input.id).eq("business_id", context.businessId);
   revalidatePath("/admin/recipes");
-
-  if (error) {
-    return {
-      success: false,
-      message: error.message,
-    };
-  }
-
-  return {
-    success: true,
-    message: "Item archived.",
-  };
+  revalidatePath("/admin/finance/costing");
+  return error ? { success: false, message: error.message } : { success: true, message: "Item archived." };
 }

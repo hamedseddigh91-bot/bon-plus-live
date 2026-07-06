@@ -46,7 +46,7 @@ const copy = {
     pettyBalance: "مانده تقریبی تنخواه",
     tipCard: "تیپ کارت",
     talabat: "طلبات",
-    lowMargin: "آیتم کم‌سود",
+    lowMargin: "اطلاعات ناقص کاست",
     menuItems: "آیتم منو",
     ingredients: "مواد اولیه",
     averageCost: "میانگین هزینه",
@@ -76,7 +76,7 @@ const copy = {
     danger: "خطر",
     noData: "داده‌ای برای نمایش وجود ندارد.",
     unpaidWarning: "فاکتورهای پرداخت‌نشده را قبل از بستن دوره بررسی کن.",
-    marginWarning: "آیتم‌های کم‌سود یا پرهزینه را برای اصلاح قیمت بررسی کن.",
+    marginWarning: "آیتم‌هایی که کاست یا قیمت فروش معتبر ندارند را کامل کن.",
     healthy: "وضعیت کلی قابل قبول است.",
     recovery: "اقدام پیشنهادی",
   },
@@ -95,7 +95,7 @@ const copy = {
     pettyBalance: "رصيد العهدة التقريبي",
     tipCard: "تيب البطاقة",
     talabat: "طلبات",
-    lowMargin: "أصناف ربحها منخفض",
+    lowMargin: "بيانات تكلفة ناقصة",
     menuItems: "أصناف المنيو",
     ingredients: "المواد الخام",
     averageCost: "متوسط التكلفة",
@@ -125,7 +125,7 @@ const copy = {
     danger: "خطر",
     noData: "لا توجد بيانات للعرض.",
     unpaidWarning: "راجع الفواتير غير المدفوعة قبل إغلاق الفترة.",
-    marginWarning: "راجع الأصناف ذات الربح المنخفض أو التكلفة العالية لتعديل السعر.",
+    marginWarning: "أكمل الأصناف التي لا تحتوي على تكلفة أو سعر بيع صالح.",
     healthy: "الوضع العام مقبول.",
     recovery: "الإجراء المقترح",
   },
@@ -144,7 +144,7 @@ const copy = {
     pettyBalance: "Estimated petty balance",
     tipCard: "Tip card",
     talabat: "Talabat",
-    lowMargin: "Low-margin items",
+    lowMargin: "Incomplete costing data",
     menuItems: "Menu items",
     ingredients: "Ingredients",
     averageCost: "Average cost",
@@ -174,7 +174,7 @@ const copy = {
     danger: "Danger",
     noData: "No data to display.",
     unpaidWarning: "Review unpaid invoices before locking the period.",
-    marginWarning: "Review low-margin or high-cost menu items for price correction.",
+    marginWarning: "Complete items that are missing a valid cost or sale price.",
     healthy: "Overall status looks acceptable.",
     recovery: "Suggested action",
   },
@@ -289,12 +289,12 @@ export function ReportsCenterPage({ financeState, recipeState }: ReportsCenterPa
     const term = query.trim().toLowerCase();
     if (!term) return recipeState.recipeCosts;
 
-    return recipeState.recipeCosts.filter((row) => [row.name, row.category, row.status].some((value) => String(value).toLowerCase().includes(term)));
+    return recipeState.recipeCosts.filter((row) => [row.name, row.category].some((value) => String(value).toLowerCase().includes(term)));
   }, [recipeState.recipeCosts, query]);
 
   const unpaidTotal = numberValue(overview?.unpaidExpenses);
-  const lowMarginCount = recipeState.summary?.lowMarginCount ?? 0;
-  const hasAlerts = unpaidTotal > 0 || lowMarginCount > 0;
+  const costingIssueCount = recipeState.recipeCosts.filter((row) => row.recipeCost <= 0 || row.salePrice <= 0).length;
+  const hasAlerts = unpaidTotal > 0 || costingIssueCount > 0;
 
   const exportFinanceCsv = () => downloadText("finance-report.csv", toCsv(financeCsvRows(financeState.entries)), "text/csv;charset=utf-8");
   const exportClosingCsv = () => downloadText("cash-closing-report.csv", toCsv(closingCsvRows(financeState.closings)), "text/csv;charset=utf-8");
@@ -310,7 +310,7 @@ export function ReportsCenterPage({ financeState, recipeState }: ReportsCenterPa
           gross_profit: row.grossProfit,
           margin_percent: row.marginPercent,
           food_cost_percent: row.foodCostPercent,
-          status: row.status,
+          sale_multiple: row.saleMultiple,
         })),
       ),
       "text/csv;charset=utf-8",
@@ -390,7 +390,7 @@ export function ReportsCenterPage({ financeState, recipeState }: ReportsCenterPa
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard label={t.menuItems} value={String(recipeState.summary?.menuItemCount ?? 0)} icon={<ChefHat className="h-5 w-5" />} />
         <MetricCard label={t.ingredients} value={String(recipeState.summary?.ingredientCount ?? 0)} icon={<FileText className="h-5 w-5" />} />
-        <MetricCard label={t.lowMargin} value={String(lowMarginCount)} icon={<AlertTriangle className="h-5 w-5" />} tone={lowMarginCount > 0 ? "danger" : "success"} />
+        <MetricCard label={t.lowMargin} value={String(costingIssueCount)} icon={<AlertTriangle className="h-5 w-5" />} tone={costingIssueCount > 0 ? "danger" : "success"} />
         <MetricCard label={t.averageCost} value={`${money(recipeState.summary?.averageCost)} OMR`} icon={<BarChart3 className="h-5 w-5" />} />
       </section>
 
@@ -411,8 +411,8 @@ export function ReportsCenterPage({ financeState, recipeState }: ReportsCenterPa
           </div>
           <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-4">
             <div className="flex items-start gap-3">
-              {lowMarginCount > 0 ? <AlertTriangle className="mt-0.5 h-5 w-5 text-red-200" /> : <ShieldCheck className="mt-0.5 h-5 w-5 text-emerald-200" />}
-              <p className="text-sm leading-6 text-white/60">{lowMarginCount > 0 ? t.marginWarning : t.healthy}</p>
+              {costingIssueCount > 0 ? <AlertTriangle className="mt-0.5 h-5 w-5 text-red-200" /> : <ShieldCheck className="mt-0.5 h-5 w-5 text-emerald-200" />}
+              <p className="text-sm leading-6 text-white/60">{costingIssueCount > 0 ? t.marginWarning : t.healthy}</p>
             </div>
           </div>
         </div>
@@ -470,7 +470,8 @@ export function ReportsCenterPage({ financeState, recipeState }: ReportsCenterPa
                   <th className="px-4 py-3 text-right">{t.sale}</th>
                   <th className="px-4 py-3 text-right">{t.margin}</th>
                   <th className="px-4 py-3 text-right">{t.foodCost}</th>
-                  <th className="px-4 py-3">{t.status}</th>
+                  <th className="px-4 py-3 text-right">Profit</th>
+                  <th className="px-4 py-3 text-right">Sale ÷ Cost</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10">
@@ -484,16 +485,13 @@ export function ReportsCenterPage({ financeState, recipeState }: ReportsCenterPa
                     <td className="px-4 py-4 text-right">{money(row.salePrice)}</td>
                     <td className="px-4 py-4 text-right">{row.marginPercent.toFixed(1)}%</td>
                     <td className="px-4 py-4 text-right">{row.foodCostPercent.toFixed(1)}%</td>
-                    <td className="px-4 py-4">
-                      <Badge variant={row.status === "good" ? "success" : row.status === "watch" ? "secondary" : "danger"}>
-                        {row.status === "good" ? t.good : row.status === "watch" ? t.watch : t.danger}
-                      </Badge>
-                    </td>
+                    <td className="px-4 py-4 text-right">{money(row.grossProfit)}</td>
+                    <td className="px-4 py-4 text-right font-black text-white">{row.saleMultiple.toFixed(2)}×</td>
                   </tr>
                 ))}
                 {filteredRecipeRows.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-10 text-center text-white/35">{t.noData}</td>
+                    <td colSpan={7} className="px-4 py-10 text-center text-white/35">{t.noData}</td>
                   </tr>
                 )}
               </tbody>

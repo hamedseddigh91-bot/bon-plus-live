@@ -1,7 +1,9 @@
 "use client";
 
+import { getWhatsAppTemplateText } from "@/app/admin/settings/whatsapp-messages/actions";
+
 import { useMemo, useState, useTransition } from "react";
-import { Download, Printer, Save } from "lucide-react";
+import { Download, MessageCircle, Printer, Save } from "lucide-react";
 import type { CashClosing, OperationsPageState } from "@/app/admin/operations/actions";
 import { saveCashClosing } from "@/app/admin/operations/actions";
 import { Button } from "@/components/ui/button";
@@ -91,6 +93,13 @@ function printClosing(label: string, closing: CashClosing) {
   win.print();
 }
 
+
+async function shareClosing(closing: CashClosing, language: FinanceLanguage) {
+  const saved = await getWhatsAppTemplateText("cash_closing", language);
+  const fallback = ["Bon Plus — Cash Closing Summary", `Date: ${closing.closingDate}`, `Cash: ${money(closing.cashAmount)} OMR`, `Card: ${money(closing.cardAmount)} OMR`, `Talabat: ${money(closing.talabatAmount)} OMR`, `Total: ${money(closing.totalAmount)} OMR`].join("\n");
+  const lines = (saved || fallback).replaceAll("{date}", closing.closingDate).replaceAll("{cash}", money(closing.cashAmount)).replaceAll("{card}", money(closing.cardAmount)).replaceAll("{talabat}", money(closing.talabatAmount)).replaceAll("{total}", money(closing.totalAmount)).replaceAll("{discrepancy}", "—");
+  window.open(`https://wa.me/?text=${encodeURIComponent(lines)}`, "_blank", "noopener,noreferrer");
+}
 export function FinanceClosingPage({ initialState }: FinanceClosingPageProps) {
   const [message, setMessage] = useState<string | null>(initialState.message ?? null);
   const [isPending, startTransition] = useTransition();
@@ -251,10 +260,11 @@ export function FinanceClosingPage({ initialState }: FinanceClosingPageProps) {
                         <th className="px-4 py-3">{t.talabatIncome}</th>
                         <th className="px-4 py-3">{t.tipCard}</th>
                         <th className="px-4 py-3 text-right">{t.total}</th>
+                        <th className="px-4 py-3 text-right">WhatsApp</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/10">
-                      {sortedClosings.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-white/35">{t.noClosings}</td></tr>}
+                      {sortedClosings.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-white/35">{t.noClosings}</td></tr>}
 
                       {sortedClosings.map((closing) => (
                         <tr key={closing.id} className="cursor-pointer text-white/70 hover:bg-white/[0.03]" onClick={() => editClosing(closing)}>
@@ -264,6 +274,16 @@ export function FinanceClosingPage({ initialState }: FinanceClosingPageProps) {
                           <td className="px-4 py-4">{money(closing.talabatAmount)}</td>
                           <td className="px-4 py-4">{money(closing.otherAmount)}</td>
                           <td className="px-4 py-4 text-right font-bold text-white">{money(closing.totalAmount)}</td>
+                          <td className="px-4 py-4 text-right">
+                            <button
+                              type="button"
+                              onClick={(event) => { event.stopPropagation(); shareClosing(closing, language); }}
+                              className="inline-flex items-center gap-2 rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-300/20"
+                            >
+                              <MessageCircle className="h-3.5 w-3.5" />
+                              WhatsApp
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
