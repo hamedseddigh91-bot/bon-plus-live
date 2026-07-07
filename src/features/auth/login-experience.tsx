@@ -32,7 +32,7 @@ export function LoginExperience() {
         />
       </div>
 
-      <div className="relative z-10 flex min-h-screen w-full items-center justify-center px-4 py-8 md:justify-start md:pl-[18vw] md:pr-8 xl:pl-[20vw]">
+      <div className="relative z-10 flex min-h-screen w-full items-center justify-center px-4 py-8 md:justify-start md:pl-[7vw] md:pr-8 xl:pl-[8vw]">
         <LoginForm />
       </div>
     </main>
