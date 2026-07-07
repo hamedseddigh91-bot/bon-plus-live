@@ -174,6 +174,11 @@ export async function requireUserContext() {
   return context;
 }
 
+export async function requireCurrentBusinessSlug() {
+  const context = await requireUserContext();
+  return context.currentBusiness.slug;
+}
+
 export function canAccessModule(role: BusinessRole, module: string) {
   const ownerModules = [
     "dashboard",

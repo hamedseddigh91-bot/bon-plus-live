@@ -1,7 +1,7 @@
 "use server";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getCurrentBusinessSlug } from "@/lib/business-context";
+import { requireCurrentBusinessSlug } from "@/lib/auth-session";
 import { requireModulePermission } from "@/lib/user-permissions";
 import type { FeedbackSegment, LanguageCode, RewardType } from "@/types/feedback";
 
@@ -209,7 +209,7 @@ export async function getAdminFeedbackInbox(
 ): Promise<FeedbackInboxState> {
   await requireModulePermission("feedback", "view");
   const supabase = createSupabaseAdminClient();
-  const businessSlug = await getCurrentBusinessSlug();
+  const businessSlug = await requireCurrentBusinessSlug();
 
   const { data, error } = await supabase.rpc("admin_get_feedback_inbox_fast", {
     p_slug: businessSlug,

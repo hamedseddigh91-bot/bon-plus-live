@@ -4,8 +4,7 @@ import crypto from "crypto";
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getCurrentBusinessSlug } from "@/lib/business-context";
-import { requireAuthenticatedUser } from "@/lib/auth-session";
+import { requireAuthenticatedUser, requireCurrentBusinessSlug } from "@/lib/auth-session";
 import { requireModulePermission } from "@/lib/user-permissions";
 import type { FeedbackSegment, RewardType } from "@/types/feedback";
 
@@ -66,7 +65,7 @@ export async function getDiscountCenter(input: {
 } = {}): Promise<DiscountCenterState> {
   await requireModulePermission("discounts", "view");
   const supabase = createSupabaseAdminClient();
-  const businessSlug = await getCurrentBusinessSlug();
+  const businessSlug = await requireCurrentBusinessSlug();
 
   const { data, error } = await supabase.rpc("admin_get_discount_center_fast", {
     p_slug: businessSlug,
@@ -131,7 +130,7 @@ export async function redeemDiscountCode(input: {
 }) {
   await requireModulePermission("discounts", "edit");
   const supabase = createSupabaseAdminClient();
-  const businessSlug = await getCurrentBusinessSlug();
+  const businessSlug = await requireCurrentBusinessSlug();
 
   const { data, error } = await supabase.rpc("admin_redeem_discount_code_fast", {
     p_slug: businessSlug,
@@ -173,7 +172,7 @@ export type DiscountValidation = {
 
 async function discountContext() {
   const actor = await requireAuthenticatedUser();
-  const businessSlug = await getCurrentBusinessSlug();
+  const businessSlug = await requireCurrentBusinessSlug();
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase.rpc("_operations_get_context", {
     p_slug: businessSlug,

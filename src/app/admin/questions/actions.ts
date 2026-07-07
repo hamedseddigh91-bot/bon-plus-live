@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getCurrentBusinessSlug } from "@/lib/business-context";
+import { requireCurrentBusinessSlug } from "@/lib/auth-session";
 import { requireModulePermission } from "@/lib/user-permissions";
 import type { FeedbackQuestionType } from "@/types/feedback";
 
@@ -48,7 +48,7 @@ export type SaveQuestionInput = {
 export async function getAdminQuestions(): Promise<AdminQuestionsState> {
   await requireModulePermission("settings_feedback", "view");
   const supabase = createSupabaseAdminClient();
-  const businessSlug = await getCurrentBusinessSlug();
+  const businessSlug = await requireCurrentBusinessSlug();
 
   const { data, error } = await supabase.rpc("admin_get_feedback_questions_fast", {
     p_slug: businessSlug,

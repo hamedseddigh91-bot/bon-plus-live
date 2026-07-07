@@ -1,7 +1,7 @@
 "use server";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getCurrentBusinessSlug } from "@/lib/business-context";
+import { requireCurrentBusinessSlug } from "@/lib/auth-session";
 import { requireModulePermission } from "@/lib/user-permissions";
 
 export type ActivityLogRow = {
@@ -33,7 +33,7 @@ export async function getActivityLogs(input: {
 } = {}): Promise<ActivityLogsState> {
   await requireModulePermission("activity_logs", "view");
   const supabase = createSupabaseAdminClient();
-  const businessSlug = await getCurrentBusinessSlug();
+  const businessSlug = await requireCurrentBusinessSlug();
 
   const { data, error } = await supabase.rpc("admin_get_activity_logs_fast", {
     p_slug: businessSlug,

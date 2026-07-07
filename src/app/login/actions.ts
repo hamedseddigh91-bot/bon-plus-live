@@ -8,7 +8,7 @@ import {
   createSupabaseAuthClient,
 } from "@/lib/auth-session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getCurrentBusinessSlug } from "@/lib/business-context";
+import { BUSINESS_COOKIE_NAME, getCurrentBusinessSlug } from "@/lib/business-context";
 
 const cookieOptions = {
   path: "/",
@@ -78,6 +78,14 @@ export async function signInWithPassword(input: {
     maxAge: 60 * 60 * 24 * 30,
   });
 
+  const resolvedBusinessSlug = context?.success ? context.currentBusiness?.slug : null;
+  if (resolvedBusinessSlug) {
+    cookieStore.set(BUSINESS_COOKIE_NAME, resolvedBusinessSlug, {
+      ...cookieOptions,
+      maxAge: 60 * 60 * 24 * 30,
+    });
+  }
+
   return {
     success: true,
     message: "Logged in.",
@@ -90,6 +98,7 @@ export async function signOut() {
 
   cookieStore.delete(ACCESS_TOKEN_COOKIE);
   cookieStore.delete(REFRESH_TOKEN_COOKIE);
+  cookieStore.delete(BUSINESS_COOKIE_NAME);
 
   redirect("/login");
 }

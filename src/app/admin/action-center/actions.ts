@@ -1,9 +1,8 @@
 "use server";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getCurrentBusinessSlug } from "@/lib/business-context";
 import { requireModulePermission } from "@/lib/user-permissions";
-import { requireAuthenticatedUser } from "@/lib/auth-session";
+import { requireAuthenticatedUser, requireCurrentBusinessSlug } from "@/lib/auth-session";
 
 export type ActionCenterItem = {
   id: string;
@@ -29,7 +28,7 @@ export type ActionCenterState = {
 
 async function context() {
   const actor = await requireAuthenticatedUser();
-  const businessSlug = await getCurrentBusinessSlug();
+  const businessSlug = await requireCurrentBusinessSlug();
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase.rpc("_operations_get_context", {
     p_slug: businessSlug,

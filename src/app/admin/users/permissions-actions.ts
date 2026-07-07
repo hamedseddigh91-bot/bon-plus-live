@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getCurrentBusinessSlug } from "@/lib/business-context";
+import { requireCurrentBusinessSlug } from "@/lib/auth-session";
 import { requireModulePermission } from "@/lib/user-permissions";
 
 export type UserPermission = {
@@ -19,7 +19,7 @@ const MODULES = [
 
 export async function getUserPermissions(businessUserId: string) {
   await requireModulePermission("settings_users", "view");
-  const businessSlug = await getCurrentBusinessSlug();
+  const businessSlug = await requireCurrentBusinessSlug();
   const supabase = createSupabaseAdminClient();
 
   const { data: business } = await supabase.from("businesses").select("id").eq("slug", businessSlug).maybeSingle();
@@ -52,7 +52,7 @@ export async function getUserPermissions(businessUserId: string) {
 export async function saveUserPermissions(input: { businessUserId: string; permissions: UserPermission[] }) {
   const actorContext = await requireModulePermission("settings_users", "edit");
   const actor = actorContext.user;
-  const businessSlug = await getCurrentBusinessSlug();
+  const businessSlug = await requireCurrentBusinessSlug();
   const supabase = createSupabaseAdminClient();
 
   const { data: business } = await supabase.from("businesses").select("id").eq("slug", businessSlug).maybeSingle();

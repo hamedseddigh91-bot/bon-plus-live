@@ -2,8 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getCurrentBusinessSlug } from "@/lib/business-context";
-import { requireAuthenticatedUser } from "@/lib/auth-session";
+import { requireAuthenticatedUser, requireCurrentBusinessSlug } from "@/lib/auth-session";
 import { requireModulePermission } from "@/lib/user-permissions";
 
 export type LoyaltyRuleRow = {
@@ -46,7 +45,7 @@ export type LoyaltyCounterState = {
 
 async function context() {
   const actor = await requireAuthenticatedUser();
-  const slug = await getCurrentBusinessSlug();
+  const slug = await requireCurrentBusinessSlug();
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase.rpc("_operations_get_context", {
     p_slug: slug,

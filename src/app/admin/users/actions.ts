@@ -2,8 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getCurrentBusinessSlug } from "@/lib/business-context";
-import type { BusinessRole } from "@/lib/auth-session";
+import { requireCurrentBusinessSlug, type BusinessRole } from "@/lib/auth-session";
 import { requireModulePermission } from "@/lib/user-permissions";
 
 export type BusinessUser = {
@@ -89,7 +88,7 @@ async function createOrUpdateAuthUser(input: {
 
 export async function getBusinessUsers(): Promise<UsersState> {
   const actor = (await requireModulePermission("settings_users", "view")).user;
-  const businessSlug = await getCurrentBusinessSlug();
+  const businessSlug = await requireCurrentBusinessSlug();
   const supabase = createSupabaseAdminClient();
 
   const { data, error } = await supabase.rpc("admin_list_business_users_fast", {
@@ -117,7 +116,7 @@ export async function createBusinessUserDirect(input: {
   active: boolean;
 }) {
   const actor = (await requireModulePermission("settings_users", "edit")).user;
-  const businessSlug = await getCurrentBusinessSlug();
+  const businessSlug = await requireCurrentBusinessSlug();
   const supabase = createSupabaseAdminClient();
 
   const email = input.email.trim().toLowerCase();
@@ -193,7 +192,7 @@ export async function saveBusinessUser(input: {
   active: boolean;
 }) {
   const actor = (await requireModulePermission("settings_users", "edit")).user;
-  const businessSlug = await getCurrentBusinessSlug();
+  const businessSlug = await requireCurrentBusinessSlug();
   const supabase = createSupabaseAdminClient();
 
   const { data, error } = await supabase.rpc("admin_upsert_business_user_fast", {

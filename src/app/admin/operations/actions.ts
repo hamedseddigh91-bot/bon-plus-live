@@ -3,8 +3,7 @@
 import crypto from "crypto";
 import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getCurrentBusinessSlug } from "@/lib/business-context";
-import { requireAuthenticatedUser } from "@/lib/auth-session";
+import { requireAuthenticatedUser, requireCurrentBusinessSlug } from "@/lib/auth-session";
 import { requireAnyModulePermission, requireModulePermission } from "@/lib/user-permissions";
 
 export type OperationSupplier = {
@@ -146,7 +145,7 @@ function cleanFileName(name: string) {
 
 async function actorAndSlug() {
   const actor = await requireAuthenticatedUser();
-  const businessSlug = await getCurrentBusinessSlug();
+  const businessSlug = await requireCurrentBusinessSlug();
 
   return { actor, businessSlug };
 }

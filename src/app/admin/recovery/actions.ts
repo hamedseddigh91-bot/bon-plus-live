@@ -1,7 +1,7 @@
 "use server";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getCurrentBusinessSlug } from "@/lib/business-context";
+import { requireCurrentBusinessSlug } from "@/lib/auth-session";
 import { requireModulePermission } from "@/lib/user-permissions";
 import type { FeedbackSegment, LanguageCode } from "@/types/feedback";
 
@@ -145,7 +145,7 @@ export async function getRecoveryBoard(
 ): Promise<RecoveryBoardState> {
   await requireModulePermission("followups", "view");
   const supabase = createSupabaseAdminClient();
-  const businessSlug = await getCurrentBusinessSlug();
+  const businessSlug = await requireCurrentBusinessSlug();
 
   const { data, error } = await supabase.rpc("admin_get_recovery_board_fast", {
     p_slug: businessSlug,

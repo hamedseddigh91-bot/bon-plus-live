@@ -1,7 +1,7 @@
 "use server";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getCurrentBusinessSlug } from "@/lib/business-context";
+import { requireCurrentBusinessSlug } from "@/lib/auth-session";
 import { requireModulePermission } from "@/lib/user-permissions";
 import type { FeedbackSegment, LanguageCode, RewardType } from "@/types/feedback";
 
@@ -125,7 +125,7 @@ export async function getCustomerDirectory(
 ): Promise<CustomerDirectoryState> {
   await requireModulePermission("customers", "view");
   const supabase = createSupabaseAdminClient();
-  const businessSlug = await getCurrentBusinessSlug();
+  const businessSlug = await requireCurrentBusinessSlug();
 
   const { data, error } = await supabase.rpc("admin_get_customer_directory_fast", {
     p_slug: businessSlug,

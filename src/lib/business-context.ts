@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 export const BUSINESS_COOKIE_NAME = "current_business_slug";
 
 export function getDefaultBusinessSlug() {
-  return process.env.NEXT_PUBLIC_DEFAULT_BUSINESS_SLUG ?? "demo-cafe";
+  return process.env.NEXT_PUBLIC_DEFAULT_BUSINESS_SLUG ?? "bon-plus-cafe";
 }
 
 export async function getCurrentBusinessSlug() {
