@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useTransition } from "react";
 import { signInWithPassword } from "@/app/login/actions";
@@ -37,11 +37,11 @@ export function LoginForm() {
       className="w-[450px] max-w-[calc(100vw-32px)] rounded-[17px] border border-white/20 bg-white/[0.055] p-5 pb-8 text-left text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.20),inset_0_-1px_0_rgba(255,255,255,0.06),0_0_16px_rgba(39,168,255,0.88),0_0_38px_rgba(0,119,255,0.68),0_0_76px_rgba(0,92,255,0.38)] backdrop-blur-[18px] backdrop-saturate-[1.35]"
       style={{ fontFamily: "'Quicksand', 'Trebuchet MS', Arial, sans-serif" }}
     >
-      <h1 className="text-center text-[40px] font-semibold leading-[50px] tracking-[1px]">
-        Login Here
+      <h1 className="text-center text-[28px] font-semibold leading-[36px] tracking-[0.7px]">
+        Bon Plus Business Console
       </h1>
 
-      <label htmlFor="email" className="mt-[30px] block text-[25px] font-extrabold tracking-[1px]">
+      <label htmlFor="email" className="mt-[30px] block text-[19px] font-bold tracking-[0.6px]">
         Username
       </label>
       <input
@@ -56,7 +56,7 @@ export function LoginForm() {
         className={controlClass}
       />
 
-      <label htmlFor="password" className="mt-[30px] block text-[25px] font-extrabold tracking-[1px]">
+      <label htmlFor="password" className="mt-[30px] block text-[19px] font-bold tracking-[0.6px]">
         Password
       </label>
       <input
@@ -80,10 +80,11 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isPending}
-        className="mt-10 w-full cursor-pointer rounded-[5px] border border-white/15 bg-black/15 px-[15px] py-2 text-[18px] font-semibold tracking-[1px] text-[#e1e1e1] transition-all duration-500 hover:bg-[#126fa8]/75 hover:shadow-[0_0_18px_rgba(39,168,255,0.45)] focus:bg-[#126fa8]/75 focus:shadow-[0_0_0_2px_rgba(39,168,255,0.45)] disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-10 w-full cursor-pointer rounded-[5px] border border-white/15 bg-black/15 px-[15px] py-2 text-[16px] font-semibold tracking-[0.7px] text-[#e1e1e1] transition-all duration-500 hover:bg-[#126fa8]/75 hover:shadow-[0_0_18px_rgba(39,168,255,0.45)] focus:bg-[#126fa8]/75 focus:shadow-[0_0_0_2px_rgba(39,168,255,0.45)] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isPending ? "Logging in..." : "Log In"}
       </button>
     </form>
   );
 }
+
