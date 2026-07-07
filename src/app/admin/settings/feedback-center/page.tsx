@@ -1,19 +1,16 @@
 import { AdminShellServer } from "@/components/layout/admin-shell-server";
-import { ExternalReviewsManager } from "@/features/admin/settings/external-reviews-manager";
+import { FeedbackCenter } from "@/features/admin/settings/feedback-center";
 import { FeedbackSettingsShell } from "@/features/admin/settings/feedback-settings-shell";
 import { SettingsShell } from "@/features/admin/settings/settings-shell";
-import { getExternalReviewIntegrations } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function Page() {
-  const state = await getExternalReviewIntegrations();
-
+export default function Page() {
   return (
     <AdminShellServer requiredModule="settings_feedback">
       <SettingsShell>
         <FeedbackSettingsShell>
-          <ExternalReviewsManager initialState={state} />
+          <FeedbackCenter />
         </FeedbackSettingsShell>
       </SettingsShell>
     </AdminShellServer>

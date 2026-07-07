@@ -5,11 +5,9 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import {
   Gift,
-  ListChecks,
   MessageCircle,
   Settings2,
   SlidersHorizontal,
-  Star,
   UserCog,
 } from "lucide-react";
 import { useAdminLanguage } from "@/lib/admin-language";
@@ -23,22 +21,10 @@ const items = [
     icon: Settings2,
   },
   {
-    href: "/admin/questions",
-    key: "feedbackQuestions",
-    moduleKey: "questions",
-    icon: ListChecks,
-  },
-  {
-    href: "/admin/settings/feedback",
-    key: "responseRules",
+    href: "/admin/settings/feedback-center",
+    key: "feedback",
     moduleKey: "settings_feedback",
     icon: SlidersHorizontal,
-  },
-  {
-    href: "/admin/settings/external-reviews",
-    key: "external",
-    moduleKey: "settings_feedback",
-    icon: Star,
   },
   {
     href: "/admin/settings/users",
@@ -63,32 +49,45 @@ const items = [
 const labels = {
   fa: {
     general: "عمومی",
-    feedbackQuestions: "سؤال‌های فیدبک",
-    responseRules: "قوانین پاسخ و پاداش",
+    feedback: "فیدبک",
     users: "کاربران",
     loyalty: "قوانین وفاداری",
     whatsapp: "متن‌های واتساپ",
-    external: "ریویوهای خارجی",
   },
   ar: {
     general: "عام",
-    feedbackQuestions: "أسئلة التقييم",
-    responseRules: "قواعد الرد والمكافآت",
+    feedback: "التقييم",
     users: "المستخدمون",
     loyalty: "قواعد الولاء",
     whatsapp: "رسائل واتساب",
-    external: "المراجعات الخارجية",
   },
   en: {
     general: "General",
-    feedbackQuestions: "Feedback Questions",
-    responseRules: "Response & Reward Rules",
+    feedback: "Feedback",
     users: "Users",
     loyalty: "Loyalty Rules",
     whatsapp: "WhatsApp Messages",
-    external: "External Reviews",
   },
 };
+
+function itemIsActive(pathname: string, item: (typeof items)[number]) {
+  if (item.key === "feedback") {
+    return (
+      pathname === "/admin/settings/feedback-center" ||
+      pathname.startsWith("/admin/settings/feedback-center/") ||
+      pathname === "/admin/settings/feedback" ||
+      pathname.startsWith("/admin/settings/feedback/") ||
+      pathname === "/admin/settings/external-reviews" ||
+      pathname.startsWith("/admin/settings/external-reviews/") ||
+      pathname === "/admin/settings/qr" ||
+      pathname.startsWith("/admin/settings/qr/") ||
+      pathname === "/admin/questions" ||
+      pathname.startsWith("/admin/questions/")
+    );
+  }
+
+  return pathname === item.href || pathname.startsWith(item.href + "/");
+}
 
 export function SettingsShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -104,8 +103,7 @@ export function SettingsShell({ children }: { children: ReactNode }) {
       <div className="overflow-x-auto pb-1">
         <nav className="flex min-w-max items-center gap-2">
           {visibleItems.map((item) => {
-            const active =
-              pathname === item.href || pathname.startsWith(item.href + "/");
+            const active = itemIsActive(pathname, item);
             const Icon = item.icon;
 
             return (
