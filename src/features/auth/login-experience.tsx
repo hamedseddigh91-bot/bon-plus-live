@@ -7,7 +7,7 @@ export function LoginExperience() {
       dir="ltr"
       className="relative min-h-screen w-full overflow-hidden bg-[#05070f] text-white"
     >
-      {/* Preserve the existing Bon Plus login background treatment. */}
+      {/* Keep the existing Bon Plus login background exactly as the page backdrop. */}
       <div className="pointer-events-none absolute inset-0">
         <div
           className="absolute inset-0 bg-cover bg-center opacity-70 md:opacity-100"
@@ -32,7 +32,7 @@ export function LoginExperience() {
         />
       </div>
 
-      <div className="relative z-10 flex min-h-screen w-full items-center justify-center px-4 py-8">
+      <div className="relative z-10 flex min-h-screen w-full items-center justify-center px-4 py-8 md:justify-start md:pl-[18vw] md:pr-8 xl:pl-[20vw]">
         <LoginForm />
       </div>
     </main>
