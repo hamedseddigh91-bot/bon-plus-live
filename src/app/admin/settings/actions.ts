@@ -279,28 +279,31 @@ function mapSettings(params: {
 
 export async function getCoreControlState(): Promise<CoreControlState> {
   const context = await requireModulePermission("settings_general", "view");
-  const canEdit = await userHasModulePermission(context, "settings_general", "edit");
   const supabase = createSupabaseAdminClient();
 
-  const { data: business, error: businessError } = await supabase
-    .from("businesses")
-    .select("id,name,slug,logo_url,accent_color,google_maps_review_url,address,mobile_number,po_box")
-    .eq("id", context.currentBusiness.id)
-    .maybeSingle();
-
-  if (businessError || !business) {
-    return {
-      success: false,
-      message: businessError?.message ?? "Business was not found.",
-      settings: null,
-      role: context.role,
-      canEdit: false,
-      permissions: rolePermissions,
-    };
-  }
-
   try {
-    const appSettings = await getSettingsRow(context.currentBusiness.id);
+    const [canEdit, businessResult, appSettings] = await Promise.all([
+      userHasModulePermission(context, "settings_general", "edit"),
+      supabase
+        .from("businesses")
+        .select("id,name,slug,logo_url,accent_color,google_maps_review_url,address,mobile_number,po_box")
+        .eq("id", context.currentBusiness.id)
+        .maybeSingle(),
+      getSettingsRow(context.currentBusiness.id),
+    ]);
+
+    const { data: business, error: businessError } = businessResult;
+
+    if (businessError || !business) {
+      return {
+        success: false,
+        message: businessError?.message ?? "Business was not found.",
+        settings: null,
+        role: context.role,
+        canEdit: false,
+        permissions: rolePermissions,
+      };
+    }
 
     return {
       success: true,

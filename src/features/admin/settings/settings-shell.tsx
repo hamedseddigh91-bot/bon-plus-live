@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { Gift, MessageCircle, Settings2, SlidersHorizontal, Star, UserCog } from "lucide-react";
 import { useAdminLanguage } from "@/lib/admin-language";
@@ -24,6 +24,7 @@ const labels = {
 
 export function SettingsShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { language } = useAdminLanguage();
   const { canView } = useAdminPermissions();
   const visibleItems = items.filter((item) => canView(item.moduleKey));
@@ -35,7 +36,7 @@ export function SettingsShell({ children }: { children: ReactNode }) {
           {visibleItems.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             const Icon = item.icon;
-            return <Link key={item.href} href={item.href} className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-bold transition ${active ? "bg-amber-200 text-black" : "text-[color:var(--admin-muted)] hover:bg-[color:var(--admin-soft)] hover:text-[color:var(--admin-text)]"}`}><Icon className="h-4 w-4" />{text[item.key]}</Link>;
+            return <Link key={item.href} href={item.href} prefetch onPointerEnter={() => router.prefetch(item.href)} onFocus={() => router.prefetch(item.href)} className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-bold transition ${active ? "bg-amber-200 text-black" : "text-[color:var(--admin-muted)] hover:bg-[color:var(--admin-soft)] hover:text-[color:var(--admin-text)]"}`}><Icon className="h-4 w-4" />{text[item.key]}</Link>;
           })}
         </div>
       </div>

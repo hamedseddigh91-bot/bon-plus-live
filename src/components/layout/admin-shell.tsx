@@ -341,6 +341,21 @@ function AdminShellInner({
     if (explicitRows.length > 0) return explicitRows.some((permission) => permission.view);
     return visibleModules.includes(item.module);
   }), [visibleModules, modulePermissions]);
+  const settingsLandingHref = useMemo(() => {
+    if (role === "owner" || isPlatformAdmin) return "/admin/settings/general";
+
+    const routes = [
+      ["settings_general", "/admin/settings/general"],
+      ["settings_feedback", "/admin/settings/feedback"],
+      ["settings_users", "/admin/settings/users"],
+      ["settings_whatsapp", "/admin/settings/whatsapp-messages"],
+    ] as const;
+    const explicitRoute = routes.find(([key]) => modulePermissions[key]?.view);
+
+    if (explicitRoute) return explicitRoute[1];
+    return visibleModules.includes("settings") ? "/admin/settings/general" : "/admin";
+  }, [isPlatformAdmin, modulePermissions, role, visibleModules]);
+  const navHref = (item: NavItem) => item.href === "/admin/settings" ? settingsLandingHref : item.href;
   const currentMeta =
     pageMetaByPath.find((item) => item.test(pathname)) ?? pageMetaByPath[0];
   const currentPageKey = pageKeyFromPath(pathname);
@@ -472,11 +487,12 @@ function AdminShellInner({
               {visibleNavItems.map((item) => {
                 const active = isActivePath(pathname, item);
                 const Icon = item.icon;
+                const href = navHref(item);
 
                 return (
                   <Link
                     key={item.href}
-                    href={item.href}
+                    href={href}
                     prefetch
                     onClick={() => setMobileNavOpen(false)}
                     className={`group relative flex h-12 items-center gap-4 overflow-hidden rounded-[1.15rem] px-4 text-[15px] font-semibold transition duration-300 ${
@@ -599,15 +615,16 @@ function AdminShellInner({
           {visibleNavItems.map((item) => {
             const active = isActivePath(pathname, item);
             const Icon = item.icon;
+            const href = navHref(item);
 
             return (
               <div key={item.href} className="space-y-1">
                 <Link
-                  href={item.href}
+                  href={href}
                   prefetch
-                  onPointerEnter={() => warmRoute(item.href)}
-                  onMouseDown={() => warmRoute(item.href)}
-                  onFocus={() => warmRoute(item.href)}
+                  onPointerEnter={() => warmRoute(href)}
+                  onMouseDown={() => warmRoute(href)}
+                  onFocus={() => warmRoute(href)}
                   className={`group relative flex h-12 items-center gap-4 overflow-hidden rounded-[1.15rem] px-4 text-[15px] font-semibold transition duration-300 ${
                     active
                       ? "bg-gradient-to-r from-amber-200 to-yellow-300 text-black shadow-[0_18px_50px_rgba(251,191,36,0.20)]"
