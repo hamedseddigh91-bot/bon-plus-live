@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getCurrentBusinessSlug } from "@/lib/business-context";
 import type { FeedbackSegment, RewardType } from "@/types/feedback";
+import { requireModulePermission } from "@/lib/user-permissions";
 
 export type AdminRewardsBusiness = {
   id: string;
@@ -70,8 +70,9 @@ export type SaveRewardsInput = {
 };
 
 export async function getAdminRewards(): Promise<AdminRewardsState> {
+  const context = await requireModulePermission("loyalty", "view");
   const supabase = createSupabaseAdminClient();
-  const businessSlug = await getCurrentBusinessSlug();
+  const businessSlug = context.currentBusiness.slug;
 
   const { data, error } = await supabase.rpc("admin_get_rewards_fast", {
     p_slug: businessSlug,
@@ -91,10 +92,21 @@ export async function getAdminRewards(): Promise<AdminRewardsState> {
 }
 
 export async function saveAdminRewards(input: SaveRewardsInput) {
+  const context = await requireModulePermission("loyalty", "edit");
   const supabase = createSupabaseAdminClient();
 
+  if (input.businessId && input.businessId !== context.currentBusiness.id) {
+    return {
+      success: false,
+      message: "Business access denied.",
+      business: null,
+      discountSettings: null,
+      rewards: [],
+    } as AdminRewardsState;
+  }
+
   const { data, error } = await supabase.rpc("admin_save_rewards_fast", {
-    p_business_id: input.businessId,
+    p_business_id: context.currentBusiness.id,
     p_discount_settings: input.discountSettings,
     p_rewards: input.rewards,
   });

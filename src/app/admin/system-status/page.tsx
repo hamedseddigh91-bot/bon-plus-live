@@ -1,6 +1,7 @@
 import { AdminShellServer } from "@/components/layout/admin-shell-server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { Card } from "@/components/ui/card";
+import { requireModulePermission } from "@/lib/user-permissions";
 
 type CheckItem = {
   label: string;
@@ -67,6 +68,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function SystemStatusPage() {
+  await requireModulePermission("system", "view");
   const checks = await getSystemChecks();
 
   return (

@@ -106,6 +106,7 @@ export async function setCurrentBusiness(slug: string) {
     path: "/",
     sameSite: "lax",
     httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
   });
 
   revalidatePath("/admin");
