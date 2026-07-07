@@ -1,10 +1,24 @@
 export type LanguageCode = "en" | "ar" | "fa";
 
-export type FeedbackQuestionType = "star" | "emoji" | "yes_no" | "text";
+export type FeedbackQuestionType =
+  | "star"
+  | "emoji"
+  | "yes_no"
+  | "text"
+  | "multiple_choice";
 
 export type FeedbackSegment = "satisfied" | "medium" | "unhappy";
 
 export type RewardType = "thank_you" | "percentage" | "fixed" | "free_item";
+
+export type FeedbackQuestionOption = {
+  id: string;
+  text: {
+    en: string;
+    ar: string;
+    fa: string;
+  };
+};
 
 export type FeedbackQuestion = {
   id: string;
@@ -16,6 +30,7 @@ export type FeedbackQuestion = {
     ar: string;
     fa: string;
   };
+  options?: FeedbackQuestionOption[];
 };
 
 export type FeedbackBusiness = {
