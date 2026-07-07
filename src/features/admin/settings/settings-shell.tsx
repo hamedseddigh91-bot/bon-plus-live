@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import {
   Gift,
-  Inbox,
   ListChecks,
   MessageCircle,
   Settings2,
@@ -22,12 +21,6 @@ const items = [
     key: "general",
     moduleKey: "settings_general",
     icon: Settings2,
-  },
-  {
-    href: "/admin/crm/feedback",
-    key: "feedbackInbox",
-    moduleKey: "feedback",
-    icon: Inbox,
   },
   {
     href: "/admin/questions",
@@ -70,7 +63,6 @@ const items = [
 const labels = {
   fa: {
     general: "عمومی",
-    feedbackInbox: "فیدبک‌های ثبت‌شده",
     feedbackQuestions: "سؤال‌های فیدبک",
     responseRules: "قوانین پاسخ و پاداش",
     users: "کاربران",
@@ -80,7 +72,6 @@ const labels = {
   },
   ar: {
     general: "عام",
-    feedbackInbox: "الآراء المسجلة",
     feedbackQuestions: "أسئلة التقييم",
     responseRules: "قواعد الرد والمكافآت",
     users: "المستخدمون",
@@ -90,7 +81,6 @@ const labels = {
   },
   en: {
     general: "General",
-    feedbackInbox: "Feedback Inbox",
     feedbackQuestions: "Feedback Questions",
     responseRules: "Response & Reward Rules",
     users: "Users",
