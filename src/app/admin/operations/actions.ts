@@ -312,6 +312,72 @@ export async function getOperationsPageState(input?: {
   };
 }
 
+export async function getDashboardOperationsState(input?: {
+  dateFrom?: string;
+  dateTo?: string;
+}): Promise<OperationsPageState> {
+  await requireModulePermission("dashboard", "view");
+  const { actor, businessSlug } = await actorAndSlug();
+  const supabase = createSupabaseAdminClient();
+  const defaultRange = currentMonthRange();
+  const dateFrom = input?.dateFrom || defaultRange.dateFrom;
+  const dateTo = input?.dateTo || defaultRange.dateTo;
+
+  const [overviewResult, entriesResult, closingsResult] = await Promise.all([
+    supabase.rpc("admin_get_operations_overview_fast", {
+      p_slug: businessSlug,
+      p_date_from: dateFrom,
+      p_date_to: dateTo,
+      p_actor_auth_user_id: actor.id,
+      p_actor_email: actor.email,
+    }),
+    supabase.rpc("admin_list_finance_entries_fast", {
+      p_slug: businessSlug,
+      p_date_from: dateFrom,
+      p_date_to: dateTo,
+      p_status: "active",
+      p_actor_auth_user_id: actor.id,
+      p_actor_email: actor.email,
+      p_limit: 60,
+    }),
+    supabase.rpc("admin_list_cash_closings_fast", {
+      p_slug: businessSlug,
+      p_date_from: dateFrom,
+      p_date_to: dateTo,
+      p_actor_auth_user_id: actor.id,
+      p_actor_email: actor.email,
+      p_limit: 10,
+    }),
+  ]);
+
+  if (overviewResult.error || !overviewResult.data?.success) {
+    return {
+      success: false,
+      message: overviewResult.data?.message ?? overviewResult.error?.message ?? "Dashboard finance summary failed.",
+      dateFrom,
+      dateTo,
+      overview: null,
+      entries: [],
+      suppliers: [],
+      closings: [],
+      documents: [],
+      periods: [],
+    };
+  }
+
+  return {
+    success: true,
+    dateFrom,
+    dateTo,
+    overview: overviewResult.data as OperationsOverview,
+    entries: (entriesResult.data?.entries ?? []) as FinanceEntry[],
+    suppliers: [],
+    closings: (closingsResult.data?.closings ?? []) as CashClosing[],
+    documents: [],
+    periods: [],
+  };
+}
+
 export async function getFinanceClosingPageState(input?: {
   dateFrom?: string;
   dateTo?: string;

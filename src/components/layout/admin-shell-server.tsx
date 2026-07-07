@@ -14,7 +14,10 @@ export async function AdminShellServer({
   requiredModule,
 }: AdminShellServerProps) {
   const context = await requireUserContext();
-  const modulePermissions = await getCurrentUserPermissionMap(context);
+  const modulePermissions =
+    context.role === "owner" || context.isPlatformAdmin
+      ? {}
+      : await getCurrentUserPermissionMap(context);
 
   if (requiredModule && context.role !== "owner" && !context.isPlatformAdmin) {
     const { canAccessModule } = await import("@/lib/auth-session");

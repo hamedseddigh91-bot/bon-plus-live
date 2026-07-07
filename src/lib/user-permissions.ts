@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   canAccessModule,
@@ -9,13 +10,13 @@ import {
 export type PermissionMap = Record<string, { view: boolean; edit: boolean }>;
 export type PermissionLevel = "view" | "edit";
 
-export async function getCurrentUserPermissionMap(context: UserContext): Promise<PermissionMap> {
+const getPermissionMapCached = cache(async (businessId: string, userId: string, email: string): Promise<PermissionMap> => {
   const supabase = createSupabaseAdminClient();
   const { data: membership } = await supabase
     .from("business_users")
     .select("id")
-    .eq("business_id", context.currentBusiness.id)
-    .or(`auth_user_id.eq.${context.user.id},email.ilike.${context.user.email}`)
+    .eq("business_id", businessId)
+    .or(`auth_user_id.eq.${userId},email.ilike.${email}`)
     .maybeSingle();
 
   if (!membership?.id) return {};
@@ -24,13 +25,17 @@ export async function getCurrentUserPermissionMap(context: UserContext): Promise
     .from("user_module_permissions")
     .select("module_key, can_view, can_edit")
     .eq("business_user_id", membership.id)
-    .eq("business_id", context.currentBusiness.id);
+    .eq("business_id", businessId);
 
   const result: PermissionMap = {};
   for (const row of data ?? []) {
     result[row.module_key] = { view: Boolean(row.can_view), edit: Boolean(row.can_edit) };
   }
   return result;
+});
+
+export async function getCurrentUserPermissionMap(context: UserContext): Promise<PermissionMap> {
+  return getPermissionMapCached(context.currentBusiness.id, context.user.id, context.user.email);
 }
 
 function fallbackAllowed(context: UserContext, moduleKey: string, level: PermissionLevel) {

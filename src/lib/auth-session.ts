@@ -3,6 +3,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import { cache } from "react";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getCurrentBusinessSlug } from "@/lib/business-context";
 
@@ -75,7 +76,7 @@ export function createSupabaseAuthClient() {
   });
 }
 
-export async function getAuthenticatedUser(): Promise<AuthUser | null> {
+export const getAuthenticatedUser = cache(async (): Promise<AuthUser | null> => {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
 
@@ -94,7 +95,7 @@ export async function getAuthenticatedUser(): Promise<AuthUser | null> {
     id: data.user.id,
     email: data.user.email,
   };
-}
+});
 
 export async function requireAuthenticatedUser() {
   const user = await getAuthenticatedUser();
@@ -106,7 +107,7 @@ export async function requireAuthenticatedUser() {
   return user;
 }
 
-export async function getPlatformAdminContext(): Promise<PlatformAdminContext | null> {
+export const getPlatformAdminContext = cache(async (): Promise<PlatformAdminContext | null> => {
   const user = await getAuthenticatedUser();
 
   if (!user) {
@@ -128,7 +129,7 @@ export async function getPlatformAdminContext(): Promise<PlatformAdminContext | 
     ...(data as Omit<PlatformAdminContext, "user">),
     user,
   };
-}
+});
 
 export async function requirePlatformAdminContext() {
   const context = await getPlatformAdminContext();
@@ -140,7 +141,7 @@ export async function requirePlatformAdminContext() {
   return context;
 }
 
-export async function getUserContext(): Promise<UserContext | null> {
+export const getUserContext = cache(async (): Promise<UserContext | null> => {
   const user = await getAuthenticatedUser();
 
   if (!user) {
@@ -161,7 +162,7 @@ export async function getUserContext(): Promise<UserContext | null> {
   }
 
   return data as UserContext;
-}
+});
 
 export async function requireUserContext() {
   const context = await getUserContext();
