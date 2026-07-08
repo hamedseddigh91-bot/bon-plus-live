@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState, useTransition } from "react";
 import { Coffee, Gift, MessageCircle, PlusCircle, Search, CheckCircle2 } from "lucide-react";
@@ -11,6 +11,12 @@ import { useAdminLanguage } from "@/lib/admin-language";
 
 function rewardText(row: Pick<LoyaltyCounterRow, "rewardLabel" | "rewardType" | "rewardValue">) {
   return row.rewardLabel || `${row.rewardValue} ${row.rewardType}`;
+}
+
+function ruleDisplayName(rule: { categoryKey: string; name: string }, language: "fa" | "ar" | "en") {
+  if (rule.categoryKey === "coffee") return language === "fa" ? "قهوه" : language === "ar" ? "قهوة" : "Coffee";
+  if (rule.categoryKey === "food") return language === "fa" ? "غذا" : language === "ar" ? "طعام" : "Food";
+  return rule.name;
 }
 
 function fillTemplate(template: string, row: LoyaltyCounterRow) {
@@ -95,7 +101,7 @@ export function LoyaltyCounter({ initialState }: { initialState: LoyaltyCounterS
       {message && <p className="mt-3 text-sm text-amber-200">{message}</p>}
       <div className="mt-4 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
         <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder={copy.phone} className="rounded-2xl border border-[color:var(--admin-border)] bg-black/10 px-4 py-3 text-sm text-[color:var(--admin-text)] outline-none"/>
-        <select value={ruleId} onChange={e=>setRuleId(e.target.value)} className="rounded-2xl border border-[color:var(--admin-border)] bg-black/10 px-4 py-3 text-sm text-[color:var(--admin-text)] outline-none"><option value="">{copy.rule}</option>{initialState.rules.map(r=><option key={r.id} value={r.id}>{r.name} · {r.thresholdCount}</option>)}</select>
+        <select value={ruleId} onChange={e=>setRuleId(e.target.value)} className="rounded-2xl border border-[color:var(--admin-border)] bg-black/10 px-4 py-3 text-sm text-[color:var(--admin-text)] outline-none"><option value="">{copy.rule}</option>{initialState.rules.map(r=><option key={r.id} value={r.id}>{ruleDisplayName(r, language)} · {r.thresholdCount}</option>)}</select>
         <Button onClick={submit} disabled={pending||!phone||!ruleId}><PlusCircle className="h-4 w-4"/>{copy.record}</Button>
       </div>
       {result?.success && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-4"><div><p className="font-black text-[color:var(--admin-text)]">{result.rule.name}</p><p className="text-sm text-[color:var(--admin-muted)]">{result.count} / {result.threshold}{result.rewardReached?` · ${copy.rewardReady}`:""}</p></div><Button onClick={sendResult}><MessageCircle className="h-4 w-4"/>{copy.whatsapp}</Button></div>}
@@ -116,3 +122,4 @@ export function LoyaltyCounter({ initialState }: { initialState: LoyaltyCounterS
     </Card>
   </div>;
 }
+

@@ -1,4 +1,4 @@
-import type { FeedbackBusiness, FeedbackQuestion } from "@/types/feedback";
+﻿import type { FeedbackBusiness, FeedbackQuestion } from "@/types/feedback";
 import { FeedbackWizard } from "@/features/customer-feedback/feedback-wizard";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getBaseUrl } from "@/lib/business-context";
@@ -55,10 +55,46 @@ async function getFeedbackData(slug: string) {
       return { business: fallbackBusiness, questions: fallbackQuestions };
     }
 
+      const rpcQuestions = result.questions && result.questions.length > 0
+    ? result.questions
+    : fallbackQuestions;
+
+  const questionIds = rpcQuestions
+    .map((question) => question.id)
+    .filter((id) => !id.startsWith("fallback-"));
+
+  if (questionIds.length === 0) {
+    return { business: result.business, questions: rpcQuestions };
+  }
+
+  const { data: optionRows, error: optionError } = await supabase
+    .from("feedback_questions")
+    .select("id, options_json")
+    .eq("business_id", result.business.id)
+    .in("id", questionIds);
+
+  if (optionError) {
+    return { business: result.business, questions: rpcQuestions };
+  }
+
+  const optionsById = new Map(
+    (optionRows ?? []).map((row) => [
+      row.id as string,
+      Array.isArray(row.options_json) ? row.options_json : [],
+    ]),
+  );
+
+  const hydratedQuestions = rpcQuestions.map((question) => {
+    const options = optionsById.get(question.id) ?? [];
+    if (options.length === 0) return question;
     return {
-      business: result.business,
-      questions: result.questions && result.questions.length > 0 ? result.questions : fallbackQuestions,
+      ...question,
+      type: "multiple_choice" as const,
+      options: options as FeedbackQuestion["options"],
     };
+  });
+
+  return { business: result.business, questions: hydratedQuestions };
   } catch {
     return { business: fallbackBusiness, questions: fallbackQuestions };
   }
@@ -74,3 +110,4 @@ export default async function FeedbackSlugPage({
 
   return <FeedbackWizard business={data.business} questions={data.questions} />;
 }
+

@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireCurrentBusinessSlug } from "@/lib/auth-session";
@@ -221,7 +221,7 @@ export async function getAdminFeedbackInbox(
     p_min_score: input.minScore ?? null,
     p_max_score: input.maxScore ?? null,
     p_reward_filter: input.rewardFilter ?? "all",
-    p_limit: input.limit ?? 25,
+    p_limit: input.limit ?? 200,
     p_offset: input.offset ?? 0,
   });
 
@@ -376,6 +376,16 @@ export async function moveFeedbackWorkflow(
   await requireModulePermission("feedback", "edit");
   const supabase = createSupabaseAdminClient();
 
+  if (targetStage === "new") {
+  const { error: recoveryError } = await supabase
+  .from("feedback_recovery_cases")
+  .update({ status: "open", resolved_at: null })
+  .eq("feedback_submission_id", feedbackId);
+  if (recoveryError) {
+  return { success: false, message: recoveryError.message };
+  }
+  }
+
   if (targetStage === "follow_up") {
     const { data: existingCase, error: caseLookupError } = await supabase
       .from("feedback_recovery_cases")
@@ -429,4 +439,6 @@ export async function moveFeedbackWorkflow(
 
   return { success: true };
 }
+
+
 

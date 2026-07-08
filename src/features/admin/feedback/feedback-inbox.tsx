@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { getWhatsAppTemplateText } from "@/app/admin/settings/whatsapp-messages/actions";
 
@@ -398,7 +398,7 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
         dateTo,
         minScore: minScore ? Number(minScore) : null,
         maxScore: maxScore ? Number(maxScore) : null,
-        limit: 25,
+        limit: 200,
         offset,
       });
 
@@ -505,8 +505,8 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
 
   const renderFeedbackTable = (items: typeof state.feedback, stage: "new" | "follow_up" | "resolved") => (
     <Card className="overflow-x-auto p-0">
-      <div className="grid min-w-[1180px] grid-cols-[minmax(220px,1.5fr)_76px_104px_112px_84px_92px_minmax(240px,1fr)_28px] gap-2 border-b border-[color:var(--admin-border)] bg-black/5 px-4 py-3 text-[10px] font-black uppercase tracking-[0.12em] text-[color:var(--admin-muted)]">
-        <span>{t.phone}</span><span>{t.score}</span><span>{t.level}</span><span>{t.recovery}</span><span>{t.date}</span><span>{t.whatsapp}</span><span>{t.recovery}</span><span />
+      <div className="grid min-w-[900px] grid-cols-[minmax(220px,1.6fr)_72px_100px_118px_82px_96px_minmax(160px,0.9fr)_28px] gap-2 border-b border-[color:var(--admin-border)] bg-black/5 px-4 py-3 text-[10px] font-black uppercase tracking-[0.12em] text-[color:var(--admin-muted)]">
+        <span>{t.phone}</span><span>{t.score}</span><span>{t.level}</span><span>{t.recovery}</span><span>{t.date}</span><span>{t.whatsapp}</span><span>{language === "fa" ? "مرحله" : language === "ar" ? "المرحلة" : "Stage"}</span><span />
       </div>
       <div className="divide-y divide-[color:var(--admin-border)]">
         {items.length === 0 && <div className="p-6 text-sm text-[color:var(--admin-muted)]">{t.noFeedback}</div>}
@@ -517,7 +517,7 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
             tabIndex={0}
             onClick={() => openDetail(item.id)}
             onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") openDetail(item.id); }}
-            className={`grid min-h-[58px] min-w-[1180px] w-full cursor-pointer grid-cols-[minmax(220px,1.5fr)_76px_104px_112px_84px_92px_minmax(240px,1fr)_28px] items-center gap-2 px-4 py-2 text-start transition hover:bg-amber-300/[0.08] ${selectedId === item.id ? "bg-amber-300/[0.10]" : ""}`}
+            className={`grid min-h-[58px] min-w-[900px] w-full cursor-pointer grid-cols-[minmax(220px,1.6fr)_72px_100px_118px_82px_96px_minmax(160px,0.9fr)_28px] items-center gap-2 px-4 py-2 text-start transition hover:bg-amber-300/[0.08] ${selectedId === item.id ? "bg-amber-300/[0.10]" : ""}`}
           >
             <div className="min-w-0">
               <p className="truncate text-sm font-black text-[color:var(--admin-text)]">{item.phone}</p>
@@ -528,17 +528,18 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
             <Badge variant={recoveryVariant(item.recoveryStatus)}>{recoveryLabel(item.recoveryStatus, t)}</Badge>
             <p className="text-xs text-[color:var(--admin-muted)]">{item.createdAt.slice(5, 10)}</p>
             <button type="button" onClick={(event) => { event.stopPropagation(); openWhatsappComposer(item.phone, Number(item.overallScore || 0)); }} className="flex items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-2 py-2 text-xs font-bold text-emerald-200"><MessageCircle className="h-3.5 w-3.5" />{t.whatsapp}</button>
-            <div className="flex flex-nowrap items-center gap-2" onClick={(event) => event.stopPropagation()}>
-              {stage !== "new" && (
-                <button type="button" disabled={movingFeedbackId === item.id} onClick={() => moveFeedback(item.id, "new")} className="whitespace-nowrap rounded-xl border border-[color:var(--admin-border)] bg-black/10 px-3 py-2 text-xs font-bold text-[color:var(--admin-text)] disabled:opacity-50">{movingFeedbackId === item.id ? t.moving : t.moveToNew}</button>
-              )}
-              {stage !== "follow_up" && (
-                <button type="button" disabled={movingFeedbackId === item.id} onClick={() => moveFeedback(item.id, "follow_up")} className="whitespace-nowrap rounded-xl border border-sky-300/20 bg-sky-300/10 px-3 py-2 text-xs font-bold text-sky-100 disabled:opacity-50">{movingFeedbackId === item.id ? t.moving : t.moveToFollowUp}</button>
-              )}
-              {stage !== "resolved" && (
-                <button type="button" disabled={movingFeedbackId === item.id} onClick={() => moveFeedback(item.id, "resolved")} className="whitespace-nowrap rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-3 py-2 text-xs font-bold text-emerald-100 disabled:opacity-50">{movingFeedbackId === item.id ? t.moving : t.moveToResolved}</button>
-              )}
-            </div>
+              <div className="min-w-0" onClick={(event) => event.stopPropagation()}>
+  <select
+  value={item.workflowStage ?? "new"}
+  disabled={movingFeedbackId === item.id}
+  onChange={(event) => moveFeedback(item.id, event.target.value as "new" | "follow_up" | "resolved")}
+  className="w-full rounded-xl border border-[color:var(--admin-border)] bg-black/10 px-2 py-2 text-xs font-bold text-[color:var(--admin-text)] outline-none disabled:opacity-50"
+  >
+  <option value="new">{t.newFeedbacks}</option>
+  <option value="follow_up">{t.inFollowUp}</option>
+  <option value="resolved">{t.resolvedFeedbacks}</option>
+  </select>
+  </div>
             <ChevronRight className="h-4 w-4 text-[color:var(--admin-muted)]" />
           </div>
         ))}
@@ -617,22 +618,22 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
         </Card>
       </section>
 
-      <div className="space-y-8">
-        {[
-          { key: "new" as const, label: t.newFeedbacks, count: workflowCounts.new, items: feedbackBuckets.new },
-          { key: "follow_up" as const, label: t.inFollowUp, count: workflowCounts.follow_up, items: feedbackBuckets.follow_up },
-          { key: "resolved" as const, label: t.resolvedFeedbacks, count: workflowCounts.resolved, items: feedbackBuckets.resolved },
-        ].map((section) => (
-          <section key={section.key} className="space-y-3">
-            <Card className="p-5">
-              <div className="flex items-center justify-between gap-4">
-                <h2 className="text-lg font-black text-[color:var(--admin-text)]">{section.label}</h2>
-                <span className="text-3xl font-black text-[color:var(--admin-text)]">{section.count}</span>
-              </div>
-            </Card>
-            {renderFeedbackTable(section.items, section.key)}
-          </section>
-        ))}
+        <div className="space-y-8">
+  {[
+  { key: "new" as const, label: t.newFeedbacks, count: workflowCounts.new, items: feedbackBuckets.new },
+  { key: "follow_up" as const, label: t.inFollowUp, count: workflowCounts.follow_up, items: feedbackBuckets.follow_up },
+  { key: "resolved" as const, label: t.resolvedFeedbacks, count: workflowCounts.resolved, items: feedbackBuckets.resolved },
+  ].map((section) => (
+  <section key={section.key} className="space-y-3">
+  <Card className="p-5">
+  <div className="flex items-center justify-between gap-4">
+  <h2 className="text-lg font-black text-[color:var(--admin-text)]">{section.label}</h2>
+  <span className="text-3xl font-black text-[color:var(--admin-text)]">{section.count}</span>
+  </div>
+  </Card>
+  {renderFeedbackTable(section.items, section.key)}
+  </section>
+  ))}
 
         {pagination.hasMore && <div><Button variant="secondary" onClick={() => load(state.feedback.length)} disabled={isPending}>{t.loadMore}</Button></div>}
 
@@ -651,7 +652,20 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
             <div className="space-y-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="mb-3 flex flex-wrap items-center gap-2"><Badge variant={segmentVariant(selectedDetail.segment)}>{selectedDetail.segment}</Badge><Badge variant="secondary">{t.language}: {selectedDetail.language}</Badge></div>
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+  <Badge variant={segmentVariant(selectedDetail.segment)}>{selectedDetail.segment}</Badge>
+  <Badge variant="secondary">{t.language}: {selectedDetail.language}</Badge>
+  <select
+  value={state.feedback.find((item) => item.id === selectedDetail.id)?.workflowStage ?? "new"}
+  disabled={movingFeedbackId === selectedDetail.id}
+  onChange={(event) => moveFeedback(selectedDetail.id, event.target.value as "new" | "follow_up" | "resolved")}
+  className="rounded-xl border border-[color:var(--admin-border)] bg-black/10 px-3 py-2 text-xs font-bold text-[color:var(--admin-text)] outline-none disabled:opacity-50"
+  >
+  <option value="new">{t.newFeedbacks}</option>
+  <option value="follow_up">{t.inFollowUp}</option>
+  <option value="resolved">{t.resolvedFeedbacks}</option>
+  </select>
+  </div>
                   <h2 className="text-2xl font-black text-[color:var(--admin-text)]">{selectedDetail.phone}</h2>
                   <p className="mt-1 text-sm text-[color:var(--admin-muted)]">{formatDate(selectedDetail.createdAt)}</p>
                 </div>
@@ -712,3 +726,5 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
     </div>
   );
 }
+
+

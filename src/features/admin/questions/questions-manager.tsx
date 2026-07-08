@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState, useTransition } from "react";
 import {
@@ -14,6 +14,7 @@ import {
 import {
   type AdminQuestion,
   type AdminQuestionsState,
+  deleteAdminQuestion,
   getAdminQuestions,
   reorderAdminQuestions,
   saveAdminQuestion,
@@ -216,6 +217,23 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
     });
   };
 
+  const removeQuestion = (question: AdminQuestion) => {
+    if (!business || isPending) return;
+    const accepted = window.confirm("Delete this question? Questions with historical answers will be archived instead of permanently deleted.");
+    if (!accepted) return;
+    startTransition(async () => {
+      const result = await deleteAdminQuestion(business.id, question.id);
+      if (!result.success) {
+        setMessage(result.message);
+        return;
+      }
+      const nextState = await getAdminQuestions();
+      setState(nextState);
+      setMessage(result.message);
+      if (form.id === question.id) resetForm();
+    });
+  };
+
   const move = (question: AdminQuestion, direction: "up" | "down") => {
     if (!business || isPending) return;
 
@@ -353,18 +371,26 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
                   >
                     Edit
                   </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => toggle(question)}
-                    disabled={isPending}
-                  >
-                    {question.active ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                    {question.active ? "Hide" : "Show"}
-                  </Button>
+                            <Button
+            variant="secondary"
+            onClick={() => toggle(question)}
+            disabled={isPending}
+          >
+            {question.active ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+            {question.active ? "Hide" : "Show"}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => removeQuestion(question)}
+            disabled={isPending}
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete
+          </Button>
                 </div>
               </div>
             ))}
@@ -573,3 +599,4 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
     </div>
   );
 }
+

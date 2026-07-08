@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -85,9 +85,9 @@ async function attachOptions(
   }
 
   const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase
-    .from("feedback_questions")
-    .select("id, options_json")
+  const feedbackQuestionsTable = supabase.from("feedback_questions") as any;
+  const { data, error } = await feedbackQuestionsTable
+    .select("id, options_json, archived_at")
     .eq("business_id", state.business.id);
 
   if (error) {
@@ -98,13 +98,22 @@ async function attachOptions(
     };
   }
 
+    const optionRows = (data ?? []) as Array<{
+    id: string;
+    options_json: unknown;
+    archived_at: string | null;
+  }>;
   const optionsById = new Map(
-    (data ?? []).map((row) => [row.id, normalizeOptions(row.options_json)]),
+    optionRows.map((row) => [row.id, normalizeOptions(row.options_json)]),
   );
-
+  const archivedIds = new Set(
+    optionRows.filter((row) => Boolean(row.archived_at)).map((row) => row.id),
+  );
   return {
     ...state,
-    questions: state.questions.map((question) => {
+    questions: state.questions
+      .filter((question) => !archivedIds.has(question.id))
+      .map((question) => {
       const options = optionsById.get(question.id) ?? [];
       return {
         ...question,
@@ -152,9 +161,31 @@ export async function saveAdminQuestion(input: SaveQuestionInput) {
     };
   }
 
+  let questionIdForSave = input.questionId ?? null;
+  if (input.questionId) {
+    const { count, error: answerCountError } = await supabase
+      .from("feedback_answers")
+      .select("id", { count: "exact", head: true })
+      .eq("question_id", input.questionId);
+    if (answerCountError) {
+      return { success: false, message: answerCountError.message };
+    }
+    if ((count ?? 0) > 0) {
+      const { error: archiveError } = await supabase
+        .from("feedback_questions")
+        .update({ is_active: false, archived_at: new Date().toISOString() } as any)
+        .eq("id", input.questionId)
+        .eq("business_id", input.businessId);
+      if (archiveError) {
+        return { success: false, message: archiveError.message };
+      }
+      questionIdForSave = null;
+    }
+  }
+
   const { data, error } = await supabase.rpc("admin_save_feedback_question_fast", {
     p_business_id: input.businessId,
-    p_question_id: input.questionId ?? null,
+    p_question_id: questionIdForSave,
     // Multiple choice is persisted as a text answer in the existing feedback engine.
     p_question_type: isMultipleChoice ? "text" : input.type,
     p_display_order: input.order,
@@ -175,7 +206,7 @@ export async function saveAdminQuestion(input: SaveQuestionInput) {
     question?: AdminQuestion;
   };
 
-  let savedQuestionId = input.questionId ?? result.question?.id ?? null;
+  let savedQuestionId = questionIdForSave ?? result.question?.id ?? null;
 
   if (!savedQuestionId) {
     const { data: savedRow } = await supabase
@@ -243,6 +274,47 @@ export async function toggleAdminQuestion(
   };
 }
 
+export async function deleteAdminQuestion(
+  businessId: string,
+  questionId: string,
+) {
+  await requireModulePermission("settings_feedback", "edit");
+  const supabase = createSupabaseAdminClient();
+
+  const { count, error: countError } = await supabase
+    .from("feedback_answers")
+    .select("id", { count: "exact", head: true })
+    .eq("question_id", questionId);
+  if (countError) {
+    return { success: false, message: countError.message };
+  }
+
+  if ((count ?? 0) > 0) {
+    const { error } = await supabase
+      .from("feedback_questions")
+      .update({ is_active: false, archived_at: new Date().toISOString() } as any)
+      .eq("id", questionId)
+      .eq("business_id", businessId);
+    if (error) return { success: false, message: error.message };
+    revalidatePath("/admin/questions");
+    revalidatePath("/admin/settings/feedback-center/questions");
+    revalidatePath("/feedback");
+    return { success: true, message: "Question archived because it has historical answers.", archived: true };
+  }
+
+  const { error } = await supabase
+    .from("feedback_questions")
+    .delete()
+    .eq("id", questionId)
+    .eq("business_id", businessId);
+  if (error) return { success: false, message: error.message };
+
+  revalidatePath("/admin/questions");
+  revalidatePath("/admin/settings/feedback-center/questions");
+  revalidatePath("/feedback");
+  return { success: true, message: "Question deleted.", archived: false };
+}
+
 export async function reorderAdminQuestions(
   businessId: string,
   orderedQuestions: { id: string; order: number }[],
@@ -272,3 +344,5 @@ export async function reorderAdminQuestions(
 
   return attachOptions(data as AdminQuestionsState);
 }
+
+

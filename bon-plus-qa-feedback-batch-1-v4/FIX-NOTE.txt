@@ -1,0 +1,4 @@
+﻿v3: removed brittle localized moving-label patch points. Stage header is now rendered directly from the active admin language.
+
+
+v4: replaced brittle exact multiline matching with whitespace-tolerant patch matching.
