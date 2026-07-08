@@ -138,7 +138,7 @@ export async function redeemDiscountCode(input: {
     p_note: input.note ?? null,
   });
 
-  revalidatePath("/admin/discounts");
+  revalidatePath("/admin/crm/discounts");
 
   if (error) {
     return {
@@ -221,7 +221,7 @@ export async function createManualDiscountCode(input: {
       created_by: actor.id,
     });
     if (error) return { success: false, message: error.message };
-    revalidatePath("/admin/crm/loyalty");
+    revalidatePath("/admin/crm/discounts");
     return { success: true, message: "Discount code created.", code };
   } catch (error) {
     return { success: false, message: error instanceof Error ? error.message : "Could not create discount code." };
@@ -266,8 +266,30 @@ export async function markDiscountReminderSent(input: { codeId: string; stage: "
     const { actor, supabase, businessId } = await discountContext();
     const column = input.stage === "early" ? "early_reminder_sent_at" : "expiry_reminder_sent_at";
     const byColumn = input.stage === "early" ? "early_reminder_sent_by" : "expiry_reminder_sent_by";
-    const now = new Date().toISOString();
 
+    const { data: existingRow, error: readError } = await supabase
+      .from("discount_codes")
+      .select("early_reminder_sent_at,expiry_reminder_sent_at")
+      .eq("id", input.codeId)
+      .eq("business_id", businessId)
+      .maybeSingle();
+
+    if (readError) return { success: false, message: readError.message };
+    if (!existingRow) return { success: false, message: "Discount code was not found." };
+
+    const existingSentAt = input.stage === "early"
+      ? existingRow.early_reminder_sent_at
+      : existingRow.expiry_reminder_sent_at;
+
+    if (existingSentAt) {
+      return {
+        success: true,
+        message: "Reminder was already marked as sent.",
+        sentAt: existingSentAt,
+      };
+    }
+
+    const now = new Date().toISOString();
     const { error } = await supabase
       .from("discount_codes")
       .update({ [column]: now, [byColumn]: actor.id, updated_at: now })
@@ -285,10 +307,13 @@ export async function markDiscountReminderSent(input: { codeId: string; stage: "
       metadata: { stage: input.stage, confirmed_at: now },
     });
 
-    revalidatePath("/admin/crm/loyalty");
+    revalidatePath("/admin/crm/discounts");
     revalidatePath("/admin/action-center");
     return { success: true, message: "Reminder marked as sent.", sentAt: now };
   } catch (error) {
-    return { success: false, message: error instanceof Error ? error.message : "Could not confirm reminder." };
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Could not confirm reminder.",
+    };
   }
 }

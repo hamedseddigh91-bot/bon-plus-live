@@ -216,3 +216,81 @@ export async function saveBusinessUser(input: {
 
   return data as { success: boolean; message?: string };
 }
+
+export async function resetBusinessUserPassword(input: { businessUserId: string; newPassword: string; }) {
+  try {
+    const context = await requireModulePermission("settings_users", "edit");
+    if (context.role !== "owner" && !context.isPlatformAdmin) {
+      return { success: false, message: "Only the business owner can change user passwords." };
+    }
+
+    if (!input.businessUserId || input.newPassword.length < 8) {
+      return { success: false, message: "Password must be at least 8 characters." };
+    }
+
+    const businessSlug = await requireCurrentBusinessSlug();
+    const supabase = createSupabaseAdminClient();
+
+    const { data: business, error: businessError } = await supabase
+      .from("businesses")
+      .select("id")
+      .eq("slug", businessSlug)
+      .maybeSingle();
+
+    if (businessError || !business?.id) {
+      return { success: false, message: businessError?.message ?? "Business not found." };
+    }
+
+    const { data: membership, error: membershipError } = await supabase
+      .from("business_users")
+      .select("id,email,auth_user_id")
+      .eq("id", input.businessUserId)
+      .eq("business_id", business.id)
+      .maybeSingle();
+
+    if (membershipError || !membership) {
+      return { success: false, message: membershipError?.message ?? "User not found in this business." };
+    }
+
+    let authUserId = membership.auth_user_id as string | null;
+
+    if (!authUserId) {
+      const authUser = await findAuthUserByEmail(membership.email);
+      authUserId = authUser?.id ?? null;
+
+      if (authUserId) {
+        const { error: linkError } = await supabase
+          .from("business_users")
+          .update({ auth_user_id: authUserId, updated_at: new Date().toISOString() })
+          .eq("id", membership.id)
+          .eq("business_id", business.id);
+
+        if (linkError) {
+          return { success: false, message: linkError.message };
+        }
+      }
+    }
+
+    if (!authUserId) {
+      return { success: false, message: "This user is not linked to a login account." };
+    }
+
+    const { error } = await supabase.auth.admin.updateUserById(authUserId, {
+      password: input.newPassword,
+    });
+
+    if (error) {
+      return { success: false, message: error.message };
+    }
+
+    revalidatePath("/admin/settings/users");
+    revalidatePath("/admin/users");
+
+    return { success: true, message: "Password updated successfully." };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Password update failed.",
+    };
+  }
+}

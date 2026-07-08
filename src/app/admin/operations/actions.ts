@@ -337,7 +337,7 @@ export async function getDashboardOperationsState(input?: {
       p_status: "active",
       p_actor_auth_user_id: actor.id,
       p_actor_email: actor.email,
-      p_limit: 60,
+      p_limit: 2000,
     }),
     supabase.rpc("admin_list_cash_closings_fast", {
       p_slug: businessSlug,
@@ -661,18 +661,17 @@ export async function saveFinanceEntry(input: {
   const { actor, businessSlug } = await actorAndSlug();
   const supabase = createSupabaseAdminClient();
 
-  const amount = Number(input.amount || 0);
+  const amount = Number(input.amount || 0); const paymentStatus = input.paymentStatus === "paid" ? "paid" : "unpaid"; const normalizedPayer = paymentStatus === "paid" ? (input.payer || "petty_cash") : "other";
 
   const { data, error } = await supabase.rpc("admin_save_finance_entry_fast", {
     p_slug: businessSlug,
     p_entry_id: input.id || null,
     p_entry_date: input.entryDate,
     p_entry_type: input.entryType,
-    p_title: input.title,
+    p_title: input.title?.trim() || "",
     p_amount: Number.isFinite(amount) ? amount : 0,
     p_supplier_id: input.supplierId || null,
-    p_payment_status: input.paymentStatus,
-    p_payer: input.payer,
+    p_payment_status: paymentStatus, p_payer: normalizedPayer,
     p_usage_place: input.usagePlace,
     p_reference_no: input.referenceNo || null,
     p_description: input.description || null,

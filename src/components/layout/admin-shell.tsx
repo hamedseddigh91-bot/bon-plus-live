@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -9,7 +9,6 @@ import {
   BarChart3,
   ClipboardList,
   Crown,
-  Database,
   Grid2X2,
   History,
   Languages,
@@ -43,6 +42,7 @@ type AdminShellProps = {
   children: ReactNode;
   businesses?: BusinessListItem[];
   currentBusinessSlug?: string;
+  businessLogoUrl?: string | null;
   role?: BusinessRole;
   userEmail?: string;
   isPlatformAdmin?: boolean;
@@ -183,12 +183,7 @@ const navItems: NavItem[] = [
     icon: History,
     module: "activity_logs",
   },
-  {
-    labelKey: "system",
-    href: "/admin/system-status",
-    icon: Database,
-    module: "system",
-  },
+  
 ];
 
 type AdminCopy = (typeof adminText)[AdminLanguage];
@@ -313,11 +308,11 @@ function AdminShellInner({
   children,
   businesses = [],
   currentBusinessSlug = "",
+  businessLogoUrl = null,
   role = "owner",
   userEmail = "",
   isPlatformAdmin = false,
-  modulePermissions = {},
-}: AdminShellProps) {
+  modulePermissions = {}, }: AdminShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { language, setLanguage, theme, setTheme, dir, t } = useAdminLanguage();
@@ -411,9 +406,7 @@ function AdminShellInner({
                 onClick={() => setMobileNavOpen(false)}
                 className="flex min-w-0 items-center gap-3 rounded-[1.35rem] border border-white/10 bg-white/[0.05] p-3"
               >
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.1rem] bg-gradient-to-br from-amber-200 via-yellow-300 to-orange-400 text-sm font-black text-black">
-                  BP
-                </div>
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.1rem] bg-gradient-to-br from-amber-200 via-yellow-300 to-orange-400 text-sm font-black text-black">{businessLogoUrl ? <img src={businessLogoUrl} alt="Business logo" className="block h-full w-full rounded-[inherit] object-cover object-center" /> : "BP"}</div>
                 <div className="min-w-0">
                   <p
                     className={`truncate text-base font-bold ${theme === "light" ? "text-slate-950" : "text-white"}`}
@@ -549,7 +542,7 @@ function AdminShellInner({
           className="mb-5 flex items-center gap-3 rounded-[1.45rem] border border-white/10 bg-white/[0.05] p-3 transition hover:bg-white/[0.08]"
         >
           <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[1.25rem] bg-gradient-to-br from-amber-200 via-yellow-300 to-orange-400 text-base font-black text-black shadow-[0_18px_40px_rgba(251,191,36,0.22)]">
-            <span className="relative z-10">BP</span>
+            <span className="relative z-10">{businessLogoUrl ? <img src={businessLogoUrl} alt="Business logo" className="block h-full w-full rounded-[inherit] object-cover object-center" /> : "BP"}</span>
             <span className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.9),transparent_32%)]" />
           </div>
           <div className="min-w-0 leading-tight">
@@ -669,9 +662,7 @@ function AdminShellInner({
               prefetch
               className="flex min-w-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.055] px-3 py-2"
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-200 to-yellow-300 text-xs font-black text-black">
-                BP
-              </span>
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-200 to-yellow-300 text-xs font-black text-black">{businessLogoUrl ? <img src={businessLogoUrl} alt="Business logo" className="block h-full w-full rounded-[inherit] object-cover object-center" /> : "BP"}</span>
               <span className="min-w-0">
                 <span className="block truncate text-sm font-bold text-white">
                   {t.appName}
@@ -788,3 +779,4 @@ export function AdminShell(props: AdminShellProps) {
     </AdminLanguageProvider>
   );
 }
+

@@ -121,7 +121,7 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [invoiceFiles, setInvoiceFiles] = useState<File[]>([]);
   const [selectedDocumentEntryId, setSelectedDocumentEntryId] = useState("");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(""); const [supplierSearch, setSupplierSearch] = useState(""); const [supplierManageSearch, setSupplierManageSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [supplierFilter, setSupplierFilter] = useState("all");
   const [usageFilter, setUsageFilter] = useState("all");
@@ -217,7 +217,7 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
       referenceNo: entry.referenceNo ?? "",
       description: entry.description ?? "",
     });
-    setSelectedDocumentEntryId(entry.id);
+    setSupplierSearch(entry.supplierName ?? ""); setSelectedDocumentEntryId(entry.id);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -404,7 +404,7 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
                     <span className="text-sm text-white/45">{t.paymentStatus}</span>
                     <select
                       value={entryForm.paymentStatus}
-                      onChange={(event) => setEntryForm((current) => ({ ...current, paymentStatus: event.target.value }))}
+                      onChange={(event) => setEntryForm((current) => ({ ...current, paymentStatus: event.target.value, payer: event.target.value === "paid" ? (current.paymentStatus === "paid" ? current.payer : "petty_cash") : "other" }))}
                       className="mt-2 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none [color-scheme:dark] focus:border-amber-200/50"
                     >
                       <option value="paid">{t.paid}</option>
@@ -424,8 +424,7 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
 
                   <label className="block">
                     <span className="text-sm text-white/45">{t.supplier}</span>
-                    <select
-                      value={entryForm.supplierId}
+                    <input list="invoice-supplier-search-list" value={supplierSearch} onChange={(event) => { const value = event.target.value; setSupplierSearch(value); const match = initialState.suppliers.find((supplier) => supplier.name.toLowerCase() === value.toLowerCase()); setEntryForm((current) => ({ ...current, supplierId: match?.id ?? "" })); }} className="mt-2 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-amber-200/50" placeholder="Search supplier..." /> <datalist id="invoice-supplier-search-list">{initialState.suppliers.filter((supplier) => supplier.active).map((supplier) => <option key={supplier.id} value={supplier.name} />)}</datalist> <select value={entryForm.supplierId}
                       onChange={(event) => setEntryForm((current) => ({ ...current, supplierId: event.target.value }))}
                       className="mt-2 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none [color-scheme:dark] focus:border-amber-200/50"
                     >
@@ -439,15 +438,14 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
                   <label className="block">
                     <span className="text-sm text-white/45">{t.payer}</span>
                     <select
-                      value={entryForm.payer}
-                      onChange={(event) => setEntryForm((current) => ({ ...current, payer: event.target.value }))}
+                      value={entryForm.payer} disabled={entryForm.paymentStatus !== "paid"} onChange={(event) => setEntryForm((current) => ({ ...current, payer: event.target.value }))}
                       className="mt-2 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none [color-scheme:dark] focus:border-amber-200/50"
                     >
                       <option value="petty_cash">{t.pettyCash}</option>
                       <option value="cash_drawer">{t.cashIncome}</option>
                       <option value="owner">{t.ownerPaid}</option>
                       <option value="bank">Bank</option>
-                      <option value="other">{t.other}</option>
+                      <option value="other">{entryForm.paymentStatus === "paid" ? t.other : "Not paid yet"}</option>
                     </select>
                   </label>
 
@@ -497,7 +495,7 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
                 </div>
 
                 <div className="mt-5 flex flex-wrap gap-3">
-                  <Button onClick={submitEntry} disabled={isPending || !entryForm.amount || !entryForm.title.trim()}>
+                  <Button onClick={submitEntry} disabled={isPending || !entryForm.amount}>
                     <Save className="h-4 w-4" />
                     {entryForm.id ? t.updateInvoice : t.saveInvoice}
                   </Button>
@@ -518,8 +516,7 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
                           referenceNo: "",
                           description: "",
                         });
-                        setSelectedDocumentEntryId("");
-                        setInvoiceFiles([]);
+                        setSelectedDocumentEntryId(""); setSupplierSearch(""); setInvoiceFiles([]);
                       }}
                     >
                       {t.clear}
@@ -531,7 +528,7 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
               <div className="space-y-6">
                 <Card className="p-5">
                   <h2 className="text-xl font-semibold text-white">{t.supplierManagement}</h2>
-                  <div className="mt-5 grid gap-3">
+                  <div className="mt-5 grid gap-3"> <input list="supplier-management-list" value={supplierManageSearch} onChange={(event) => { const value = event.target.value; setSupplierManageSearch(value); const match = initialState.suppliers.find((supplier) => supplier.name.toLowerCase() === value.toLowerCase()); if (match) editSupplier(match); }} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-amber-200/50" placeholder="Search existing supplier to edit..." /> <datalist id="supplier-management-list">{initialState.suppliers.map((supplier) => <option key={supplier.id} value={supplier.name} />)}</datalist>
                     <input value={supplierForm.name} onChange={(event) => setSupplierForm((current) => ({ ...current, name: event.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none [color-scheme:dark] focus:border-amber-200/50" placeholder={t.supplierName} />
                     <input value={supplierForm.phone} onChange={(event) => setSupplierForm((current) => ({ ...current, phone: event.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none [color-scheme:dark] focus:border-amber-200/50" placeholder={t.phone} />
                     <input value={supplierForm.email} onChange={(event) => setSupplierForm((current) => ({ ...current, email: event.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none [color-scheme:dark] focus:border-amber-200/50" placeholder={t.email} />
@@ -543,53 +540,11 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
                   </div>
                 </Card>
 
-                <Card className="p-5">
-                  <h2 className="text-xl font-semibold text-white">{t.invoiceDocuments}</h2>
-                  <p className="mt-2 text-xs text-white/35">{l.selectedInvoiceHelp}</p>
-                  <div className="mt-5 grid gap-3">
-                    <select value={selectedDocumentEntryId} onChange={(event) => setSelectedDocumentEntryId(event.target.value)} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none [color-scheme:dark] focus:border-amber-200/50">
-                      <option value="">{t.selectInvoice}</option>
-                      {invoices.map((entry) => (
-                        <option key={entry.id} value={entry.id}>{entry.entryDate} — {entry.title} — {money(entry.amount)}</option>
-                      ))}
-                    </select>
-
-                    <input type="file" accept="image/*,application/pdf" onChange={(event) => setDocumentFile(event.target.files?.[0] ?? null)} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white file:mr-4 file:rounded-xl file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white" />
-
-                    <Button onClick={submitDocument} disabled={isPending || !selectedDocumentEntryId || !documentFile}>
-                      <FileUp className="h-4 w-4" />
-                      {t.uploadDocument}
-                    </Button>
-                  </div>
-
-                  <div className="mt-5 space-y-2">
-                    {initialState.documents.filter((document) => document.ownerType === "finance_entry").slice(0, 8).map((document) => (
-                      <button key={document.id} type="button" onClick={() => openDocument(document)} className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/15 px-4 py-3 text-left text-sm text-white/70 hover:bg-white/10">
-                        <span className="min-w-0">
-                          <span className="block truncate font-semibold text-white">{document.fileName}</span>
-                          <span className="block text-xs text-white/35">{document.createdAt.slice(0, 10)}</span>
-                        </span>
-                        <span className="flex shrink-0 items-center gap-2 text-xs text-white/35">{fileSize(document.sizeBytes)}<Download className="h-3.5 w-3.5" /></span>
-                      </button>
-                    ))}
-                    {initialState.documents.filter((document) => document.ownerType === "finance_entry").length === 0 && <p className="text-sm text-white/35">{t.noDocuments}</p>}
-                  </div>
-                </Card>
+                
               </div>
             </section>
 
-            <section className="grid gap-6 xl:grid-cols-[0.65fr_1.35fr]">
-              <Card className="p-5">
-                <h2 className="text-xl font-semibold text-white">{t.suppliers}</h2>
-                <div className="mt-5 space-y-2">
-                  {initialState.suppliers.map((supplier) => (
-                    <button key={supplier.id} type="button" onClick={() => editSupplier(supplier)} className="w-full rounded-2xl border border-white/10 bg-black/15 px-4 py-3 text-left hover:bg-white/10">
-                      <p className="font-semibold text-white">{supplier.name}</p>
-                      <p className="mt-1 text-xs text-white/35">{supplier.phone ?? "—"} / {supplier.email ?? "—"}</p>
-                    </button>
-                  ))}
-                </div>
-              </Card>
+            <section className="grid gap-6">
 
               <Card className="p-5">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -644,7 +599,7 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
                           <tr key={entry.id} className="text-white/70">
                             <td className="px-4 py-4">{entry.entryDate}</td>
                             <td className="px-4 py-4">
-                              <p className="font-semibold text-white">{entry.title}</p>
+                              <p className="font-semibold text-white">{entry.title || `${entry.supplierName ?? "Invoice"} — ${entry.entryDate}`}</p>
                               <p className="text-xs text-white/35">{entry.paymentStatus === "paid" ? t.paid : t.unpaid}</p>
                             </td>
                             <td className="px-4 py-4">{entry.supplierName ?? "—"}</td>

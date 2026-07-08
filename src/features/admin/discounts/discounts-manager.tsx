@@ -306,9 +306,9 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
 
         <div className="space-y-6">
           {[
-            { key: "urgent" as const, title: "Urgent follow-up — 3 days or less", rows: groupedCodes.urgent, stage: "expiry" as const },
-            { key: "active" as const, title: "Active codes — more than 3 days left", rows: groupedCodes.activeLong, stage: "early" as const },
-            { key: "closed" as const, title: "Used, expired or closed codes", rows: groupedCodes.closed, stage: null },
+            { key: "urgent" as const, title: "Unused codes — expiring in 3 days or less", rows: groupedCodes.urgent, stage: "expiry" as const },
+            { key: "active" as const, title: "Unused codes — more than 3 days remaining", rows: groupedCodes.activeLong, stage: "early" as const },
+            { key: "closed" as const, title: "Used or expired codes", rows: groupedCodes.closed, stage: null },
           ].map((group) => (
             <Card key={group.key} className="overflow-hidden p-0">
               <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
@@ -335,11 +335,11 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
                           <div className="flex flex-wrap items-center gap-2">
                             {group.stage && (
                               <>
-                                <button type="button" disabled={Boolean(sent)} onClick={() => openReminder(row, group.stage!)} className="inline-flex items-center gap-2 rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-300/20 disabled:cursor-not-allowed disabled:opacity-35">
+                                <button type="button" disabled={!row.feedbackPhone || Boolean(sent)} onClick={() => openReminder(row, group.stage!)} className="inline-flex items-center gap-2 rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-300/20 disabled:cursor-not-allowed disabled:opacity-35">
                                   <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
                                 </button>
                                 <button type="button" disabled={Boolean(sent) || isPending} onClick={() => confirmReminder(row.id, group.stage!)} className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/65 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35">
-                                  <CheckCircle2 className="h-3.5 w-3.5" /> {sent ? "Message already sent" : "Confirm sent"}
+                                  <CheckCircle2 className="h-3.5 w-3.5" /> {sent ? "Sent" : "Mark as sent"}
                                 </button>
                               </>
                             )}
