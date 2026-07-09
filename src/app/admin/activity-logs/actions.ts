@@ -36,6 +36,17 @@ const modulePatterns: Record<string, string[]> = {
   system: ["system", "login", "logout", "auth"],
 };
 
+const BUSINESS_UTC_OFFSET = "+04:00";
+
+function nextCalendarDate(date: string) {
+  const [year, month, day] = date.split("-").map(Number);
+  if (!year || !month || !day) return date;
+
+  const value = new Date(Date.UTC(year, month - 1, day));
+  value.setUTCDate(value.getUTCDate() + 1);
+  return value.toISOString().slice(0, 10);
+}
+
 export async function getActivityLogs(
   input: {
     search?: string;
@@ -50,7 +61,7 @@ export async function getActivityLogs(
 
   const supabase = createSupabaseAdminClient();
   const businessSlug = await requireCurrentBusinessSlug();
-  const limit = Math.min(Math.max(input.limit ?? 50, 1), 100);
+  const limit = Math.min(Math.max(input.limit ?? 25, 1), 100);
   const offset = Math.max(input.offset ?? 0, 0);
 
   const businessResult = await supabase
@@ -87,10 +98,13 @@ export async function getActivityLogs(
   }
 
   if (input.dateFrom) {
-    query = query.gte("created_at", `${input.dateFrom}T00:00:00.000Z`);
+    query = query.gte("created_at", `${input.dateFrom}T00:00:00${BUSINESS_UTC_OFFSET}`);
   }
   if (input.dateTo) {
-    query = query.lte("created_at", `${input.dateTo}T23:59:59.999Z`);
+    query = query.lt(
+      "created_at",
+      `${nextCalendarDate(input.dateTo)}T00:00:00${BUSINESS_UTC_OFFSET}`,
+    );
   }
 
   const selectedModule = input.module?.trim();

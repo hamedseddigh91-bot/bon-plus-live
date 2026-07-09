@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -66,7 +66,6 @@ type LabelKey =
   | "rewards"
   | "discounts"
   | "reports"
-  | "qa"
   | "activityLogs"
   | "users"
   | "system";
@@ -172,12 +171,6 @@ const navItems: NavItem[] = [
     module: "reports",
   },
   {
-    labelKey: "qa",
-    href: "/admin/qa",
-    icon: ClipboardList,
-    module: "dashboard",
-  },
-  {
     labelKey: "activityLogs",
     href: "/admin/activity-logs",
     icon: History,
@@ -254,11 +247,6 @@ const pageMetaByPath: Array<{
     subtitleKey: "pageReportsSubtitle",
   },
   {
-    test: (path) => path.startsWith("/admin/qa"),
-    titleKey: "pageQaTitle",
-    subtitleKey: "pageQaSubtitle",
-  },
-  {
     test: (path) => path.startsWith("/admin/activity-logs"),
     titleKey: "pageActivityLogsTitle",
     subtitleKey: "pageActivityLogsSubtitle",
@@ -297,7 +285,6 @@ function pageKeyFromPath(pathname: string) {
   if (pathname.startsWith("/admin/rewards")) return "rewards";
   if (pathname.startsWith("/admin/discounts")) return "discounts";
   if (pathname.startsWith("/admin/reports")) return "reports";
-  if (pathname.startsWith("/admin/qa")) return "qa";
   if (pathname.startsWith("/admin/activity-logs")) return "activity-logs";
   if (pathname.startsWith("/admin/users")) return "users";
   if (pathname.startsWith("/admin/system-status")) return "system";

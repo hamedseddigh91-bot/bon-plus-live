@@ -1,0 +1,6 @@
+-- SAFETY NOTE:
+-- This migration timestamp is part of the linked project's migration history,
+-- but this repository copy does not contain a recoverable baseline schema.
+-- Do not use this file to bootstrap, restore, or clone a Supabase database.
+-- Before any reset, migration repair, or new-environment bootstrap, capture the
+-- actual linked schema and migration history first. See docs/DATABASE_BASELINE_SAFETY.md.

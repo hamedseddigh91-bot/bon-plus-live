@@ -1,20 +1,35 @@
 # Deployment Checklist
 
-## 1. Backup first
+## 1. Backup and baseline safety first
 
 Create a Supabase database backup/snapshot before applying migrations. Keep the currently deployed commit/tag available for code rollback.
 
-## 2. Apply migrations in this exact order
+The repository contains eleven migration files, but `20260704171621_remote_schema.sql` is only a migration-history placeholder and is not a recoverable baseline. Read `docs/DATABASE_BASELINE_SAFETY.md` before any reset, migration repair, database clone, or destructive cleanup.
 
-1. `20260704190000_bonplus_crm_finance_loyalty_upgrade.sql`
-2. `20260705213000_finance_period_rollover_opening_entry.sql`
-3. `20260705233000_feedback_workflow_stage.sql`
-4. `20260705235900_discount_reminder_stages.sql`
-5. `20260705235950_settings_feedback_whatsapp_center.sql`
-6. `20260706002000_user_level_permissions.sql`
-7. `20260706004000_completion_pack.sql`
+## 2. Compare migration history before applying anything
 
-Apply each migration once only. If the production database already has some of them, check migration history before running anything manually.
+Run read-only inspection first:
+
+```bash
+npx supabase migration list --linked
+npx supabase db push --linked --dry-run
+```
+
+Review the output before any real push. Do not manually replay migrations that the remote history already considers applied.
+
+Repository migration order:
+
+1. `20260704171621_remote_schema.sql`
+2. `20260704190000_bonplus_crm_finance_loyalty_upgrade.sql`
+3. `20260705213000_finance_period_rollover_opening_entry.sql`
+4. `20260705233000_feedback_workflow_stage.sql`
+5. `20260705235900_discount_reminder_stages.sql`
+6. `20260705235950_settings_feedback_whatsapp_center.sql`
+7. `20260706002000_user_level_permissions.sql`
+8. `20260706004000_completion_pack.sql`
+9. `20260708130000_feedback_multiple_choice_options.sql`
+10. `20260708233000_loyalty_coffee_food_rules.sql`
+11. `20260708234500_feedback_question_archive_visibility.sql`
 
 ## 3. Environment variables
 
@@ -54,27 +69,32 @@ Do not expose either secret in browser-side code.
 ## 5. Install and preflight
 
 Run:
-- `npm ci`
-- `npm run typecheck`
-- `npm run lint`
-- `npm run build:cf:next`
-- `npm run build:cf:bundle`
-- `npx wrangler deploy --dry-run`
 
-The Cloudflare build has been validated in this release. Keep the Next.js build and OpenNext bundle phases separate in Workers Builds.
+```bash
+npm ci
+npm run typecheck
+npm run lint
+npm run build:cf:next
+npm run build:cf:bundle
+npx wrangler deploy --dry-run
+```
+
+Keep the Next.js build and OpenNext bundle phases separate in Workers Builds.
 
 ## 6. Deploy to Cloudflare Workers
 
 Use the same commit that passed preflight. Configure Workers Builds with:
+
 - Build command: `npm run build:cf:next`
 - Deploy command: `npm run build:cf:bundle && npm run cf:deploy`
 
-See `docs/CLOUDFLARE_STAGE_2.md` for variables and secrets. After deployment, verify login and open the admin dashboard, Settings, CRM Feedback, Loyalty, Finance, Costing, and Action Center.
+See `docs/CLOUDFLARE_STAGE_2.md` for variables and secrets.
 
 ## 7. Post-deploy smoke check
 
-Only a short smoke check is needed before general use:
-- login works;
+Verify:
+
+- login works and redirects to the first permitted page;
 - Settings opens;
 - logo can be uploaded;
 - one user permission can be changed and saved;
@@ -82,4 +102,11 @@ Only a short smoke check is needed before general use:
 - one feedback row can move stage;
 - one loyalty count can be recorded;
 - finance pages load current-month data;
-- costing page loads items and calculations.
+- costing page loads items and calculations;
+- Activity Logs opens with today's Oman activity by default;
+- Activity Logs date range, module filter, search, pagination, and detail modal work;
+- `/admin/qa` is no longer part of the shipped application routes.
+
+## 8. Historical data migration boundary
+
+Do not migrate historical data and do not clean test data as part of this release. Those steps are deferred until the application is validated and the database baseline/backup process is verified.
