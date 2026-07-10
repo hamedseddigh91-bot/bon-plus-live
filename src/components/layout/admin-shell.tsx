@@ -305,7 +305,31 @@ function AdminShellInner({
   const { language, setLanguage, theme, setTheme, dir, t } = useAdminLanguage();
   const [isSigningOut, startSignOut] = useTransition();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [desktopNavOpen, setDesktopNavOpen] = useState(true);
+  const [desktopNavPreferenceReady, setDesktopNavPreferenceReady] = useState(false);
   const [permissionNoticeOpen, setPermissionNoticeOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      const savedPreference = window.localStorage.getItem("bp-admin-sidebar-open");
+      if (savedPreference === "0") setDesktopNavOpen(false);
+      if (savedPreference === "1") setDesktopNavOpen(true);
+    } catch {
+      // Keep the default open state when browser storage is unavailable.
+    } finally {
+      setDesktopNavPreferenceReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!desktopNavPreferenceReady) return;
+
+    try {
+      window.localStorage.setItem("bp-admin-sidebar-open", desktopNavOpen ? "1" : "0");
+    } catch {
+      // Sidebar toggle still works for the current page without persistence.
+    }
+  }, [desktopNavOpen, desktopNavPreferenceReady]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -560,7 +584,14 @@ function AdminShellInner({
         </div>
       )}
 
-      <aside className="fixed left-0 top-0 z-30 hidden h-screen w-[326px] overflow-y-auto overscroll-contain border-r border-white/10 bg-black/35 px-5 py-5 shadow-[24px_0_80px_rgba(0,0,0,0.25)] backdrop-blur-2xl lg:block">
+      <aside
+        className={`fixed left-0 top-0 z-30 hidden h-screen w-[326px] overflow-y-auto overscroll-contain border-r border-white/10 bg-black/35 px-5 py-5 shadow-[24px_0_80px_rgba(0,0,0,0.25)] backdrop-blur-2xl transition-[transform,opacity] duration-300 ease-out lg:block ${
+          desktopNavOpen
+            ? "lg:translate-x-0 lg:opacity-100"
+            : "pointer-events-none lg:-translate-x-full lg:opacity-0"
+        }`}
+        aria-hidden={!desktopNavOpen}
+      >
         <Link
           href="/admin"
           prefetch
@@ -682,7 +713,11 @@ function AdminShellInner({
         </nav>
       </aside>
 
-      <div className="relative z-10 lg:pl-[326px]">
+      <div
+        className={`relative z-10 transition-[padding] duration-300 ease-out ${
+          desktopNavOpen ? "lg:pl-[326px]" : "lg:pl-0"
+        }`}
+      >
         <header className="sticky top-0 z-20 border-b border-white/10 bg-[#06070b]/72 px-4 py-3 backdrop-blur-2xl sm:px-6 lg:px-8 lg:py-4">
           <div className="mb-3 flex items-center justify-between gap-3 lg:hidden">
             <Link
@@ -712,7 +747,34 @@ function AdminShellInner({
           </div>
 
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:justify-between lg:gap-4">
-            <div className="min-w-0 overflow-hidden lg:max-w-[calc(100vw-760px)] xl:max-w-[calc(100vw-820px)] 2xl:max-w-[760px]">
+            <div className="flex min-w-0 items-start gap-3">
+              <button
+                type="button"
+                onClick={() => setDesktopNavOpen((current) => !current)}
+                className={`hidden h-11 w-11 shrink-0 items-center justify-center rounded-2xl border shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition lg:flex ${
+                  theme === "light"
+                    ? "border-slate-200 bg-white/80 text-slate-700 hover:bg-white hover:text-slate-950"
+                    : "border-white/10 bg-white/[0.055] text-white/65 hover:bg-white/[0.09] hover:text-white"
+                }`}
+                aria-label={
+                  language === "fa"
+                    ? desktopNavOpen ? "بستن منو" : "باز کردن منو"
+                    : language === "ar"
+                      ? desktopNavOpen ? "إغلاق القائمة" : "فتح القائمة"
+                      : desktopNavOpen ? "Close menu" : "Open menu"
+                }
+                title={
+                  language === "fa"
+                    ? desktopNavOpen ? "بستن منو" : "باز کردن منو"
+                    : language === "ar"
+                      ? desktopNavOpen ? "إغلاق القائمة" : "فتح القائمة"
+                      : desktopNavOpen ? "Close menu" : "Open menu"
+                }
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+
+              <div className="min-w-0 overflow-hidden lg:max-w-[calc(100vw-760px)] xl:max-w-[calc(100vw-820px)] 2xl:max-w-[760px]">
               <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-amber-200/75">
                 <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_18px_rgba(110,231,183,0.8)]" />
                 {t.topLabel}
@@ -723,6 +785,7 @@ function AdminShellInner({
               <p className="mt-1 max-w-full truncate text-sm text-white/42">
                 {t[currentMeta.subtitleKey]}
               </p>
+              </div>
             </div>
 
             <div className="-mx-1 flex w-full min-w-0 shrink-0 items-center gap-2 overflow-x-auto px-1 pb-1 lg:mx-0 lg:w-auto lg:flex-wrap lg:justify-end lg:overflow-visible lg:pb-0 xl:flex-nowrap 2xl:max-w-none">
