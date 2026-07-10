@@ -10,6 +10,7 @@ import {
   saveFinanceEntry,
   saveSupplier,
   uploadOperationDocument,
+  uploadOperationDocuments,
 } from "@/app/admin/operations/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -279,16 +280,15 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
       if (result.success) {
         const ownerId = result.entryId || entryForm.id;
         if (invoiceFiles.length > 0 && ownerId) {
-          for (const file of invoiceFiles) {
-            const formData = new FormData();
-            formData.set("ownerType", "finance_entry");
-            formData.set("ownerId", ownerId);
-            formData.set("file", file);
-            const uploadResult = await uploadOperationDocument(formData);
-            if (!uploadResult.success) {
-              setMessage(uploadResult.message ?? "Invoice saved, but one or more attachments failed to upload.");
-              return;
-            }
+          const formData = new FormData();
+          formData.set("ownerType", "finance_entry");
+          formData.set("ownerId", ownerId);
+          invoiceFiles.forEach((file) => formData.append("files", file));
+
+          const uploadResult = await uploadOperationDocuments(formData);
+          if (!uploadResult.success) {
+            setMessage(uploadResult.message ?? "Invoice saved, but attachments failed to upload.");
+            return;
           }
         }
         window.location.reload();

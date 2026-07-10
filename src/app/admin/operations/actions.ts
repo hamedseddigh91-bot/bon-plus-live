@@ -883,6 +883,174 @@ export async function uploadOperationDocument(formData: FormData): Promise<Actio
   };
 }
 
+
+export async function uploadOperationDocuments(formData: FormData): Promise<ActionResult> {
+  const context = await getOperationsContext();
+
+  if (!context.success || !context.businessId) {
+    return {
+      success: false,
+      message: context.message ?? "Finance access failed.",
+    };
+  }
+
+  const ownerType = String(formData.get("ownerType") ?? "");
+  await requireAnyModulePermission(
+    ownerType === "cash_closing" ? ["finance_closing"] : ["finance_invoices", "finance_cash"],
+    "edit",
+  );
+
+  const ownerId = String(formData.get("ownerId") ?? "");
+  const files = formData
+    .getAll("files")
+    .filter((value): value is File => value instanceof File && value.size > 0);
+
+  if (!["finance_entry", "cash_closing", "supplier"].includes(ownerType)) {
+    return {
+      success: false,
+      message: "Invalid document owner.",
+    };
+  }
+
+  if (!ownerId) {
+    return {
+      success: false,
+      message: "Select a saved record before uploading documents.",
+    };
+  }
+
+  if (files.length === 0) {
+    return {
+      success: false,
+      message: "Please select at least one file.",
+    };
+  }
+
+  if (files.length > 10) {
+    return {
+      success: false,
+      message: "You can upload up to 10 files per invoice.",
+    };
+  }
+
+  const allowedFiles = files.every(
+    (file) => file.type.startsWith("image/") || file.type === "application/pdf",
+  );
+
+  if (!allowedFiles) {
+    return {
+      success: false,
+      message: "Only image and PDF files are allowed.",
+    };
+  }
+
+  const oversizedFile = files.find((file) => file.size > 10 * 1024 * 1024);
+  if (oversizedFile) {
+    return {
+      success: false,
+      message: `${oversizedFile.name} is too large. Maximum size per file is 10MB.`,
+    };
+  }
+
+  const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+  if (totalBytes > 45 * 1024 * 1024) {
+    return {
+      success: false,
+      message: "The selected files are too large together. Maximum total size is 45MB.",
+    };
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const table =
+    ownerType === "finance_entry"
+      ? "finance_entries"
+      : ownerType === "cash_closing"
+        ? "cash_closings"
+        : "operation_suppliers";
+
+  const { data: owner, error: ownerError } = await supabase
+    .from(table)
+    .select("id,business_id")
+    .eq("id", ownerId)
+    .eq("business_id", context.businessId)
+    .maybeSingle();
+
+  if (ownerError || !owner) {
+    return {
+      success: false,
+      message: "The selected record was not found for this business.",
+    };
+  }
+
+  const uploaded: Array<{
+    filePath: string;
+    fileName: string;
+    mimeType: string | null;
+    sizeBytes: number;
+  }> = [];
+
+  for (const file of files) {
+    const cleanName = cleanFileName(file.name);
+    const filePath = `${context.businessId}/${ownerType}/${ownerId}/${crypto.randomUUID()}-${cleanName}`;
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+
+    const { error: uploadError } = await supabase.storage
+      .from("operation-documents")
+      .upload(filePath, fileBuffer, {
+        contentType: file.type || "application/octet-stream",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      if (uploaded.length > 0) {
+        await supabase.storage.from("operation-documents").remove(uploaded.map((item) => item.filePath));
+      }
+
+      return {
+        success: false,
+        message: `${file.name}: ${uploadError.message}`,
+      };
+    }
+
+    uploaded.push({
+      filePath,
+      fileName: file.name,
+      mimeType: file.type || null,
+      sizeBytes: file.size,
+    });
+  }
+
+  const { error: insertError } = await supabase.from("operation_documents").insert(
+    uploaded.map((item) => ({
+      business_id: context.businessId,
+      owner_type: ownerType,
+      owner_id: ownerId,
+      file_path: item.filePath,
+      file_name: item.fileName,
+      mime_type: item.mimeType,
+      size_bytes: item.sizeBytes,
+      created_by: context.actor.id,
+      created_by_email: context.actor.email,
+    })),
+  );
+
+  if (insertError) {
+    await supabase.storage.from("operation-documents").remove(uploaded.map((item) => item.filePath));
+
+    return {
+      success: false,
+      message: insertError.message,
+    };
+  }
+
+  revalidateFinancePages();
+
+  return {
+    success: true,
+    message: `${uploaded.length} attachment${uploaded.length === 1 ? "" : "s"} uploaded.`,
+  };
+}
+
 export async function getOperationDocumentSignedUrl(input: {
   documentId: string;
 }): Promise<{ success: boolean; message?: string; url?: string }> {
