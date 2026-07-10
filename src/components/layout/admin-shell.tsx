@@ -747,7 +747,7 @@ function AdminShellInner({
           </div>
 
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:justify-between lg:gap-4">
-            <div className="flex min-w-0 items-start gap-3">
+            <div className="flex min-w-0 items-start gap-3" dir="ltr">
               <button
                 type="button"
                 onClick={() => setDesktopNavOpen((current) => !current)}
@@ -774,7 +774,10 @@ function AdminShellInner({
                 <Menu className="h-5 w-5" />
               </button>
 
-              <div className="min-w-0 overflow-hidden lg:max-w-[calc(100vw-760px)] xl:max-w-[calc(100vw-820px)] 2xl:max-w-[760px]">
+              <div
+                className="min-w-0 overflow-hidden lg:max-w-[calc(100vw-760px)] xl:max-w-[calc(100vw-820px)] 2xl:max-w-[760px]"
+                dir={dir}
+              >
               <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-amber-200/75">
                 <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_18px_rgba(110,231,183,0.8)]" />
                 {t.topLabel}
