@@ -132,6 +132,28 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
   const [message, setMessage] = useState<string | null>(initialState.message ?? null);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [invoiceFiles, setInvoiceFiles] = useState<File[]>([]);
+
+  const appendInvoiceFiles = (files: FileList | null) => {
+    if (!files) return;
+
+    setInvoiceFiles((current) => {
+      const next = [...current];
+      for (const file of Array.from(files)) {
+        const duplicate = next.some(
+          (item) =>
+            item.name === file.name &&
+            item.size === file.size &&
+            item.lastModified === file.lastModified,
+        );
+        if (!duplicate) next.push(file);
+      }
+      return next;
+    });
+  };
+
+  const removeInvoiceFile = (index: number) => {
+    setInvoiceFiles((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  };
   const [documentViewer, setDocumentViewer] = useState<{
     entry: FinanceEntry;
     files: Array<{ document: OperationDocument; url: string }>;
@@ -534,10 +556,35 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
                       type="file"
                       multiple
                       accept="image/*,application/pdf"
-                      onChange={(event) => setInvoiceFiles(Array.from(event.target.files ?? []))}
+                      onChange={(event) => {
+                        appendInvoiceFiles(event.target.files);
+                        event.currentTarget.value = "";
+                      }}
                       className="mt-2 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white file:mr-4 file:rounded-xl file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white"
                     />
-                    {invoiceFiles.length > 0 && <p className="mt-2 text-xs text-white/40">{invoiceFiles.length} file(s) selected</p>}
+                    {invoiceFiles.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-xs text-white/50">{invoiceFiles.length} file(s) selected — you can choose more files again.</p>
+                        <div className="flex flex-wrap gap-2">
+                          {invoiceFiles.map((file, index) => (
+                            <span
+                              key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
+                              className="inline-flex max-w-full items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70"
+                            >
+                              <span className="max-w-48 truncate">{file.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => removeInvoiceFile(index)}
+                                className="rounded-md p-0.5 text-white/45 transition hover:bg-white/10 hover:text-white"
+                                aria-label={`Remove ${file.name}`}
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </label>
                 </div>
 
