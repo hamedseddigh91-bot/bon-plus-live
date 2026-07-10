@@ -3,7 +3,7 @@
 import { getWhatsAppTemplateText } from "@/app/admin/settings/whatsapp-messages/actions";
 
 import { useMemo, useState, useTransition } from "react";
-import { Download, FileUp, MessageCircle, PackagePlus, Printer, Save, Search } from "lucide-react";
+import { Download, Eye, FileText, LoaderCircle, MessageCircle, PackagePlus, Printer, Save, Search, X } from "lucide-react";
 import type { FinanceEntry, OperationDocument, OperationSupplier, OperationsPageState } from "@/app/admin/operations/actions";
 import {
   getOperationDocumentSignedUrl,
@@ -46,6 +46,10 @@ const pageText: Record<FinanceLanguage, Record<string, string>> = {
     missingDocs: "بدون سند",
     invoicePreview: "پیش‌نمایش فاکتور",
     confirmVoid: "این فاکتور حذف منطقی شود؟",
+    viewDocuments: "مشاهده فایل‌ها",
+    loadingDocuments: "در حال بارگذاری فایل‌ها...",
+    noDocuments: "فایلی برای این فاکتور پیدا نشد.",
+    openOriginal: "باز کردن فایل اصلی",
   },
   ar: {
     search: "البحث في الفواتير",
@@ -63,6 +67,10 @@ const pageText: Record<FinanceLanguage, Record<string, string>> = {
     missingDocs: "بدون مستند",
     invoicePreview: "معاينة الفاتورة",
     confirmVoid: "هل تريد إلغاء هذه الفاتورة؟",
+    viewDocuments: "عرض الملفات",
+    loadingDocuments: "جارٍ تحميل الملفات...",
+    noDocuments: "لم يتم العثور على ملفات لهذه الفاتورة.",
+    openOriginal: "فتح الملف الأصلي",
   },
   en: {
     search: "Search invoices",
@@ -80,6 +88,10 @@ const pageText: Record<FinanceLanguage, Record<string, string>> = {
     missingDocs: "Missing docs",
     invoicePreview: "Invoice preview",
     confirmVoid: "Void this invoice?",
+    viewDocuments: "View files",
+    loadingDocuments: "Loading files...",
+    noDocuments: "No files were found for this invoice.",
+    openOriginal: "Open original file",
   },
 };
 
@@ -120,6 +132,11 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
   const [message, setMessage] = useState<string | null>(initialState.message ?? null);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [invoiceFiles, setInvoiceFiles] = useState<File[]>([]);
+  const [documentViewer, setDocumentViewer] = useState<{
+    entry: FinanceEntry;
+    files: Array<{ document: OperationDocument; url: string }>;
+  } | null>(null);
+  const [documentViewerLoading, setDocumentViewerLoading] = useState(false);
   const [selectedDocumentEntryId, setSelectedDocumentEntryId] = useState("");
   const [search, setSearch] = useState(""); const [supplierSearch, setSupplierSearch] = useState(""); const [supplierManageSearch, setSupplierManageSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -293,6 +310,36 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
       }
 
       window.open(result.url, "_blank", "noopener,noreferrer");
+    });
+  };
+
+  const viewInvoiceDocuments = (entry: FinanceEntry, documents: OperationDocument[]) => {
+    if (documents.length === 0) {
+      setMessage("No attachment was found for this invoice.");
+      return;
+    }
+
+    setDocumentViewer({ entry, files: [] });
+    setDocumentViewerLoading(true);
+
+    startTransition(async () => {
+      const results = await Promise.all(
+        documents.map(async (document) => ({
+          document,
+          result: await getOperationDocumentSignedUrl({ documentId: document.id }),
+        })),
+      );
+
+      const files = results
+        .filter((item) => item.result.success && item.result.url)
+        .map((item) => ({ document: item.document, url: item.result.url as string }));
+
+      setDocumentViewer({ entry, files });
+      setDocumentViewerLoading(false);
+
+      if (files.length === 0) {
+        setMessage(results.find((item) => item.result.message)?.result.message ?? "Could not open invoice files.");
+      }
     });
   };
 
@@ -606,7 +653,18 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
                             <td className="px-4 py-4">{docs.length}</td>
                             <td className="px-4 py-4 text-right font-bold text-white">{money(entry.amount)}</td>
                             <td className="px-4 py-4 text-right">
-                              <div className="flex justify-end gap-2">
+                              <div className="flex flex-wrap justify-end gap-2">
+                                {docs.length > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => viewInvoiceDocuments(entry, docs)}
+                                    className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200/20 bg-amber-200/[0.08] px-3 py-2 text-xs font-semibold text-amber-100 hover:bg-amber-200/[0.14]"
+                                    title={l.viewDocuments}
+                                  >
+                                    <Eye className="h-3.5 w-3.5" />
+                                    <span>{l.viewDocuments} ({docs.length})</span>
+                                  </button>
+                                )}
                                 <button type="button" onClick={() => editEntry(entry)} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/65 hover:bg-white/10">{t.edit}</button>
                                 <button type="button" onClick={() => printInvoice(entry, l.invoicePreview)} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/65 hover:bg-white/10"><Printer className="h-3.5 w-3.5" /></button>
                                 <button type="button" onClick={() => shareInvoice(entry, language)} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/65 hover:bg-white/10"><MessageCircle className="h-3.5 w-3.5" /></button>
@@ -623,6 +681,100 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
                 </div>
               </Card>
             </section>
+
+            {documentViewer && (
+              <div
+                className="fixed inset-0 z-[180] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+                onClick={() => setDocumentViewer(null)}
+              >
+                <div
+                  className="max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-3xl border border-white/10 bg-[#101010] shadow-2xl"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between gap-4 border-b border-white/10 px-5 py-4">
+                    <div>
+                      <p className="text-xs text-white/40">{l.viewDocuments}</p>
+                      <h3 className="mt-1 text-lg font-bold text-white">
+                        {documentViewer.entry.title || documentViewer.entry.supplierName || documentViewer.entry.entryDate}
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setDocumentViewer(null)}
+                      className="rounded-xl border border-white/10 p-2 text-white/60 hover:bg-white/10 hover:text-white"
+                      aria-label="Close"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  <div className="max-h-[calc(90vh-88px)] overflow-y-auto p-5">
+                    {documentViewerLoading && (
+                      <div className="flex min-h-56 items-center justify-center gap-3 text-sm text-white/55">
+                        <LoaderCircle className="h-5 w-5 animate-spin" />
+                        {l.loadingDocuments}
+                      </div>
+                    )}
+
+                    {!documentViewerLoading && documentViewer.files.length === 0 && (
+                      <div className="flex min-h-56 items-center justify-center text-sm text-white/45">
+                        {l.noDocuments}
+                      </div>
+                    )}
+
+                    {!documentViewerLoading && documentViewer.files.length > 0 && (
+                      <div className="grid gap-5 md:grid-cols-2">
+                        {documentViewer.files.map(({ document, url }) => {
+                          const isImage = document.mimeType?.startsWith("image/") ?? false;
+                          const isPdf = document.mimeType === "application/pdf" || document.fileName.toLowerCase().endsWith(".pdf");
+
+                          return (
+                            <article key={document.id} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+                              <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-semibold text-white">{document.fileName}</p>
+                                  <p className="mt-0.5 text-xs text-white/35">{document.mimeType || "file"}</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => window.open(url, "_blank", "noopener,noreferrer")}
+                                  className="shrink-0 rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/70 hover:bg-white/10"
+                                >
+                                  {l.openOriginal}
+                                </button>
+                              </div>
+
+                              <div className="flex min-h-72 items-center justify-center bg-black/25 p-3">
+                                {isImage ? (
+                                  <img
+                                    src={url}
+                                    alt={document.fileName}
+                                    className="max-h-[65vh] w-full rounded-xl object-contain"
+                                  />
+                                ) : isPdf ? (
+                                  <iframe
+                                    src={url}
+                                    title={document.fileName}
+                                    className="h-[65vh] w-full rounded-xl bg-white"
+                                  />
+                                ) : (
+                                  <div className="flex flex-col items-center gap-3 py-12 text-white/50">
+                                    <FileText className="h-12 w-12" />
+                                    <button type="button" onClick={() => openDocument(document)} className="text-sm font-semibold text-amber-100 hover:underline">
+                                      {l.openOriginal}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         );
       }}
