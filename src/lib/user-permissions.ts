@@ -1,5 +1,4 @@
 import "server-only";
-import { cache } from "react";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   canAccessModule,
@@ -10,32 +9,98 @@ import {
 export type PermissionMap = Record<string, { view: boolean; edit: boolean }>;
 export type PermissionLevel = "view" | "edit";
 
-const getPermissionMapCached = cache(async (businessId: string, userId: string, email: string): Promise<PermissionMap> => {
+export type CurrentPermissionState = {
+  permissions: PermissionMap;
+  membershipFound: boolean;
+  hasExplicitPermissions: boolean;
+};
+
+async function resolveCurrentPermissionState(
+  businessId: string,
+  userId: string,
+  email: string,
+): Promise<CurrentPermissionState> {
   const supabase = createSupabaseAdminClient();
-  const { data: membership } = await supabase
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // Resolve the exact business membership deterministically. Avoid a compound
+  // PostgREST OR filter here because permission enforcement must fail closed
+  // if identity resolution is inconsistent.
+  let membershipId: string | null = null;
+
+  const { data: byAuthUser } = await supabase
     .from("business_users")
     .select("id")
     .eq("business_id", businessId)
-    .or(`auth_user_id.eq.${userId},email.ilike.${email}`)
+    .eq("auth_user_id", userId)
+    .eq("is_active", true)
     .maybeSingle();
 
-  if (!membership?.id) return {};
+  membershipId = byAuthUser?.id ?? null;
 
-  const { data } = await supabase
+  if (!membershipId && normalizedEmail) {
+    const { data: byEmail } = await supabase
+      .from("business_users")
+      .select("id")
+      .eq("business_id", businessId)
+      .ilike("email", normalizedEmail)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    membershipId = byEmail?.id ?? null;
+  }
+
+  if (!membershipId) {
+    return {
+      permissions: {},
+      membershipFound: false,
+      hasExplicitPermissions: false,
+    };
+  }
+
+  const { data, error } = await supabase
     .from("user_module_permissions")
     .select("module_key, can_view, can_edit")
-    .eq("business_user_id", membership.id)
+    .eq("business_user_id", membershipId)
     .eq("business_id", businessId);
 
-  const result: PermissionMap = {};
-  for (const row of data ?? []) {
-    result[row.module_key] = { view: Boolean(row.can_view), edit: Boolean(row.can_edit) };
+  if (error) {
+    // Permission reads must fail closed for authenticated non-owner users.
+    return {
+      permissions: {},
+      membershipFound: true,
+      hasExplicitPermissions: true,
+    };
   }
-  return result;
-});
+
+  const permissions: PermissionMap = {};
+  for (const row of data ?? []) {
+    permissions[row.module_key] = {
+      view: Boolean(row.can_view),
+      edit: Boolean(row.can_edit),
+    };
+  }
+
+  return {
+    permissions,
+    membershipFound: true,
+    hasExplicitPermissions: (data?.length ?? 0) > 0,
+  };
+}
+
+export async function getCurrentUserPermissionState(
+  context: UserContext,
+): Promise<CurrentPermissionState> {
+  return resolveCurrentPermissionState(
+    context.currentBusiness.id,
+    context.user.id,
+    context.user.email,
+  );
+}
 
 export async function getCurrentUserPermissionMap(context: UserContext): Promise<PermissionMap> {
-  return getPermissionMapCached(context.currentBusiness.id, context.user.id, context.user.email);
+  const state = await getCurrentUserPermissionState(context);
+  return state.permissions;
 }
 
 function fallbackAllowed(context: UserContext, moduleKey: string, level: PermissionLevel) {
@@ -43,20 +108,31 @@ function fallbackAllowed(context: UserContext, moduleKey: string, level: Permiss
   return context.role === "manager";
 }
 
-
 export async function userHasModulePermission(
   context: UserContext,
   moduleKey: string,
   level: PermissionLevel = "view",
 ): Promise<boolean> {
   if (context.role === "owner" || context.isPlatformAdmin) return true;
-  const permissions = await getCurrentUserPermissionMap(context);
-  const explicit = permissions[moduleKey];
-  return explicit
-    ? level === "edit"
-      ? explicit.edit
-      : explicit.view
-    : fallbackAllowed(context, moduleKey, level);
+
+  const state = await getCurrentUserPermissionState(context);
+
+  // The auth context itself proves this user should have a membership. If the
+  // matching row cannot be resolved, deny rather than silently falling back to
+  // broad role permissions.
+  if (!state.membershipFound) return false;
+
+  const explicit = state.permissions[moduleKey];
+  if (explicit) {
+    return level === "edit" ? explicit.edit : explicit.view;
+  }
+
+  // Once a user has any custom permission rows, the custom map is authoritative
+  // and missing modules are denied. This prevents manager-role fallback from
+  // accidentally granting edit access to modules omitted from the map.
+  if (state.hasExplicitPermissions) return false;
+
+  return fallbackAllowed(context, moduleKey, level);
 }
 
 export async function requireModulePermission(
@@ -64,7 +140,6 @@ export async function requireModulePermission(
   level: PermissionLevel = "view",
 ): Promise<UserContext> {
   const context = await requireUserContext();
-
   const allowed = await userHasModulePermission(context, moduleKey, level);
 
   if (!allowed) {
@@ -84,14 +159,19 @@ export async function requireAnyModulePermission(
     return context;
   }
 
-  const permissions = await getCurrentUserPermissionMap(context);
+  const state = await getCurrentUserPermissionState(context);
+  if (!state.membershipFound) {
+    throw new Error("Permission denied.");
+  }
+
   const allowed = moduleKeys.some((moduleKey) => {
-    const explicit = permissions[moduleKey];
-    return explicit
-      ? level === "edit"
-        ? explicit.edit
-        : explicit.view
-      : fallbackAllowed(context, moduleKey, level);
+    const explicit = state.permissions[moduleKey];
+    if (explicit) {
+      return level === "edit" ? explicit.edit : explicit.view;
+    }
+
+    if (state.hasExplicitPermissions) return false;
+    return fallbackAllowed(context, moduleKey, level);
   });
 
   if (!allowed) {

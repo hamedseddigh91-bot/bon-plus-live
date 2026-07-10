@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
-import { requireUserContext } from "@/lib/auth-session";
-import { getCurrentUserPermissionMap } from "@/lib/user-permissions";
+import { canAccessModule, requireUserContext } from "@/lib/auth-session";
+import { getCurrentUserPermissionState } from "@/lib/user-permissions";
 
 type AdminShellServerProps = {
   children: ReactNode;
@@ -11,15 +11,24 @@ type AdminShellServerProps = {
 
 export async function AdminShellServer({ children, requiredModule }: AdminShellServerProps) {
   const context = await requireUserContext();
-  const modulePermissions =
+
+  const permissionState =
     context.role === "owner" || context.isPlatformAdmin
-      ? {}
-      : await getCurrentUserPermissionMap(context);
+      ? { permissions: {}, membershipFound: true, hasExplicitPermissions: false }
+      : await getCurrentUserPermissionState(context);
+
+  const modulePermissions = permissionState.permissions;
 
   if (requiredModule && context.role !== "owner" && !context.isPlatformAdmin) {
-    const { canAccessModule } = await import("@/lib/auth-session");
+    if (!permissionState.membershipFound) redirect("/admin");
+
     const explicit = modulePermissions[requiredModule];
-    const allowed = explicit ? explicit.view : canAccessModule(context.role, requiredModule);
+    const allowed = explicit
+      ? explicit.view
+      : permissionState.hasExplicitPermissions
+        ? false
+        : canAccessModule(context.role, requiredModule);
+
     if (!allowed) redirect("/admin");
   }
 
