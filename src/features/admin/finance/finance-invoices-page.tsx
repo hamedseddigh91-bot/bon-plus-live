@@ -133,12 +133,12 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [invoiceFiles, setInvoiceFiles] = useState<File[]>([]);
 
-  const appendInvoiceFiles = (files: FileList | null) => {
-    if (!files) return;
+  const appendInvoiceFiles = (files: File[]) => {
+    if (files.length === 0) return;
 
     setInvoiceFiles((current) => {
       const next = [...current];
-      for (const file of Array.from(files)) {
+      for (const file of files) {
         const duplicate = next.some(
           (item) =>
             item.name === file.name &&
@@ -572,8 +572,9 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
                       multiple
                       accept="image/*,application/pdf"
                       onChange={(event) => {
-                        appendInvoiceFiles(event.target.files);
+                        const files = Array.from(event.currentTarget.files ?? []);
                         event.currentTarget.value = "";
+                        appendInvoiceFiles(files);
                       }}
                       className="mt-2 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white file:mr-4 file:rounded-xl file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white"
                     />
