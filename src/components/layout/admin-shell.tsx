@@ -303,6 +303,7 @@ function AdminShellInner({
   const pathname = usePathname();
   const router = useRouter();
   const { language, setLanguage, theme, setTheme, dir, t } = useAdminLanguage();
+  const isLightTheme = theme === "light" || theme === "liquid-light";
   const [isSigningOut, startSignOut] = useTransition();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [desktopNavOpen, setDesktopNavOpen] = useState(true);
@@ -441,7 +442,7 @@ function AdminShellInner({
 
           <aside
             className={`absolute top-0 h-full w-[min(88vw,360px)] overflow-y-auto overscroll-contain px-4 py-4 shadow-[0_24px_90px_rgba(0,0,0,0.45)] backdrop-blur-2xl ${
-              theme === "light"
+              isLightTheme
                 ? "border-slate-200 bg-white/98 text-slate-900"
                 : "border-white/10 bg-[#080a10]/96 text-white"
             }`}
@@ -461,12 +462,12 @@ function AdminShellInner({
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.1rem] bg-gradient-to-br from-amber-200 via-yellow-300 to-orange-400 text-sm font-black text-black">{businessLogoUrl ? <img src={businessLogoUrl} alt="Business logo" className="block h-full w-full rounded-[inherit] object-cover object-center" /> : "BP"}</div>
                 <div className="min-w-0">
                   <p
-                    className={`truncate text-base font-bold ${theme === "light" ? "text-slate-950" : "text-white"}`}
+                    className={`truncate text-base font-bold ${isLightTheme ? "text-slate-950" : "text-white"}`}
                   >
                     {t.appName}
                   </p>
                   <p
-                    className={`truncate text-xs ${theme === "light" ? "text-slate-500" : "text-white/42"}`}
+                    className={`truncate text-xs ${isLightTheme ? "text-slate-500" : "text-white/42"}`}
                   >
                     {t.appSubtitle}
                   </p>
@@ -476,7 +477,7 @@ function AdminShellInner({
               <button
                 type="button"
                 onClick={() => setMobileNavOpen(false)}
-                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border ${theme === "light" ? "border-slate-200 bg-slate-100 text-slate-700" : "border-white/10 bg-white/[0.06] text-white/70"}`}
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border ${isLightTheme ? "border-slate-200 bg-slate-100 text-slate-700" : "border-white/10 bg-white/[0.06] text-white/70"}`}
                 aria-label="Close menu"
               >
                 <X className="h-5 w-5" />
@@ -493,10 +494,10 @@ function AdminShellInner({
             )}
 
             <div
-              className={`mb-4 rounded-[1.25rem] border px-4 py-3 ${theme === "light" ? "border-slate-200 bg-slate-50" : "border-white/10 bg-white/[0.045]"}`}
+              className={`mb-4 rounded-[1.25rem] border px-4 py-3 ${isLightTheme ? "border-slate-200 bg-slate-50" : "border-white/10 bg-white/[0.045]"}`}
             >
               <p
-                className={`truncate text-xs ${theme === "light" ? "text-slate-500" : "text-white/40"}`}
+                className={`truncate text-xs ${isLightTheme ? "text-slate-500" : "text-white/40"}`}
               >
                 {userEmail}
               </p>
@@ -519,7 +520,7 @@ function AdminShellInner({
                   className={`group flex h-12 items-center gap-4 rounded-[1.15rem] px-4 text-[15px] font-semibold transition ${
                     pathname.startsWith("/platform")
                       ? "bg-gradient-to-r from-amber-200 to-yellow-300 text-black shadow-[0_18px_50px_rgba(251,191,36,0.20)]"
-                      : theme === "light"
+                      : isLightTheme
                         ? "text-slate-700 hover:bg-slate-100 hover:text-slate-950"
                         : "text-white/58 hover:bg-white/[0.07] hover:text-white"
                   }`}
@@ -543,7 +544,7 @@ function AdminShellInner({
                     className={`group relative flex h-12 items-center gap-4 overflow-hidden rounded-[1.15rem] px-4 text-[15px] font-semibold transition duration-300 ${
                       active
                         ? "bg-gradient-to-r from-amber-200 to-yellow-300 text-black shadow-[0_18px_50px_rgba(251,191,36,0.20)]"
-                        : theme === "light"
+                        : isLightTheme
                           ? "text-slate-700 hover:bg-slate-100 hover:text-slate-950"
                           : "text-white/58 hover:bg-white/[0.07] hover:text-white"
                     }`}
@@ -552,7 +553,7 @@ function AdminShellInner({
                       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition ${
                         active
                           ? "bg-black/10 text-black"
-                          : theme === "light"
+                          : isLightTheme
                             ? "bg-slate-100 text-slate-600 group-hover:text-slate-950"
                             : "bg-white/[0.06] text-white/55 group-hover:text-white"
                       }`}
@@ -574,7 +575,7 @@ function AdminShellInner({
                 type="button"
                 onClick={() => startSignOut(async () => signOut())}
                 disabled={isSigningOut}
-                className={`mt-4 flex h-12 w-full items-center gap-4 rounded-[1.15rem] px-4 text-[15px] font-semibold transition hover:bg-red-400/10 hover:text-red-600 disabled:opacity-40 ${theme === "light" ? "text-slate-700" : "text-white/58"}`}
+                className={`mt-4 flex h-12 w-full items-center gap-4 rounded-[1.15rem] px-4 text-[15px] font-semibold transition hover:bg-red-400/10 hover:text-red-600 disabled:opacity-40 ${isLightTheme ? "text-slate-700" : "text-white/58"}`}
               >
                 <LogOut className="h-5 w-5 shrink-0" />
                 <span>{isSigningOut ? t.signingOut : t.signOut}</span>
@@ -613,7 +614,7 @@ function AdminShellInner({
               {t.appName}
             </div>
             <div
-              className={`truncate text-xs ${theme === "light" ? "text-slate-500" : "text-white/40"}`}
+              className={`truncate text-xs ${isLightTheme ? "text-slate-500" : "text-white/40"}`}
             >
               {t.appSubtitle}
             </div>
@@ -631,7 +632,7 @@ function AdminShellInner({
 
         <div className="mb-4 rounded-[1.35rem] border border-white/10 bg-white/[0.045] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
           <p
-            className={`truncate text-xs ${theme === "light" ? "text-slate-500" : "text-white/40"}`}
+            className={`truncate text-xs ${isLightTheme ? "text-slate-500" : "text-white/40"}`}
           >
             {userEmail}
           </p>
@@ -752,7 +753,7 @@ function AdminShellInner({
                 type="button"
                 onClick={() => setDesktopNavOpen((current) => !current)}
                 className={`hidden h-11 w-11 shrink-0 items-center justify-center rounded-2xl border shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition lg:flex ${
-                  theme === "light"
+                  isLightTheme
                     ? "border-slate-200 bg-white/80 text-slate-700 hover:bg-white hover:text-slate-950"
                     : "border-white/10 bg-white/[0.055] text-white/65 hover:bg-white/[0.09] hover:text-white"
                 }`}
@@ -823,13 +824,23 @@ function AdminShellInner({
                 <div className="hidden items-center gap-1 px-2 text-xs font-semibold text-white/45 sm:flex">
                   {theme === "dark" ? (
                     <Moon className="h-4 w-4" />
-                  ) : (
+                  ) : theme === "light" ? (
                     <Sun className="h-4 w-4" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
                   )}
                   {t.theme}
                 </div>
                 {adminThemeOptions.map((item) => {
-                  const Icon = item.value === "dark" ? Moon : Sun;
+                  const Icon = item.value === "dark" ? Moon : item.value === "light" ? Sun : Sparkles;
+                  const label =
+                    item.value === "dark"
+                      ? t.darkTheme
+                      : item.value === "light"
+                        ? t.lightTheme
+                        : item.value === "liquid-dark"
+                          ? t.liquidDarkTheme
+                          : t.liquidLightTheme;
 
                   return (
                     <button
@@ -841,11 +852,11 @@ function AdminShellInner({
                           ? "bg-amber-200 text-black shadow-[0_10px_28px_rgba(251,191,36,0.20)]"
                           : "text-white/48 hover:bg-white/[0.06] hover:text-white"
                       }`}
-                      title={item.value === "dark" ? t.darkTheme : t.lightTheme}
+                      title={label}
                     >
                       <Icon className="h-4 w-4" />
                       <span className="hidden sm:inline">
-                        {item.value === "dark" ? t.darkTheme : t.lightTheme}
+                        {label}
                       </span>
                     </button>
                   );

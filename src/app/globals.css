@@ -997,3 +997,152 @@ body[data-admin-theme="light"] .bp-admin-shell select:focus {
   .bp-admin-shell main section:first-child::before,
   .bp-admin-shell main section:first-child::after { display: none !important; }
 }
+
+
+/* Bon Plus Liquid Glass themes */
+body[data-admin-theme="liquid-dark"] {
+  --bp-page-bg: #07111f;
+  --bp-text-main: #f8fbff;
+  --bp-text-soft: rgba(235, 245, 255, 0.72);
+  --bp-text-muted: rgba(210, 226, 245, 0.50);
+  --bp-surface: rgba(10, 28, 52, 0.56);
+  --bp-surface-strong: rgba(16, 42, 74, 0.72);
+  --bp-surface-soft: rgba(17, 42, 75, 0.38);
+  --bp-border: rgba(151, 199, 255, 0.16);
+  --bp-border-strong: rgba(151, 199, 255, 0.28);
+  --bp-input-bg: rgba(4, 18, 36, 0.46);
+  --bp-shadow: rgba(0, 8, 28, 0.42);
+  background: #06101d;
+  color: var(--bp-text-main);
+}
+
+body[data-admin-theme="liquid-dark"] .bp-admin-shell {
+  background:
+    radial-gradient(circle at 78% 8%, rgba(67, 97, 238, 0.26), transparent 26%),
+    radial-gradient(circle at 18% 88%, rgba(102, 45, 145, 0.24), transparent 30%),
+    radial-gradient(circle at 52% 48%, rgba(0, 180, 216, 0.12), transparent 32%),
+    linear-gradient(145deg, #06101d 0%, #0a1730 48%, #07101f 100%) !important;
+}
+
+body[data-admin-theme="liquid-dark"] aside,
+body[data-admin-theme="liquid-dark"] header,
+body[data-admin-theme="liquid-dark"] .bp-card {
+  border-color: var(--bp-border) !important;
+  background: linear-gradient(145deg, rgba(18, 42, 74, 0.60), rgba(8, 25, 49, 0.44)) !important;
+  box-shadow: 0 24px 70px var(--bp-shadow), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+  backdrop-filter: blur(24px) saturate(135%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(135%) !important;
+}
+
+body[data-admin-theme="liquid-dark"] header { background: rgba(7, 20, 40, 0.64) !important; }
+body[data-admin-theme="liquid-dark"] aside { background: rgba(8, 22, 42, 0.66) !important; }
+body[data-admin-theme="liquid-dark"] .bp-card::before { background: linear-gradient(135deg, rgba(255,255,255,0.10), transparent 42%); }
+body[data-admin-theme="liquid-dark"] .bp-card::after { background: radial-gradient(circle, rgba(72, 149, 239, 0.16), transparent 70%); }
+body[data-admin-theme="liquid-dark"] input,
+body[data-admin-theme="liquid-dark"] textarea,
+body[data-admin-theme="liquid-dark"] select {
+  background: rgba(5, 20, 40, 0.52) !important;
+  border-color: var(--bp-border) !important;
+  color: var(--bp-text-main) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 10px 30px rgba(0,0,0,0.10);
+  backdrop-filter: blur(16px);
+}
+body[data-admin-theme="liquid-dark"] select option { background: #0a1730; color: #f8fbff; }
+body[data-admin-theme="liquid-dark"] ::selection { background: rgba(72,149,239,0.38); color: white; }
+
+body[data-admin-theme="liquid-light"] {
+  --bp-page-bg: #eaf3ff;
+  --bp-text-main: #10233f;
+  --bp-text-soft: rgba(16, 35, 63, 0.70);
+  --bp-text-muted: rgba(16, 35, 63, 0.48);
+  --bp-surface: rgba(255, 255, 255, 0.48);
+  --bp-surface-strong: rgba(255, 255, 255, 0.68);
+  --bp-surface-soft: rgba(255, 255, 255, 0.34);
+  --bp-border: rgba(80, 125, 180, 0.16);
+  --bp-border-strong: rgba(80, 125, 180, 0.24);
+  --bp-input-bg: rgba(255, 255, 255, 0.50);
+  --bp-shadow: rgba(55, 91, 135, 0.16);
+  background: #eaf3ff;
+  color: var(--bp-text-main);
+}
+
+body[data-admin-theme="liquid-light"] .bp-admin-shell {
+  background:
+    radial-gradient(circle at 82% 8%, rgba(129, 178, 255, 0.36), transparent 28%),
+    radial-gradient(circle at 12% 80%, rgba(166, 206, 255, 0.34), transparent 32%),
+    radial-gradient(circle at 54% 46%, rgba(255,255,255,0.92), transparent 35%),
+    linear-gradient(145deg, #eef6ff 0%, #dfeeff 50%, #edf6ff 100%) !important;
+  color: var(--bp-text-main) !important;
+}
+
+body[data-admin-theme="liquid-light"] aside,
+body[data-admin-theme="liquid-light"] header,
+body[data-admin-theme="liquid-light"] .bp-card {
+  border-color: var(--bp-border) !important;
+  background: linear-gradient(145deg, rgba(255,255,255,0.58), rgba(235,246,255,0.34)) !important;
+  box-shadow: 0 24px 70px var(--bp-shadow), inset 0 1px 0 rgba(255,255,255,0.90) !important;
+  backdrop-filter: blur(26px) saturate(125%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(125%) !important;
+}
+body[data-admin-theme="liquid-light"] header { background: rgba(241, 248, 255, 0.58) !important; }
+body[data-admin-theme="liquid-light"] aside { background: rgba(239, 247, 255, 0.56) !important; }
+body[data-admin-theme="liquid-light"] .bp-card::before { background: linear-gradient(135deg, rgba(255,255,255,0.92), transparent 44%); }
+body[data-admin-theme="liquid-light"] .bp-card::after { background: radial-gradient(circle, rgba(72,149,239,0.12), transparent 70%); }
+
+body[data-admin-theme="liquid-light"] .text-white,
+body[data-admin-theme="liquid-light"] .text-amber-100,
+body[data-admin-theme="liquid-light"] .text-orange-100,
+body[data-admin-theme="liquid-light"] .text-emerald-100,
+body[data-admin-theme="liquid-light"] .text-red-100 { color: var(--bp-text-main) !important; }
+body[data-admin-theme="liquid-light"] .text-white\/95,
+body[data-admin-theme="liquid-light"] .text-white\/90,
+body[data-admin-theme="liquid-light"] .text-white\/85,
+body[data-admin-theme="liquid-light"] .text-white\/80,
+body[data-admin-theme="liquid-light"] .text-white\/75,
+body[data-admin-theme="liquid-light"] .text-white\/70,
+body[data-admin-theme="liquid-light"] .text-white\/65,
+body[data-admin-theme="liquid-light"] .text-white\/62,
+body[data-admin-theme="liquid-light"] .text-white\/60 { color: var(--bp-text-soft) !important; }
+body[data-admin-theme="liquid-light"] .text-white\/55,
+body[data-admin-theme="liquid-light"] .text-white\/50,
+body[data-admin-theme="liquid-light"] .text-white\/48,
+body[data-admin-theme="liquid-light"] .text-white\/45,
+body[data-admin-theme="liquid-light"] .text-white\/42,
+body[data-admin-theme="liquid-light"] .text-white\/40,
+body[data-admin-theme="liquid-light"] .text-white\/35,
+body[data-admin-theme="liquid-light"] .text-white\/30 { color: var(--bp-text-muted) !important; }
+body[data-admin-theme="liquid-light"] .border-white\/5,
+body[data-admin-theme="liquid-light"] .border-white\/10,
+body[data-admin-theme="liquid-light"] .border-white\/12,
+body[data-admin-theme="liquid-light"] .border-white\/15,
+body[data-admin-theme="liquid-light"] .border-white\/16,
+body[data-admin-theme="liquid-light"] .border-white\/20 { border-color: var(--bp-border) !important; }
+body[data-admin-theme="liquid-light"] [class*="bg-white/"],
+body[data-admin-theme="liquid-light"] [class*="bg-white\\/"],
+body[data-admin-theme="liquid-light"] [class*="bg-black/"],
+body[data-admin-theme="liquid-light"] [class*="bg-black\\/"] { background-color: var(--bp-surface-soft) !important; }
+body[data-admin-theme="liquid-light"] input,
+body[data-admin-theme="liquid-light"] textarea,
+body[data-admin-theme="liquid-light"] select {
+  background: rgba(255,255,255,0.52) !important;
+  border-color: var(--bp-border) !important;
+  color: var(--bp-text-main) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.95), 0 10px 30px rgba(66, 103, 145, 0.08);
+  backdrop-filter: blur(16px);
+}
+body[data-admin-theme="liquid-light"] input::placeholder,
+body[data-admin-theme="liquid-light"] textarea::placeholder { color: rgba(16,35,63,0.42) !important; }
+body[data-admin-theme="liquid-light"] select option { background: #edf6ff; color: #10233f; }
+body[data-admin-theme="liquid-light"] table thead,
+body[data-admin-theme="liquid-light"] .bg-white\/\[0\.04\] { background-color: rgba(255,255,255,0.34) !important; }
+body[data-admin-theme="liquid-light"] tbody,
+body[data-admin-theme="liquid-light"] tr,
+body[data-admin-theme="liquid-light"] td,
+body[data-admin-theme="liquid-light"] th { border-color: var(--bp-border) !important; }
+body[data-admin-theme="liquid-light"] .divide-white\/10 > :not([hidden]) ~ :not([hidden]) { border-color: var(--bp-border) !important; }
+body[data-admin-theme="liquid-light"] ::selection { background: rgba(72,149,239,0.28); color: #10233f; }
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-admin-theme="liquid-dark"] *,
+  body[data-admin-theme="liquid-light"] * { backdrop-filter: none !important; }
+}

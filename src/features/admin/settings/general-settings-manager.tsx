@@ -157,7 +157,7 @@ export function GeneralSettingsManager({ initialState }: { initialState: CoreCon
           {field(t.mobile, <input className={input} value={s.mobileNumber || ""} onChange={(e) => setS({ ...s, mobileNumber: e.target.value })} />)}
           {field(t.po, <input className={input} value={s.poBox || ""} onChange={(e) => setS({ ...s, poBox: e.target.value })} />)}
           {field(t.lang, <select className={input} value={s.defaultLanguage} onChange={(e) => setS({ ...s, defaultLanguage: e.target.value as "fa" | "ar" | "en" })}><option value="fa">فارسی</option><option value="ar">العربية</option><option value="en">English</option></select>)}
-          {field(t.theme, <select className={input} value={s.defaultTheme} onChange={(e) => setS({ ...s, defaultTheme: e.target.value as "dark" | "light" })}><option value="dark">Dark</option><option value="light">Light</option></select>)}
+          {field(t.theme, <select className={input} value={s.defaultTheme} onChange={(e) => setS({ ...s, defaultTheme: e.target.value as "dark" | "light" | "liquid-dark" | "liquid-light" })}><option value="dark">Dark</option><option value="light">Light</option><option value="liquid-dark">Liquid Glass Dark</option><option value="liquid-light">Liquid Glass Light</option></select>)}
           {field(t.currency, <input className={input} value={s.currencyCode} onChange={(e) => setS({ ...s, currencyCode: e.target.value })} />)}
           {field(t.decimals, <input type="number" min={0} max={3} className={input} value={s.currencyDecimals} onChange={(e) => setS({ ...s, currencyDecimals: Number(e.target.value) })} />)}
         </div>

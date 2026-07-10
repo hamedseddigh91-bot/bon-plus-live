@@ -7,7 +7,7 @@ import type { LanguageCode } from "@/types/feedback";
 import { requireModulePermission, userHasModulePermission } from "@/lib/user-permissions";
 
 type AdminLanguage = "fa" | "ar" | "en";
-type AdminTheme = "dark" | "light";
+type AdminTheme = "dark" | "light" | "liquid-dark" | "liquid-light";
 
 export type CoreControlSettings = {
   businessId: string;
@@ -182,7 +182,7 @@ function normalizeLanguage(value: unknown): AdminLanguage {
 }
 
 function normalizeTheme(value: unknown): AdminTheme {
-  if (value === "light" || value === "dark") return value;
+  if (value === "light" || value === "dark" || value === "liquid-dark" || value === "liquid-light") return value;
   return "dark";
 }
 

@@ -3,7 +3,7 @@
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from "react";
 
 export type AdminLanguage = "fa" | "ar" | "en";
-export type AdminTheme = "dark" | "light";
+export type AdminTheme = "dark" | "light" | "liquid-dark" | "liquid-light";
 
 type AdminLanguageContextValue = {
   language: AdminLanguage;
@@ -26,6 +26,8 @@ export const adminLanguageOptions: Array<{ value: AdminLanguage; label: string; 
 export const adminThemeOptions: Array<{ value: AdminTheme; iconLabel: string }> = [
   { value: "dark", iconLabel: "Dark" },
   { value: "light", iconLabel: "Light" },
+  { value: "liquid-dark", iconLabel: "Liquid Dark" },
+  { value: "liquid-light", iconLabel: "Liquid Light" },
 ];
 
 export const adminText = {
@@ -38,6 +40,8 @@ export const adminText = {
     theme: "تم سایت",
     darkTheme: "تیره",
     lightTheme: "روشن",
+    liquidDarkTheme: "شیشه‌ای تیره",
+    liquidLightTheme: "شیشه‌ای روشن",
     searchPlaceholder: "جستجوی سریع...",
     ready: "آماده",
     platform: "پلتفرم",
@@ -109,6 +113,8 @@ export const adminText = {
     theme: "مظهر الموقع",
     darkTheme: "داكن",
     lightTheme: "فاتح",
+    liquidDarkTheme: "زجاجي داكن",
+    liquidLightTheme: "زجاجي فاتح",
     searchPlaceholder: "بحث سريع...",
     ready: "جاهز",
     platform: "المنصة",
@@ -180,6 +186,8 @@ export const adminText = {
     theme: "Site theme",
     darkTheme: "Dark",
     lightTheme: "Light",
+    liquidDarkTheme: "Liquid Dark",
+    liquidLightTheme: "Liquid Light",
     searchPlaceholder: "Quick search...",
     ready: "Ready",
     platform: "Platform",
@@ -252,7 +260,7 @@ function normalizeLanguage(value: string | null): AdminLanguage {
 }
 
 function normalizeTheme(value: string | null): AdminTheme {
-  if (value === "light" || value === "dark") return value;
+  if (value === "light" || value === "dark" || value === "liquid-dark" || value === "liquid-light") return value;
   return "dark";
 }
 
