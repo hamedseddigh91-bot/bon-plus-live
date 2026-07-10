@@ -10,7 +10,6 @@ import {
   saveFinanceEntry,
   saveSupplier,
   uploadOperationDocument,
-  uploadOperationDocuments,
 } from "@/app/admin/operations/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -280,14 +279,30 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
       if (result.success) {
         const ownerId = result.entryId || entryForm.id;
         if (invoiceFiles.length > 0 && ownerId) {
-          const formData = new FormData();
-          formData.set("ownerType", "finance_entry");
-          formData.set("ownerId", ownerId);
-          invoiceFiles.forEach((file) => formData.append("files", file));
+          const failedFiles: File[] = [];
+          const failureMessages: string[] = [];
+          let uploadedCount = 0;
 
-          const uploadResult = await uploadOperationDocuments(formData);
-          if (!uploadResult.success) {
-            setMessage(uploadResult.message ?? "Invoice saved, but attachments failed to upload.");
+          for (const file of invoiceFiles) {
+            const formData = new FormData();
+            formData.set("ownerType", "finance_entry");
+            formData.set("ownerId", ownerId);
+            formData.set("file", file);
+
+            const uploadResult = await uploadOperationDocument(formData);
+            if (uploadResult.success) {
+              uploadedCount += 1;
+            } else {
+              failedFiles.push(file);
+              failureMessages.push(`${file.name}: ${uploadResult.message ?? "Upload failed"}`);
+            }
+          }
+
+          if (failedFiles.length > 0) {
+            setInvoiceFiles(failedFiles);
+            setMessage(
+              `${uploadedCount} file(s) uploaded. ${failedFiles.length} file(s) failed and remain selected for retry. ${failureMessages.join(" | ")}`,
+            );
             return;
           }
         }
