@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
@@ -305,6 +305,19 @@ function AdminShellInner({
   const { language, setLanguage, theme, setTheme, dir, t } = useAdminLanguage();
   const [isSigningOut, startSignOut] = useTransition();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [permissionNoticeOpen, setPermissionNoticeOpen] = useState(false);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("permissionDenied") !== "1") return;
+
+    setPermissionNoticeOpen(true);
+    url.searchParams.delete("permissionDenied");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+
+    const timeout = window.setTimeout(() => setPermissionNoticeOpen(false), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [pathname]);
   const visibleModules = roleModules[role] ?? roleModules.read_only;
   const permissionKeysForNav = (item: NavItem) => {
     if (item.href === "/admin") return ["dashboard"];
@@ -358,6 +371,34 @@ function AdminShellInner({
         fontFamily: language === "fa" ? "var(--font-persian)" : undefined,
       }}
     >
+      {permissionNoticeOpen && (
+        <div className="fixed inset-x-0 top-5 z-[120] flex justify-center px-4" role="status" aria-live="polite">
+          <div className="flex w-full max-w-md items-start gap-3 rounded-2xl border border-amber-300/25 bg-[#17130b]/95 px-4 py-3 text-amber-50 shadow-[0_18px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-300/15 text-amber-200">!</div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-black">
+                {language === "fa" ? "دسترسی محدود" : language === "ar" ? "صلاحية محدودة" : "Permission required"}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-amber-50/75">
+                {language === "fa"
+                  ? "شما اجازه انجام این تغییر را ندارید. برای دسترسی ویرایش با مدیر سیستم تماس بگیرید."
+                  : language === "ar"
+                    ? "ليس لديك صلاحية لإجراء هذا التغيير. تواصل مع مدير النظام للحصول على صلاحية التعديل."
+                    : "You do not have permission to make this change. Contact an administrator for edit access."}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPermissionNoticeOpen(false)}
+              className="rounded-lg p-1 text-amber-50/55 transition hover:bg-white/10 hover:text-amber-50"
+              aria-label="Close permission notice"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div className="bp-orb bp-orb-1" />
         <div className="bp-orb bp-orb-2" />

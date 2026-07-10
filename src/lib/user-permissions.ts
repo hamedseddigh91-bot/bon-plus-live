@@ -1,4 +1,6 @@
 import "server-only";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   canAccessModule,
@@ -14,6 +16,26 @@ export type CurrentPermissionState = {
   membershipFound: boolean;
   hasExplicitPermissions: boolean;
 };
+
+async function redirectPermissionDenied(): Promise<never> {
+  const headerStore = await headers();
+  const referer = headerStore.get("referer");
+  let target = "/admin?permissionDenied=1";
+
+  if (referer) {
+    try {
+      const url = new URL(referer);
+      if (url.pathname.startsWith("/admin")) {
+        url.searchParams.set("permissionDenied", "1");
+        target = `${url.pathname}${url.search}${url.hash}`;
+      }
+    } catch {
+      // Fall back to the admin home if the referrer cannot be parsed.
+    }
+  }
+
+  redirect(target);
+}
 
 async function resolveCurrentPermissionState(
   businessId: string,
@@ -143,7 +165,7 @@ export async function requireModulePermission(
   const allowed = await userHasModulePermission(context, moduleKey, level);
 
   if (!allowed) {
-    throw new Error("Permission denied.");
+    await redirectPermissionDenied();
   }
 
   return context;
@@ -161,7 +183,7 @@ export async function requireAnyModulePermission(
 
   const state = await getCurrentUserPermissionState(context);
   if (!state.membershipFound) {
-    throw new Error("Permission denied.");
+    await redirectPermissionDenied();
   }
 
   const allowed = moduleKeys.some((moduleKey) => {
@@ -175,7 +197,7 @@ export async function requireAnyModulePermission(
   });
 
   if (!allowed) {
-    throw new Error("Permission denied.");
+    await redirectPermissionDenied();
   }
 
   return context;
