@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   output: "standalone",
   experimental: {
     cpus: 2,
+    serverActions: {
+      bodySizeLimit: "12mb",
+    },
   },
 };
 
