@@ -53,13 +53,12 @@ export async function getActionCenterState(): Promise<ActionCenterState> {
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
 
-    const [feedbacks, recoveries, discounts, loyaltyCounters, invoices, periods, recipes] = await Promise.all([
+    const [feedbacks, recoveries, discounts, loyaltyCounters, invoices, recipes] = await Promise.all([
       supabase.from("feedback_submissions").select("id,workflow_stage,overall_score,source_id,phone,created_at,customer_sources(name)").eq("business_id", businessId).order("created_at", { ascending: false }).limit(80),
       supabase.from("feedback_recovery_cases").select("id,feedback_submission_id,phone,priority,status,complaint_reason,updated_at").eq("business_id", businessId).not("status", "in", '("resolved","closed")').order("updated_at", { ascending: true }).limit(50),
       supabase.from("discount_codes").select("id,code,expires_at,status,usage_limit,used_count,customer_id,customers(phone)").eq("business_id", businessId).order("expires_at", { ascending: true }).limit(100),
       supabase.from("loyalty_customer_counters").select("id,phone,pending_rewards,rule_id,loyalty_program_rules(name,reward_label)").eq("business_id", businessId).gt("pending_rewards", 0).limit(100),
       supabase.from("finance_entries").select("id,title,amount,entry_date,payment_status,status").eq("business_id", businessId).eq("entry_type", "expense").eq("status", "active").neq("payment_status", "paid").order("entry_date", { ascending: true }).limit(100),
-      supabase.from("finance_periods").select("id,period_month,status,closing_petty_cash,opening_petty_cash,updated_at").eq("business_id", businessId).order("period_month", { ascending: false }).limit(12),
       supabase.from("recipe_costing_items").select("id,name,item_type,purchase_price,purchase_qty,sale_price,components,active").eq("business_id", businessId).eq("active", true).order("name").limit(200),
     ]);
 
@@ -106,14 +105,6 @@ export async function getActionCenterState(): Promise<ActionCenterState> {
       finance.push({ id: row.id, title: overdue ? "Previous month unpaid invoice" : "Unpaid invoice", detail: `${row.title} · ${Number(row.amount ?? 0).toFixed(3)} OMR · ${row.entry_date}`, category: "finance", priority: overdue ? "urgent" : "high", href: "/admin/finance/invoices", createdAt: row.entry_date });
     }
 
-    const openPeriods = (periods.data ?? []).filter((row) => row.status === "open");
-    if (openPeriods.length > 1) {
-      finance.push({ id: "period-multiple-open", title: "Multiple financial periods are open", detail: `${openPeriods.length} open periods need review`, category: "finance", priority: "urgent", href: "/admin/finance/cash" });
-    }
-    const latestPeriod = (periods.data ?? [])[0];
-    if (latestPeriod?.status === "open" && latestPeriod.period_month < new Date().toISOString().slice(0, 7)) {
-      finance.push({ id: latestPeriod.id, title: "Financial period needs closing", detail: `${latestPeriod.period_month} is still open`, category: "finance", priority: "urgent", href: "/admin/finance/cash" });
-    }
 
     for (const row of recipes.data ?? []) {
       const components = Array.isArray(row.components) ? row.components : [];

@@ -68,21 +68,6 @@ export type OperationDocument = {
   createdAt: string;
 };
 
-export type FinancePeriod = {
-  id: string;
-  businessId: string;
-  periodMonth: string;
-  status: "open" | "closed";
-  openingPettyCash: number | string;
-  closingPettyCash: number | string | null;
-  notes: string | null;
-  closedByEmail: string | null;
-  closedAt: string | null;
-  createdByEmail: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
 export type OperationsOverview = {
   success: boolean;
   message?: string;
@@ -114,7 +99,6 @@ export type OperationsPageState = {
   suppliers: OperationSupplier[];
   closings: CashClosing[];
   documents: OperationDocument[];
-  periods?: FinancePeriod[];
   previousOverdueTotal?: number;
 };
 
@@ -237,7 +221,7 @@ export async function getOperationsPageState(input?: {
   const dateFrom = input?.dateFrom || defaultRange.dateFrom;
   const dateTo = input?.dateTo || defaultRange.dateTo;
 
-  const [overviewResult, entriesResult, suppliersResult, closingsResult, periodsResult, contextResult] = await Promise.all([
+  const [overviewResult, entriesResult, suppliersResult, closingsResult, contextResult] = await Promise.all([
     supabase.rpc("admin_get_operations_overview_fast", {
       p_slug: businessSlug,
       p_date_from: dateFrom,
@@ -267,12 +251,6 @@ export async function getOperationsPageState(input?: {
       p_actor_email: actor.email,
       p_limit: 90,
     }),
-    supabase.rpc("admin_list_finance_periods_fast", {
-      p_slug: businessSlug,
-      p_actor_auth_user_id: actor.id,
-      p_actor_email: actor.email,
-      p_limit: 36,
-    }),
     supabase.rpc("_operations_get_context", {
       p_slug: businessSlug,
       p_actor_auth_user_id: actor.id,
@@ -291,7 +269,6 @@ export async function getOperationsPageState(input?: {
       suppliers: [],
       closings: [],
       documents: [],
-      periods: [],
     };
   }
 
@@ -307,7 +284,6 @@ export async function getOperationsPageState(input?: {
     suppliers: (suppliersResult.data?.suppliers ?? []) as OperationSupplier[],
     closings: (closingsResult.data?.closings ?? []) as CashClosing[],
     documents,
-    periods: (periodsResult.data?.periods ?? []) as FinancePeriod[],
   };
 }
 
@@ -360,7 +336,6 @@ export async function getDashboardOperationsState(input?: {
       suppliers: [],
       closings: [],
       documents: [],
-      periods: [],
     };
   }
 
@@ -373,7 +348,6 @@ export async function getDashboardOperationsState(input?: {
     suppliers: [],
     closings: (closingsResult.data?.closings ?? []) as CashClosing[],
     documents: [],
-    periods: [],
   };
 }
 
@@ -547,7 +521,7 @@ export async function getFinanceCashPageState(input?: {
   }
 
   const supabase = createSupabaseAdminClient();
-  const [entriesResult, closingsResult, periodsResult] = await Promise.all([
+  const [entriesResult, closingsResult] = await Promise.all([
     supabase.rpc("admin_list_finance_entries_fast", {
       p_slug: context.businessSlug,
       p_date_from: dateFrom,
@@ -565,21 +539,14 @@ export async function getFinanceCashPageState(input?: {
       p_actor_email: context.actor.email,
       p_limit: 90,
     }),
-    supabase.rpc("admin_list_finance_periods_fast", {
-      p_slug: context.businessSlug,
-      p_actor_auth_user_id: context.actor.id,
-      p_actor_email: context.actor.email,
-      p_limit: 36,
-    }),
   ]);
 
-  if (entriesResult.error || closingsResult.error || periodsResult.error) {
+  if (entriesResult.error || closingsResult.error) {
     return {
       success: false,
       message:
         entriesResult.error?.message ??
         closingsResult.error?.message ??
-        periodsResult.error?.message ??
         "Cash page could not load.",
       dateFrom,
       dateTo,
@@ -588,7 +555,6 @@ export async function getFinanceCashPageState(input?: {
       suppliers: [],
       closings: [],
       documents: [],
-      periods: [],
     };
   }
 
@@ -601,7 +567,6 @@ export async function getFinanceCashPageState(input?: {
     suppliers: [],
     closings: (closingsResult.data?.closings ?? []) as CashClosing[],
     documents: [],
-    periods: (periodsResult.data?.periods ?? []) as FinancePeriod[],
   };
 }
 
@@ -1095,103 +1060,5 @@ export async function getOperationDocumentSignedUrl(input: {
   return {
     success: true,
     url: data.signedUrl,
-  };
-}
-
-
-export async function saveFinancePeriod(input: {
-  periodMonth: string;
-  openingPettyCash: string;
-  notes?: string;
-}): Promise<ActionResult> {
-  await requireModulePermission("finance_cash", "edit");
-  const { actor, businessSlug } = await actorAndSlug();
-  const supabase = createSupabaseAdminClient();
-
-  const { data, error } = await supabase.rpc("admin_save_finance_period_fast", {
-    p_slug: businessSlug,
-    p_period_month: `${input.periodMonth}-01`,
-    p_opening_petty_cash: Number(input.openingPettyCash || 0),
-    p_notes: input.notes || null,
-    p_actor_auth_user_id: actor.id,
-    p_actor_email: actor.email,
-  });
-
-  revalidateFinancePages();
-
-  if (error || !data?.success) {
-    return {
-      success: false,
-      message: data?.message ?? error?.message ?? "Finance period save failed.",
-    };
-  }
-
-  return {
-    success: true,
-    message: data.message ?? "Finance period saved.",
-  };
-}
-
-export async function closeFinancePeriod(input: {
-  periodMonth: string;
-  closingPettyCash: string;
-  notes?: string;
-}): Promise<ActionResult> {
-  await requireModulePermission("finance_cash", "edit");
-  const { actor, businessSlug } = await actorAndSlug();
-  const supabase = createSupabaseAdminClient();
-
-  const { data, error } = await supabase.rpc("admin_close_finance_period_fast", {
-    p_slug: businessSlug,
-    p_period_month: `${input.periodMonth}-01`,
-    p_closing_petty_cash: Number(input.closingPettyCash || 0),
-    p_notes: input.notes || null,
-    p_actor_auth_user_id: actor.id,
-    p_actor_email: actor.email,
-  });
-
-  revalidateFinancePages();
-
-  if (error || !data?.success) {
-    return {
-      success: false,
-      message: data?.message ?? error?.message ?? "Finance period close failed.",
-    };
-  }
-
-  return {
-    success: true,
-    message: data.message ?? "Finance period closed.",
-  };
-}
-
-export async function reopenFinancePeriod(input: {
-  periodId: string;
-  reason?: string;
-}): Promise<ActionResult> {
-  await requireModulePermission("finance_cash", "edit");
-  const { actor, businessSlug } = await actorAndSlug();
-  const supabase = createSupabaseAdminClient();
-
-  const { data, error } = await supabase.rpc("admin_reopen_finance_period_fast", {
-    p_slug: businessSlug,
-    p_period_id: input.periodId,
-    p_reason: input.reason || "Reopened from finance page",
-    p_actor_auth_user_id: actor.id,
-    p_actor_email: actor.email,
-  });
-
-  revalidateFinancePages();
-
-  if (error || !data?.success) {
-    return {
-      success: false,
-      message: data?.message ?? error?.message ?? "Finance period reopen failed.",
-    };
-  }
-
-  return {
-    success: true,
-    message: data.message ?? "Finance period reopened.",
   };
 }

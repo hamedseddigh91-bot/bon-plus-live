@@ -27,43 +27,37 @@ const pageText: Record<FinanceLanguage, Record<string, string>> = {
     quickActions: "دسترسی سریع",
     openClosing: "ثبت بستن صندوق",
     openInvoice: "ثبت فاکتور",
-    openCash: "تنخواه و دوره",
+    openCash: "تنخواه",
     exportSummary: "خروجی خلاصه",
     health: "چک‌لیست کنترل مالی",
     unpaidCheck: "فاکتورهای پرداخت‌نشده",
     documentCheck: "فاکتورهای بدون سند",
-    periodCheck: "دوره‌های مالی",
     needsReview: "نیاز به بررسی",
     ok: "اوکی",
-    activePeriod: "دوره فعال/بسته را در تنخواه چک کن",
   },
   ar: {
     quickActions: "إجراءات سريعة",
     openClosing: "تسجيل إغلاق الصندوق",
     openInvoice: "تسجيل فاتورة",
-    openCash: "العهدة والفترات",
+    openCash: "العهدة",
     exportSummary: "تصدير الملخص",
     health: "قائمة فحص المالية",
     unpaidCheck: "فواتير غير مدفوعة",
     documentCheck: "فواتير بدون مستند",
-    periodCheck: "الفترات المالية",
     needsReview: "يحتاج مراجعة",
     ok: "ممتاز",
-    activePeriod: "راجع الفترة المفتوحة/المغلقة في العهدة",
   },
   en: {
     quickActions: "Quick actions",
     openClosing: "Record cash closing",
     openInvoice: "Add invoice",
-    openCash: "Petty cash & periods",
+    openCash: "Petty cash",
     exportSummary: "Export summary",
     health: "Finance control checklist",
     unpaidCheck: "Unpaid invoices",
     documentCheck: "Invoices without docs",
-    periodCheck: "Finance periods",
     needsReview: "Needs review",
     ok: "OK",
-    activePeriod: "Check open/closed periods in petty cash",
   },
 };
 
@@ -116,7 +110,7 @@ function downloadCsv(filename: string, rows: string[][]) {
 
 export function FinanceDashboardPage({ initialState }: FinanceDashboardPageProps) {
   const overview = initialState.overview;
-  const periods = monthlyPeriods(initialState);
+  const monthlySummary = monthlyPeriods(initialState);
   const byUsage = groupExpensesByUsage(initialState.entries);
   const bySupplier = groupExpensesBySupplier(initialState.entries);
   const closingMax = maxChartValue((initialState.closings ?? []).map((closing) => numberValue(closing.totalAmount)));
@@ -179,7 +173,6 @@ export function FinanceDashboardPage({ initialState }: FinanceDashboardPageProps
                   {[
                     [l.unpaidCheck, unpaidCount],
                     [l.documentCheck, missingDocsCount],
-                    [l.periodCheck, initialState.periods?.filter((period) => period.status === "closed").length ?? 0],
                   ].map(([label, count]) => (
                     <div key={String(label)} className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/20 p-4">
                       <span className="text-sm text-white/60">{label}</span>
@@ -250,14 +243,14 @@ export function FinanceDashboardPage({ initialState }: FinanceDashboardPageProps
               <Card className="p-5">
                 <h2 className="text-xl font-semibold text-white">{t.periodSummary}</h2>
                 <div className="mt-5 space-y-3">
-                  {periods.slice(0, 5).map((period) => (
+                  {monthlySummary.slice(0, 5).map((period) => (
                     <div key={period.month} className="rounded-2xl border border-white/10 bg-black/20 p-4">
                       <div className="flex items-center justify-between gap-4"><p className="font-bold text-white">{period.month}</p><WalletCards className="h-4 w-4 text-amber-200" /></div>
                       <p className="mt-2 text-xs text-white/45">{t.closingTotal}: {money(period.closing)} / {t.paidExpenses}: {money(period.expenses)}</p>
                       <p className="mt-1 text-xs text-white/35">{t.entries}: {period.invoiceCount} / {t.closings}: {period.closingCount}</p>
                     </div>
                   ))}
-                  {periods.length === 0 && <p className="text-sm text-white/35">{t.noData}</p>}
+                  {monthlySummary.length === 0 && <p className="text-sm text-white/35">{t.noData}</p>}
                 </div>
               </Card>
             </section>
