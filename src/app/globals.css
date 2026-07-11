@@ -1146,3 +1146,24 @@ body[data-admin-theme="liquid-light"] ::selection { background: rgba(72,149,239,
   body[data-admin-theme="liquid-dark"] *,
   body[data-admin-theme="liquid-light"] * { backdrop-filter: none !important; }
 }
+
+/* Final navigation polish: smooth route feedback without hiding the current page abruptly. */
+@keyframes bpRouteProgress {
+  0% { transform: translateX(-120%); opacity: 0.55; }
+  45% { opacity: 1; }
+  100% { transform: translateX(420%); opacity: 0.7; }
+}
+
+.bp-route-progress {
+  animation: bpRouteProgress 1.05s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform;
+}
+
+.bp-route-loading {
+  animation: bpPageFadeIn 220ms ease-out both;
+}
+
+@keyframes bpPageFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}

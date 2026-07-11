@@ -23,6 +23,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useAdminLanguage } from "@/lib/admin-language";
 import type {
   FeedbackQuestionOption,
   FeedbackQuestionType,
@@ -56,6 +57,18 @@ const emptyForm: QuestionFormState = {
   options: [],
 };
 
+const questionCopy = {
+  fa: {
+    eyebrow:"سؤال‌های فیدبک", title:"سازنده سؤال", subtitle:"ویزارد فیدبک مشتری را مدیریت کنید؛ شامل سؤال‌های چندگزینه‌ای تک‌انتخابی.", total:"مجموع", active:"فعال", inactive:"غیرفعال", required:"اجباری", optional:"اختیاری", live:"سؤال‌های فعال", liveHint:"ترتیب، ویرایش، فعال‌سازی یا مخفی‌کردن سؤال‌ها.", refresh:"تازه‌سازی", empty:"هنوز سؤالی ساخته نشده.", edit:"ویرایش", hide:"مخفی", show:"نمایش", delete:"حذف", editQuestion:"ویرایش سؤال", addQuestion:"افزودن سؤال", formHint:"متن انگلیسی سؤال اجباری است؛ عربی و فارسی اختیاری هستند.", english:"انگلیسی", arabic:"عربی", persian:"فارسی", type:"نوع", order:"ترتیب", options:"گزینه‌های پاسخ", optionsHint:"مشتری فقط یک گزینه را انتخاب می‌کند. مقدار انگلیسی برای گزارش ذخیره می‌شود.", add:"افزودن", option:"گزینه", englishOption:"گزینه انگلیسی", arabicOption:"گزینه عربی", persianOption:"گزینه فارسی", save:"ذخیره", new:"جدید", minOptions:"حداقل دو گزینه با متن انگلیسی اضافه کنید.", missingBusiness:"بیزنس پیدا نشد.", confirmDelete:"این سؤال حذف شود؟ سؤال‌هایی که پاسخ تاریخی دارند به‌جای حذف دائمی آرشیو می‌شوند.", reordered:"ترتیب سؤال‌ها تغییر کرد.", reorderFailed:"تغییر ترتیب ناموفق بود.", loadFailed:"بارگذاری سؤال‌ها ناموفق بود.", refreshFailed:"تازه‌سازی ناموفق بود.", emoji:"ایموجی", star:"ستاره", yesNo:"بله / خیر", multiple:"چندگزینه‌ای", text:"متن"
+  },
+  ar: {
+    eyebrow:"أسئلة التقييم", title:"منشئ الأسئلة", subtitle:"إدارة نموذج تقييم العملاء، بما في ذلك الأسئلة متعددة الخيارات ذات الاختيار الواحد.", total:"الإجمالي", active:"مفعل", inactive:"غير مفعل", required:"إلزامي", optional:"اختياري", live:"الأسئلة الحالية", liveHint:"إعادة الترتيب أو التعديل أو التفعيل أو الإخفاء.", refresh:"تحديث", empty:"لا توجد أسئلة بعد.", edit:"تعديل", hide:"إخفاء", show:"إظهار", delete:"حذف", editQuestion:"تعديل السؤال", addQuestion:"إضافة سؤال", formHint:"النص الإنجليزي إلزامي، والعربي والفارسي اختياريان.", english:"الإنجليزية", arabic:"العربية", persian:"الفارسية", type:"النوع", order:"الترتيب", options:"خيارات الإجابة", optionsHint:"يمكن للعميل اختيار خيار واحد فقط. يتم حفظ النص الإنجليزي لقيمة التقارير.", add:"إضافة", option:"الخيار", englishOption:"الخيار بالإنجليزية", arabicOption:"الخيار بالعربية", persianOption:"الخيار بالفارسية", save:"حفظ", new:"جديد", minOptions:"أضف خيارين على الأقل بنص إنجليزي.", missingBusiness:"لم يتم العثور على النشاط.", confirmDelete:"حذف هذا السؤال؟ الأسئلة التي لها إجابات تاريخية ستتم أرشفتها بدلاً من حذفها نهائياً.", reordered:"تم تغيير ترتيب الأسئلة.", reorderFailed:"فشل تغيير الترتيب.", loadFailed:"فشل تحميل الأسئلة.", refreshFailed:"فشل التحديث.", emoji:"إيموجي", star:"نجوم", yesNo:"نعم / لا", multiple:"اختيار متعدد", text:"نص"
+  },
+  en: {
+    eyebrow:"Feedback Questions", title:"Question Builder", subtitle:"Manage the live customer feedback wizard, including single-select multiple choice questions.", total:"Total", active:"Active", inactive:"Inactive", required:"Required", optional:"Optional", live:"Live Questions", liveHint:"Reorder, edit, activate, or hide questions.", refresh:"Refresh", empty:"No questions yet.", edit:"Edit", hide:"Hide", show:"Show", delete:"Delete", editQuestion:"Edit Question", addQuestion:"Add Question", formHint:"English question text is required. Arabic and Persian are optional.", english:"English", arabic:"Arabic", persian:"Persian", type:"Type", order:"Order", options:"Answer options", optionsHint:"Customer can select one option. English labels are used as the stored reporting value.", add:"Add", option:"Option", englishOption:"English option", arabicOption:"Arabic option", persianOption:"Persian option", save:"Save", new:"New", minOptions:"Add at least two options with English labels.", missingBusiness:"Business is missing.", confirmDelete:"Delete this question? Questions with historical answers will be archived instead of permanently deleted.", reordered:"Questions reordered.", reorderFailed:"Reorder failed.", loadFailed:"Failed to load questions.", refreshFailed:"Refresh failed.", emoji:"Emoji", star:"Star", yesNo:"Yes / No", multiple:"Multiple choice", text:"Text"
+  }
+} as const;
+
 const typeOptions: { value: FeedbackQuestionType; label: string }[] = [
   { value: "emoji", label: "Emoji" },
   { value: "star", label: "Star" },
@@ -86,6 +99,8 @@ function toForm(question: AdminQuestion): QuestionFormState {
 }
 
 export function QuestionsManager({ initialState }: QuestionsManagerProps) {
+  const { language } = useAdminLanguage();
+  const t = questionCopy[language];
   const [state, setState] = useState(initialState);
   const [form, setForm] = useState<QuestionFormState>(() => ({
     ...emptyForm,
@@ -94,7 +109,7 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
   const [message, setMessage] = useState<string | null>(
     initialState.success
       ? null
-      : initialState.message ?? "Failed to load questions.",
+      : initialState.message ?? t.loadFailed,
   );
   const [isPending, startTransition] = useTransition();
 
@@ -113,7 +128,7 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
       const nextState = await getAdminQuestions();
       setState(nextState);
       setMessage(
-        nextState.success ? null : nextState.message ?? "Refresh failed.",
+        nextState.success ? null : nextState.message ?? t.refreshFailed,
       );
     });
   };
@@ -156,7 +171,7 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
 
   const save = () => {
     if (!business) {
-      setMessage("Business is missing.");
+      setMessage(t.missingBusiness);
       return;
     }
 
@@ -164,7 +179,7 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
       form.type === "multiple_choice" &&
       form.options.filter((option) => option.text.en.trim()).length < 2
     ) {
-      setMessage("Add at least two options with English labels.");
+      setMessage(t.minOptions);
       return;
     }
 
@@ -196,7 +211,7 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
 
   const toggle = (question: AdminQuestion) => {
     if (!business) {
-      setMessage("Business is missing.");
+      setMessage(t.missingBusiness);
       return;
     }
 
@@ -219,7 +234,7 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
 
   const removeQuestion = (question: AdminQuestion) => {
     if (!business || isPending) return;
-    const accepted = window.confirm("Delete this question? Questions with historical answers will be archived instead of permanently deleted.");
+    const accepted = window.confirm(t.confirmDelete);
     if (!accepted) return;
     startTransition(async () => {
       const result = await deleteAdminQuestion(business.id, question.id);
@@ -257,11 +272,11 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
         orderedQuestions,
       );
       if (!result.success) {
-        setMessage(result.message ?? "Reorder failed.");
+        setMessage(result.message ?? t.reorderFailed);
         return;
       }
       setState(result);
-      setMessage("Questions reordered.");
+      setMessage(t.reordered);
     });
   };
 
@@ -271,15 +286,15 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-amber-200/80">Feedback Questions</p>
-          <h1 className="mt-1 text-2xl font-semibold text-white">Question Builder</h1>
+          <p className="text-sm font-medium text-amber-200/80">{t.eyebrow}</p>
+          <h1 className="mt-1 text-2xl font-semibold text-white">{t.title}</h1>
           <p className="mt-2 max-w-2xl text-sm text-white/50">
-            Manage the live customer feedback wizard, including single-select multiple choice questions.
+            {t.subtitle}
           </p>
         </div>
         <div className="flex gap-2">
-          <Badge>Total {state.questions.length}</Badge>
-          <Badge>Active {activeCount}</Badge>
+          <Badge>{t.total} {state.questions.length}</Badge>
+          <Badge>{t.active} {activeCount}</Badge>
         </div>
       </div>
 
@@ -295,21 +310,21 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
             <div>
               <div className="flex items-center gap-2 text-white">
                 <ListChecks className="h-5 w-5" />
-                <h2 className="font-semibold">Live Questions</h2>
+                <h2 className="font-semibold">{t.live}</h2>
               </div>
               <p className="mt-1 text-sm text-white/45">
-                Reorder, edit, activate, or hide questions.
+                {t.liveHint}
               </p>
             </div>
             <Button variant="secondary" onClick={refresh} disabled={isPending}>
-              Refresh
+              {t.refresh}
             </Button>
           </div>
 
           <div className="mt-5 space-y-3">
             {sortedQuestions.length === 0 && (
               <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center text-sm text-white/45">
-                No questions yet.
+                {t.empty}
               </div>
             )}
 
@@ -320,11 +335,11 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
               >
                 <div className="flex flex-wrap items-center gap-2 text-xs text-white/45">
                   <span>#{question.order}</span>
-                  <Badge>{question.active ? "Active" : "Inactive"}</Badge>
+                  <Badge>{question.active ? t.active : t.inactive}</Badge>
                   <Badge>{question.type}</Badge>
-                  <Badge>{question.required ? "Required" : "Optional"}</Badge>
+                  <Badge>{question.required ? t.required : t.optional}</Badge>
                 </div>
-                <p className="mt-3 font-medium text-white">{question.textEn}</p>
+                <p className="mt-3 font-medium text-white">{language === "fa" ? (question.textFa || question.textEn) : language === "ar" ? (question.textAr || question.textEn) : question.textEn}</p>
                 {question.textAr && (
                   <p className="mt-1 text-sm text-white/55" dir="rtl">
                     {question.textAr}
@@ -369,7 +384,7 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
                     onClick={() => setForm(toForm(question))}
                     disabled={isPending}
                   >
-                    Edit
+                    {t.edit}
                   </Button>
                             <Button
             variant="secondary"
@@ -381,7 +396,7 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
             ) : (
               <Eye className="h-4 w-4" />
             )}
-            {question.active ? "Hide" : "Show"}
+            {question.active ? t.hide : t.show}
           </Button>
           <Button
             variant="secondary"
@@ -389,7 +404,7 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
             disabled={isPending}
           >
             <Trash2 className="h-4 w-4" />
-            Delete
+            {t.delete}
           </Button>
                 </div>
               </div>
@@ -401,16 +416,16 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
           <div className="flex items-center gap-2 text-white">
             {form.id ? <Save className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
             <h2 className="font-semibold">
-              {form.id ? "Edit Question" : "Add Question"}
+              {form.id ? t.editQuestion : t.addQuestion}
             </h2>
           </div>
           <p className="mt-1 text-sm text-white/45">
-            English question text is required. Arabic and Persian are optional.
+            {t.formHint}
           </p>
 
           <div className="mt-5 space-y-4">
             <label className="block">
-              <span className="text-sm text-white/45">English</span>
+              <span className="text-sm text-white/45">{t.english}</span>
               <textarea
                 value={form.textEn}
                 onChange={(event) =>
@@ -423,7 +438,7 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
             </label>
 
             <label className="block">
-              <span className="text-sm text-white/45">Arabic</span>
+              <span className="text-sm text-white/45">{t.arabic}</span>
               <textarea
                 value={form.textAr}
                 onChange={(event) =>
@@ -437,7 +452,7 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
             </label>
 
             <label className="block">
-              <span className="text-sm text-white/45">Persian</span>
+              <span className="text-sm text-white/45">{t.persian}</span>
               <textarea
                 value={form.textFa}
                 onChange={(event) =>
@@ -452,7 +467,7 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
 
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="text-sm text-white/45">Type</span>
+                <span className="text-sm text-white/45">{t.type}</span>
                 <select
                   value={form.type}
                   onChange={(event) => {
@@ -472,14 +487,14 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
                 >
                   {typeOptions.map((option) => (
                     <option key={option.value} value={option.value}>
-                      {option.label}
+                      {option.value === "emoji" ? t.emoji : option.value === "star" ? t.star : option.value === "yes_no" ? t.yesNo : option.value === "multiple_choice" ? t.multiple : t.text}
                     </option>
                   ))}
                 </select>
               </label>
 
               <label className="block">
-                <span className="text-sm text-white/45">Order</span>
+                <span className="text-sm text-white/45">{t.order}</span>
                 <input
                   type="number"
                   min={1}
@@ -499,9 +514,9 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
               <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="font-medium text-white">Answer options</p>
+                    <p className="font-medium text-white">{t.options}</p>
                     <p className="mt-1 text-xs text-white/45">
-                      Customer can select one option. English labels are used as the stored reporting value.
+                      {t.optionsHint}
                     </p>
                   </div>
                   <Button variant="secondary" onClick={addOption} disabled={isPending}>
@@ -517,7 +532,7 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
                     >
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-xs font-medium text-white/55">
-                          Option {index + 1}
+                          {t.option} {index + 1}
                         </span>
                         <button
                           type="button"
@@ -533,20 +548,20 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
                         <input
                           value={option.text.en}
                           onChange={(event) => updateOption(option.id, "en", event.target.value)}
-                          placeholder="English option"
+                          placeholder={t.englishOption}
                           className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white outline-none focus:border-amber-200/50"
                         />
                         <input
                           value={option.text.ar}
                           onChange={(event) => updateOption(option.id, "ar", event.target.value)}
-                          placeholder="الخيار بالعربية"
+                          placeholder={t.arabicOption}
                           dir="rtl"
                           className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white outline-none focus:border-amber-200/50"
                         />
                         <input
                           value={option.text.fa}
                           onChange={(event) => updateOption(option.id, "fa", event.target.value)}
-                          placeholder="گزینه فارسی"
+                          placeholder={t.persianOption}
                           dir="rtl"
                           className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white outline-none focus:border-amber-200/50"
                         />
@@ -567,7 +582,7 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
                   }
                   className="h-4 w-4"
                 />
-                <span className="text-sm text-white/70">Required</span>
+                <span className="text-sm text-white/70">{t.required}</span>
               </label>
               <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-black/20 p-4">
                 <input
@@ -578,7 +593,7 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
                   }
                   className="h-4 w-4"
                 />
-                <span className="text-sm text-white/70">Active</span>
+                <span className="text-sm text-white/70">{t.active}</span>
               </label>
             </div>
 
@@ -587,7 +602,7 @@ export function QuestionsManager({ initialState }: QuestionsManagerProps) {
                 onClick={save}
                 disabled={isPending || !form.textEn.trim() || !business}
               >
-                <Save className="h-4 w-4" /> Save
+                <Save className="h-4 w-4" /> {t.save}
               </Button>
               <Button variant="secondary" onClick={resetForm} disabled={isPending}>
                 New

@@ -33,9 +33,9 @@ export const adminThemeOptions: Array<{ value: AdminTheme; iconLabel: string }> 
 export const adminText = {
   fa: {
     dir: "rtl",
-    appName: "Bon Plus OS",
-    appSubtitle: "پنل مدیریت کافه",
-    topLabel: "مرکز کنترل",
+    appName: "Bon Plus",
+    appSubtitle: "عملیات کافه و تجربه مشتری",
+    topLabel: "Business Console",
     globalLanguage: "زبان سایت",
     theme: "تم سایت",
     darkTheme: "تیره",
@@ -106,9 +106,9 @@ export const adminText = {
   },
   ar: {
     dir: "rtl",
-    appName: "Bon Plus OS",
-    appSubtitle: "لوحة إدارة المقهى",
-    topLabel: "مركز التحكم",
+    appName: "Bon Plus",
+    appSubtitle: "عمليات المقهى وتجربة العملاء",
+    topLabel: "Business Console",
     globalLanguage: "لغة الموقع",
     theme: "مظهر الموقع",
     darkTheme: "داكن",
@@ -179,9 +179,9 @@ export const adminText = {
   },
   en: {
     dir: "ltr",
-    appName: "Bon Plus OS",
-    appSubtitle: "Cafe management panel",
-    topLabel: "Control Center",
+    appName: "Bon Plus",
+    appSubtitle: "Café Operations & Customer Experience",
+    topLabel: "Business Console",
     globalLanguage: "Site language",
     theme: "Site theme",
     darkTheme: "Dark",

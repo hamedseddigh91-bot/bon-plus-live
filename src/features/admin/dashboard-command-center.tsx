@@ -194,13 +194,21 @@ export function DashboardCommandCenter({
   };
 
   const buckets = [
-    { label: "1★", value: feedback.feedback.filter((x) => Number(x.overallScore) < 1.5).length },
-    { label: "2★", value: feedback.feedback.filter((x) => Number(x.overallScore) >= 1.5 && Number(x.overallScore) < 2.5).length },
-    { label: "3★", value: feedback.feedback.filter((x) => Number(x.overallScore) >= 2.5 && Number(x.overallScore) < 3.5).length },
-    { label: "4★", value: feedback.feedback.filter((x) => Number(x.overallScore) >= 3.5 && Number(x.overallScore) < 4.5).length },
-    { label: "5★", value: feedback.feedback.filter((x) => Number(x.overallScore) >= 4.5).length },
+    { label: "★5", value: feedback.feedback.filter((x) => Number(x.overallScore) >= 4.5).length, color: "#38bdf8" },
+    { label: "★4", value: feedback.feedback.filter((x) => Number(x.overallScore) >= 3.5 && Number(x.overallScore) < 4.5).length, color: "#2563eb" },
+    { label: "★3", value: feedback.feedback.filter((x) => Number(x.overallScore) >= 2.5 && Number(x.overallScore) < 3.5).length, color: "#8b5cf6" },
+    { label: "★2", value: feedback.feedback.filter((x) => Number(x.overallScore) >= 1.5 && Number(x.overallScore) < 2.5).length, color: "#d946ef" },
+    { label: "★1", value: feedback.feedback.filter((x) => Number(x.overallScore) < 1.5).length, color: "#f59e0b" },
   ];
-  const maxBucket = Math.max(1, ...buckets.map((b) => b.value));
+  const totalRatings = buckets.reduce((sum, bucket) => sum + bucket.value, 0);
+  let ratingCursor = 0;
+  const ratingGradient = totalRatings > 0
+    ? `conic-gradient(${buckets.map((bucket) => {
+        const start = ratingCursor;
+        ratingCursor += (bucket.value / totalRatings) * 100;
+        return `${bucket.color} ${start}% ${ratingCursor}%`;
+      }).join(", ")})`
+    : "conic-gradient(#334155 0 100%)";
   const metrics = [
     { label: t.petty, value: overview?.estimatedPettyCashBalance, icon: WalletCards },
     { label: t.income, value: overview?.closingTotal, icon: CreditCard },
@@ -283,14 +291,29 @@ export function DashboardCommandCenter({
             <h3 className="text-xl font-black text-[color:var(--admin-text)]">{t.feedbackTrend}</h3>
             <Badge variant="amber">{Number(feedback.stats.averageScore || 0).toFixed(1)} ★</Badge>
           </div>
-          <div className="mt-6 flex h-56 items-end gap-3">
-            {buckets.map((b) => (
-              <div key={b.label} className="flex flex-1 flex-col items-center gap-2">
-                <span className="text-sm font-black text-[color:var(--admin-text)]">{b.value}</span>
-                <div className="w-full rounded-t-2xl bg-amber-200/80" style={{ height: `${Math.max(12, (b.value / maxBucket) * 150)}px` }} />
-                <span className="text-xs text-[color:var(--admin-muted)]">{b.label}</span>
+          <div className="mt-6 grid items-center gap-6 md:grid-cols-[220px_1fr]">
+            <div className="relative mx-auto h-52 w-52 rounded-full p-[18px] shadow-[0_20px_60px_rgba(37,99,235,0.18)]" style={{ background: ratingGradient }}>
+              <div className="flex h-full w-full flex-col items-center justify-center rounded-full border border-[color:var(--admin-border)] bg-[color:var(--admin-card)] text-center shadow-[inset_0_0_36px_rgba(37,99,235,0.10)]">
+                <span className="text-xs font-bold uppercase tracking-[0.16em] text-[color:var(--admin-muted)]">Average</span>
+                <span className="mt-1 text-4xl font-black text-[color:var(--admin-text)]">{Number(feedback.stats.averageScore || 0).toFixed(1)}</span>
+                <span className="mt-1 text-sm text-amber-300">★★★★★</span>
               </div>
-            ))}
+            </div>
+            <div className="space-y-3">
+              {buckets.map((bucket) => {
+                const percent = totalRatings > 0 ? Math.round((bucket.value / totalRatings) * 100) : 0;
+                return (
+                  <div key={bucket.label} className="grid grid-cols-[14px_44px_1fr_auto] items-center gap-3">
+                    <span className="h-3 w-3 rounded-full" style={{ backgroundColor: bucket.color }} />
+                    <span className="text-sm font-black text-[color:var(--admin-text)]">{bucket.label}</span>
+                    <div className="h-2 overflow-hidden rounded-full bg-[color:var(--admin-soft)]">
+                      <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${percent}%`, backgroundColor: bucket.color }} />
+                    </div>
+                    <span className="min-w-16 text-right text-sm font-bold text-[color:var(--admin-muted)]">{bucket.value} · {percent}%</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </Card>
         <Card className="p-5">

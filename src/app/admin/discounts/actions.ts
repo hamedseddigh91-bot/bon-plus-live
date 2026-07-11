@@ -7,6 +7,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireAuthenticatedUser, requireCurrentBusinessSlug } from "@/lib/auth-session";
 import { requireModulePermission } from "@/lib/user-permissions";
 import type { FeedbackSegment, RewardType } from "@/types/feedback";
+import { normalizeOmanPhone } from "@/lib/oman-phone";
 
 export type DiscountStatusFilter = "all" | "available" | "used_up" | "expired" | string;
 export type DiscountSourceFilter = "all" | "system" | "manual" | string;
@@ -199,7 +200,8 @@ export async function createManualDiscountCode(input: {
   await requireModulePermission("discounts", "edit");
   try {
     const { actor, supabase, businessId } = await discountContext();
-    const phone = input.phone.trim();
+    const phone = normalizeOmanPhone(input.phone);
+    if (!phone) return { success: false, message: "Enter a valid 8-digit Oman phone number." };
     const { data: customer } = await supabase.from("customers").select("id").eq("business_id", businessId).eq("phone", phone).maybeSingle();
     const code = makeManualCode();
     const expiresAt = new Date(Date.now() + Math.max(1, input.expiryDays || 7) * 86400000).toISOString();

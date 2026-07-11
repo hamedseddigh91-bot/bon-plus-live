@@ -247,14 +247,14 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
           <Card className="p-5">
             <div className="mb-4 flex items-center gap-2 text-white"><TicketPercent className="h-5 w-5 text-amber-200" /><h2 className="text-lg font-semibold">Create discount code</h2></div>
             <div className="grid gap-3 md:grid-cols-2">
-              <input value={createForm.phone} onChange={(e)=>setCreateForm((c)=>({...c,phone:e.target.value}))} placeholder="Phone number" className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" />
+              <div className="flex overflow-hidden rounded-2xl border border-white/10 bg-black/20"><span className="flex items-center border-e border-white/10 px-3 text-sm font-black text-amber-200" dir="ltr">+968</span><input value={createForm.phone} onChange={(e)=>setCreateForm((c)=>({...c,phone:e.target.value.replace(/\D+/g, "").slice(0,8)}))} placeholder="91234567" inputMode="numeric" maxLength={8} dir="ltr" className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none" /></div>
               <select value={createForm.rewardType} onChange={(e)=>setCreateForm((c)=>({...c,rewardType:e.target.value as typeof c.rewardType}))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none"><option value="percentage">Percentage</option><option value="fixed">Fixed OMR</option><option value="free_cafe_item">Free café item</option><option value="free_food_item">Free food item</option></select>
               <input type="number" step="0.001" value={createForm.value} onChange={(e)=>setCreateForm((c)=>({...c,value:e.target.value}))} placeholder="Value / quantity" className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" />
               <select value={createForm.acquisitionSource} onChange={(e)=>setCreateForm((c)=>({...c,acquisitionSource:e.target.value}))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none"><option>Talabat</option><option>Social Media</option><option>Google</option><option>Other</option></select>
               <input type="number" min="1" value={createForm.usageLimit} onChange={(e)=>setCreateForm((c)=>({...c,usageLimit:e.target.value}))} placeholder="Usage limit" className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" />
               <input type="number" min="1" value={createForm.expiryDays} onChange={(e)=>setCreateForm((c)=>({...c,expiryDays:e.target.value}))} placeholder="Expiry days" className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" />
             </div>
-            <Button className="mt-4" onClick={createCode} disabled={isPending || !createForm.phone.trim()}>Create code</Button>
+            <Button className="mt-4" onClick={createCode} disabled={isPending || createForm.phone.length !== 8}>Create code</Button>
           </Card>
 
           <Card className="p-5">

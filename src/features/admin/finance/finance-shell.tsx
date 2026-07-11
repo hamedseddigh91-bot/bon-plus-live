@@ -53,13 +53,6 @@ export function FinanceShell({ active, intro, children }: FinanceShellProps) {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs font-semibold text-white/45">
-            {language === "fa"
-              ? "زبان از بالای سایت کنترل می‌شود"
-              : language === "ar"
-                ? "يتم التحكم باللغة من أعلى الموقع"
-                : "Language is controlled from the site header"}
-          </div>
         </div>
 
         <div className="relative z-10 mt-6 grid gap-3 md:grid-cols-4">

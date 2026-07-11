@@ -5,6 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { BusinessRole } from "@/lib/auth-session";
 import type { LanguageCode } from "@/types/feedback";
 import { requireModulePermission, userHasModulePermission } from "@/lib/user-permissions";
+import { normalizeOmanPhone } from "@/lib/oman-phone";
 
 type AdminLanguage = "fa" | "ar" | "en";
 type AdminTheme = "dark" | "light" | "liquid-dark" | "liquid-light";
@@ -349,7 +350,7 @@ export async function saveCoreControlSettings(input: SaveCoreControlInput): Prom
       accent_color: cleanText(input.accentColor),
       google_maps_review_url: cleanText(input.googleMapsReviewUrl),
       address: cleanText(input.address),
-      mobile_number: cleanText(input.mobileNumber),
+      mobile_number: input.mobileNumber ? normalizeOmanPhone(input.mobileNumber) || null : null,
       po_box: cleanText(input.poBox),
       updated_at: new Date().toISOString(),
     })
@@ -376,7 +377,7 @@ export async function saveCoreControlSettings(input: SaveCoreControlInput): Prom
       currency_code: (cleanText(input.currencyCode) ?? "OMR").toUpperCase().slice(0, 8),
       currency_decimals: clamp(Math.round(numberValue(input.currencyDecimals, 3)), 0, 3),
       vat_percent: clamp(numberValue(input.vatPercent, 0), 0, 100),
-      whatsapp_number: cleanText(input.whatsappNumber),
+      whatsapp_number: input.whatsappNumber ? normalizeOmanPhone(input.whatsappNumber) || null : null,
       invoice_footer_text: cleanText(input.invoiceFooterText),
       invoice_logo_url: cleanText(input.invoiceLogoUrl),
       enable_talabat: Boolean(input.enableTalabat),

@@ -5,16 +5,13 @@ import type {
   SubmitFeedbackResult,
 } from "@/types/feedback";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-
-function normalizePhone(phone: string) {
-  return phone.trim().replace(/\s+/g, "");
-}
+import { normalizeOmanPhone } from "@/lib/oman-phone";
 
 export async function submitFeedback(
   payload: SubmitFeedbackPayload
 ): Promise<SubmitFeedbackResult> {
   const supabase = createSupabaseAdminClient();
-  const phone = normalizePhone(payload.phone);
+  const phone = normalizeOmanPhone(payload.phone);
 
   if (!payload.businessId) {
     return {
@@ -23,10 +20,10 @@ export async function submitFeedback(
     };
   }
 
-  if (phone.length < 5) {
+  if (!phone) {
     return {
       success: false,
-      message: "Phone number is too short.",
+      message: "Enter a valid 8-digit Oman phone number.",
     };
   }
 
@@ -88,4 +85,3 @@ export async function submitFeedback(
 
   return result;
 }
-

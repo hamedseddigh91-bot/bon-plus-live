@@ -450,7 +450,10 @@ export function AppControlCenter({ initialState }: AppControlCenterProps) {
                 <TextInput value={textValue(settings.googleMapsReviewUrl)} onChange={(event) => update("googleMapsReviewUrl", event.target.value)} placeholder="https://g.page/r/..." disabled={!canEdit} />
               </Field>
               <Field label={text.mobileNumber}>
-                <TextInput value={textValue(settings.mobileNumber)} onChange={(event) => update("mobileNumber", event.target.value)} placeholder="+968 ..." disabled={!canEdit} />
+                <div className="flex overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                  <span className="flex items-center border-e border-white/10 px-3 text-sm font-black text-amber-200" dir="ltr">+968</span>
+                  <input value={textValue(settings.mobileNumber).replace(/\D+/g, "").slice(-8)} onChange={(event) => update("mobileNumber", event.target.value.replace(/\D+/g, "").slice(0, 8))} placeholder="91234567" inputMode="numeric" maxLength={8} dir="ltr" disabled={!canEdit} className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm font-semibold text-white outline-none disabled:opacity-50" />
+                </div>
               </Field>
               <Field label={text.poBox}>
                 <TextInput value={textValue(settings.poBox)} onChange={(event) => update("poBox", event.target.value)} disabled={!canEdit} />
@@ -535,7 +538,10 @@ export function AppControlCenter({ initialState }: AppControlCenterProps) {
             </div>
             <div className="space-y-4">
               <Field label={text.whatsapp}>
-                <TextInput value={textValue(settings.whatsappNumber)} onChange={(event) => update("whatsappNumber", event.target.value)} placeholder="+968 ..." disabled={!canEdit} />
+                <div className="flex overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                  <span className="flex items-center border-e border-white/10 px-3 text-sm font-black text-amber-200" dir="ltr">+968</span>
+                  <input value={textValue(settings.whatsappNumber).replace(/\D+/g, "").slice(-8)} onChange={(event) => update("whatsappNumber", event.target.value.replace(/\D+/g, "").slice(0, 8))} placeholder="91234567" inputMode="numeric" maxLength={8} dir="ltr" disabled={!canEdit} className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm font-semibold text-white outline-none disabled:opacity-50" />
+                </div>
               </Field>
               <Field label={text.invoiceLogo}>
                 <TextInput value={textValue(settings.invoiceLogoUrl)} onChange={(event) => update("invoiceLogoUrl", event.target.value)} placeholder="https://..." disabled={!canEdit} />

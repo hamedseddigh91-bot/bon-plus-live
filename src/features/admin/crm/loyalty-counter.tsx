@@ -100,9 +100,9 @@ export function LoyaltyCounter({ initialState }: { initialState: LoyaltyCounterS
       <p className="mt-1 text-sm text-[color:var(--admin-muted)]">{copy.subtitle}</p>
       {message && <p className="mt-3 text-sm text-amber-200">{message}</p>}
       <div className="mt-4 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-        <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder={copy.phone} className="rounded-2xl border border-[color:var(--admin-border)] bg-black/10 px-4 py-3 text-sm text-[color:var(--admin-text)] outline-none"/>
+        <div className="flex overflow-hidden rounded-2xl border border-[color:var(--admin-border)] bg-black/10"><span className="flex items-center border-e border-[color:var(--admin-border)] px-3 text-sm font-black text-amber-300" dir="ltr">+968</span><input value={phone} onChange={e=>setPhone(e.target.value.replace(/\D+/g, "").slice(0,8))} placeholder="91234567" inputMode="numeric" maxLength={8} dir="ltr" className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-[color:var(--admin-text)] outline-none"/></div>
         <select value={ruleId} onChange={e=>setRuleId(e.target.value)} className="rounded-2xl border border-[color:var(--admin-border)] bg-black/10 px-4 py-3 text-sm text-[color:var(--admin-text)] outline-none"><option value="">{copy.rule}</option>{initialState.rules.map(r=><option key={r.id} value={r.id}>{ruleDisplayName(r, language)} · {r.thresholdCount}</option>)}</select>
-        <Button onClick={submit} disabled={pending||!phone||!ruleId}><PlusCircle className="h-4 w-4"/>{copy.record}</Button>
+        <Button onClick={submit} disabled={pending||phone.length!==8||!ruleId}><PlusCircle className="h-4 w-4"/>{copy.record}</Button>
       </div>
       {result?.success && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-4"><div><p className="font-black text-[color:var(--admin-text)]">{result.rule.name}</p><p className="text-sm text-[color:var(--admin-muted)]">{result.count} / {result.threshold}{result.rewardReached?` · ${copy.rewardReady}`:""}</p></div><Button onClick={sendResult}><MessageCircle className="h-4 w-4"/>{copy.whatsapp}</Button></div>}
     </Card>

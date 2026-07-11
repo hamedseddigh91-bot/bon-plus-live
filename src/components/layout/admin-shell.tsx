@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import { signOut } from "@/app/login/actions";
 import type { BusinessListItem } from "@/app/admin/business/actions";
-import { BusinessSwitcher } from "@/components/layout/business-switcher";
 import {
   AdminLanguageProvider,
   adminLanguageOptions,
@@ -293,8 +292,6 @@ function pageKeyFromPath(pathname: string) {
 
 function AdminShellInner({
   children,
-  businesses = [],
-  currentBusinessSlug = "",
   businessLogoUrl = null,
   role = "owner",
   userEmail = "",
@@ -309,6 +306,7 @@ function AdminShellInner({
   const [desktopNavOpen, setDesktopNavOpen] = useState(true);
   const [desktopNavPreferenceReady, setDesktopNavPreferenceReady] = useState(false);
   const [permissionNoticeOpen, setPermissionNoticeOpen] = useState(false);
+  const [routeTransitioning, setRouteTransitioning] = useState(false);
 
   useEffect(() => {
     try {
@@ -331,6 +329,23 @@ function AdminShellInner({
       // Sidebar toggle still works for the current page without persistence.
     }
   }, [desktopNavOpen, desktopNavPreferenceReady]);
+
+  useEffect(() => {
+    setRouteTransitioning(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    const onClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;
+      if (!anchor || event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const url = new URL(anchor.href, window.location.href);
+      if (url.origin !== window.location.origin || !url.pathname.startsWith("/admin") || url.pathname === pathname) return;
+      setRouteTransitioning(true);
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, [pathname]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -379,6 +394,21 @@ function AdminShellInner({
   const currentMeta =
     pageMetaByPath.find((item) => item.test(pathname)) ?? pageMetaByPath[0];
   const currentPageKey = pageKeyFromPath(pathname);
+  const displayName = (userEmail.split("@")[0] || "Bon Plus User")
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+  const roleLabel =
+    role === "owner"
+      ? language === "fa" ? "مالک و مدیر سیستم" : language === "ar" ? "المالك ومدير النظام" : "Owner & Administrator"
+      : role === "manager"
+        ? language === "fa" ? "مدیر" : language === "ar" ? "مدير" : "Manager"
+        : role === "accountant"
+          ? language === "fa" ? "حسابدار" : language === "ar" ? "محاسب" : "Accountant"
+          : role === "staff"
+            ? language === "fa" ? "کارمند" : language === "ar" ? "موظف" : "Staff"
+            : language === "fa" ? "فقط مشاهده" : language === "ar" ? "عرض فقط" : "View only";
 
   const warmRoute = (href: string) => {
     if (href !== pathname) router.prefetch(href);
@@ -396,6 +426,11 @@ function AdminShellInner({
         fontFamily: language === "fa" ? "var(--font-persian)" : undefined,
       }}
     >
+      {routeTransitioning && (
+        <div className="fixed inset-x-0 top-0 z-[140] h-1 overflow-hidden bg-white/5" aria-hidden="true">
+          <div className="bp-route-progress h-full w-1/3 rounded-full bg-gradient-to-r from-cyan-300 via-blue-400 to-violet-400 shadow-[0_0_18px_rgba(96,165,250,0.8)]" />
+        </div>
+      )}
       {permissionNoticeOpen && (
         <div className="fixed inset-x-0 top-5 z-[120] flex justify-center px-4" role="status" aria-live="polite">
           <div className="flex w-full max-w-md items-start gap-3 rounded-2xl border border-amber-300/25 bg-[#17130b]/95 px-4 py-3 text-amber-50 shadow-[0_18px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl">
@@ -484,31 +519,12 @@ function AdminShellInner({
               </button>
             </div>
 
-            {businesses.length > 0 && (
-              <div className="mb-4 overflow-hidden rounded-[1.25rem] border border-white/10 bg-white/[0.04] p-2">
-                <BusinessSwitcher
-                  businesses={businesses}
-                  currentSlug={currentBusinessSlug}
-                />
-              </div>
-            )}
-
             <div
               className={`mb-4 rounded-[1.25rem] border px-4 py-3 ${isLightTheme ? "border-slate-200 bg-slate-50" : "border-white/10 bg-white/[0.045]"}`}
             >
-              <p
-                className={`truncate text-xs ${isLightTheme ? "text-slate-500" : "text-white/40"}`}
-              >
-                {userEmail}
-              </p>
-              <div className="mt-2 flex items-center justify-between gap-3">
-                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-200">
-                  {role.replace("_", " ")}
-                </p>
-                <span className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-2.5 py-1 text-[10px] font-bold text-emerald-100">
-                  {t.ready}
-                </span>
-              </div>
+              <p className={`truncate text-sm font-black ${isLightTheme ? "text-slate-950" : "text-white"}`}>{displayName}</p>
+              <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.12em] text-amber-200">{roleLabel}</p>
+              <p className={`mt-2 truncate text-xs ${isLightTheme ? "text-slate-500" : "text-white/40"}`}>{userEmail}</p>
             </div>
 
             <nav className="space-y-1 pb-8">
@@ -621,29 +637,10 @@ function AdminShellInner({
           </div>
         </Link>
 
-        {businesses.length > 0 && (
-          <div className="mb-4 overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.04] p-2">
-            <BusinessSwitcher
-              businesses={businesses}
-              currentSlug={currentBusinessSlug}
-            />
-          </div>
-        )}
-
-        <div className="mb-4 rounded-[1.35rem] border border-white/10 bg-white/[0.045] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-          <p
-            className={`truncate text-xs ${isLightTheme ? "text-slate-500" : "text-white/40"}`}
-          >
-            {userEmail}
-          </p>
-          <div className="mt-2 flex items-center justify-between gap-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-200">
-              {role.replace("_", " ")}
-            </p>
-            <span className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-2.5 py-1 text-[10px] font-bold text-emerald-100">
-              {t.ready}
-            </span>
-          </div>
+        <div className="mb-4 rounded-[1.35rem] border border-white/10 bg-white/[0.045] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+          <p className="truncate text-sm font-black text-white">{displayName}</p>
+          <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.12em] text-amber-200">{roleLabel}</p>
+          <p className={`mt-2 truncate text-xs ${isLightTheme ? "text-slate-500" : "text-white/40"}`}>{userEmail}</p>
         </div>
 
         <nav className="space-y-1 pb-8">
@@ -747,7 +744,7 @@ function AdminShellInner({
             </button>
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:justify-between lg:gap-4">
+          <div className="grid gap-3 lg:grid-cols-[minmax(280px,1fr)_auto] lg:items-start lg:justify-between lg:gap-4" dir="ltr">
             <div className="flex min-w-0 items-start gap-3" dir="ltr">
               <button
                 type="button"
@@ -776,32 +773,31 @@ function AdminShellInner({
               </button>
 
               <div
-                className="min-w-0 overflow-hidden lg:max-w-[calc(100vw-760px)] xl:max-w-[calc(100vw-820px)] 2xl:max-w-[760px]"
+                className="min-w-0 flex-1"
                 dir={dir}
               >
               <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-amber-200/75">
                 <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_18px_rgba(110,231,183,0.8)]" />
                 {t.topLabel}
               </div>
-              <h1 className="mt-1 truncate text-2xl font-black tracking-[-0.04em] text-white sm:text-3xl">
+              <h1 className="mt-1 text-2xl font-black leading-tight tracking-[-0.04em] text-white sm:text-3xl">
                 {t[currentMeta.titleKey]}
               </h1>
-              <p className="mt-1 max-w-full truncate text-sm text-white/42">
+              <p className="mt-1 max-w-3xl text-sm leading-5 text-white/42">
                 {t[currentMeta.subtitleKey]}
               </p>
               </div>
             </div>
 
-            <div className="-mx-1 flex w-full min-w-0 shrink-0 items-center gap-2 overflow-x-auto px-1 pb-1 lg:mx-0 lg:w-auto lg:flex-wrap lg:justify-end lg:overflow-visible lg:pb-0 xl:flex-nowrap 2xl:max-w-none">
+            <div className="-mx-1 flex w-full min-w-0 shrink-0 items-center gap-2 overflow-x-auto px-1 pb-1 lg:mx-0 lg:w-auto lg:flex-wrap lg:justify-end lg:overflow-visible lg:pb-0 xl:flex-nowrap 2xl:max-w-none" dir="ltr">
               <div className="hidden h-11 min-w-[220px] items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.055] px-3 text-white/40 2xl:flex">
                 <Search className="h-4 w-4" />
                 <span className="text-sm">{t.searchPlaceholder}</span>
               </div>
 
               <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-white/10 bg-white/[0.055] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                <div className="hidden items-center gap-1 px-2 text-xs font-semibold text-white/45 sm:flex">
+                <div className="flex h-9 w-9 items-center justify-center text-white/45" title={t.globalLanguage}>
                   <Languages className="h-4 w-4" />
-                  {t.globalLanguage}
                 </div>
                 {adminLanguageOptions.map((item) => (
                   <button
@@ -821,7 +817,7 @@ function AdminShellInner({
               </div>
 
               <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-white/10 bg-white/[0.055] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                <div className="hidden items-center gap-1 px-2 text-xs font-semibold text-white/45 sm:flex">
+                <div className="flex h-9 w-9 items-center justify-center text-white/45" title={t.theme}>
                   {theme === "dark" ? (
                     <Moon className="h-4 w-4" />
                   ) : theme === "light" ? (
@@ -829,7 +825,6 @@ function AdminShellInner({
                   ) : (
                     <Sparkles className="h-4 w-4" />
                   )}
-                  {t.theme}
                 </div>
                 {adminThemeOptions.map((item) => {
                   const Icon = item.value === "dark" ? Moon : item.value === "light" ? Sun : Sparkles;

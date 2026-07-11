@@ -1432,12 +1432,18 @@ export function OperationsDashboard({ initialState }: OperationsDashboardProps) 
                         className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none [color-scheme:dark] focus:border-amber-200/50"
                         placeholder={t.supplierName}
                       />
-                      <input
-                        value={supplierForm.phone}
-                        onChange={(event) => setSupplierForm((current) => ({ ...current, phone: event.target.value }))}
-                        className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none [color-scheme:dark] focus:border-amber-200/50"
-                        placeholder={t.phone}
-                      />
+                      <div className="flex overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                        <span className="flex items-center border-e border-white/10 px-3 text-sm font-black text-amber-200" dir="ltr">+968</span>
+                        <input
+                          value={supplierForm.phone}
+                          onChange={(event) => setSupplierForm((current) => ({ ...current, phone: event.target.value.replace(/\D+/g, "").slice(0, 8) }))}
+                          className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none [color-scheme:dark]"
+                          placeholder="91234567"
+                          inputMode="numeric"
+                          maxLength={8}
+                          dir="ltr"
+                        />
+                      </div>
                       <input
                         value={supplierForm.email}
                         onChange={(event) => setSupplierForm((current) => ({ ...current, email: event.target.value }))}

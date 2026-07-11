@@ -105,7 +105,7 @@ export function FeedbackWizard({
 
   const canGoNext = useMemo(() => {
     if (step === 0) return Boolean(language);
-    if (step === 1) return phone.trim().length >= 5;
+    if (step === 1) return phone.replace(/\D+/g, "").length === 8;
     if (!currentQuestion) return true;
     if (!currentQuestion.required) return true;
     if (currentQuestion.type === "text") return true;
@@ -278,13 +278,18 @@ export function FeedbackWizard({
                 <Phone className="h-5 w-5" />
                 <h2 className="text-xl font-semibold">Enter your phone number</h2>
               </div>
-              <input
-                value={phone}
-                onChange={(event) => setPhone(event.target.value)}
-                placeholder="+968 ..."
-                inputMode="tel"
-                className="mt-5 w-full rounded-3xl border border-white/10 bg-black/20 px-5 py-4 text-lg text-white outline-none transition placeholder:text-white/30 focus:border-amber-200/50"
-              />
+              <div className="mt-5 flex overflow-hidden rounded-3xl border border-white/10 bg-black/20 focus-within:border-amber-200/50">
+                <span className="flex items-center border-e border-white/10 px-4 text-lg font-black text-amber-200" dir="ltr">+968</span>
+                <input
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value.replace(/\D+/g, "").slice(0, 8))}
+                  placeholder="91234567"
+                  inputMode="numeric"
+                  maxLength={8}
+                  className="min-w-0 flex-1 bg-transparent px-5 py-4 text-lg text-white outline-none placeholder:text-white/30"
+                  dir="ltr"
+                />
+              </div>
               <p className="mt-3 text-sm text-white/45">
                 Your number helps us track feedback history and send rewards.
               </p>

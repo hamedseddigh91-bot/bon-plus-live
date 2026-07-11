@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireAuthenticatedUser, requireCurrentBusinessSlug } from "@/lib/auth-session";
 import { requireModulePermission } from "@/lib/user-permissions";
+import { normalizeOmanPhone } from "@/lib/oman-phone";
 
 export type LoyaltyRuleRow = {
   id: string;
@@ -116,8 +117,8 @@ export async function recordLoyaltyPurchase(input: { phone: string; ruleId: stri
   await requireModulePermission("loyalty", "edit");
   try {
     const { supabase, businessId } = await context();
-    const phone = input.phone.trim();
-    if (!phone) return { success: false, message: "Phone is required." };
+    const phone = normalizeOmanPhone(input.phone);
+    if (!phone) return { success: false, message: "Enter a valid 8-digit Oman phone number." };
 
     const { data: rule, error: ruleError } = await supabase.from("loyalty_program_rules").select("*").eq("business_id", businessId).eq("id", input.ruleId).eq("is_active", true).single();
     if (ruleError || !rule) return { success: false, message: ruleError?.message ?? "Rule not found." };
