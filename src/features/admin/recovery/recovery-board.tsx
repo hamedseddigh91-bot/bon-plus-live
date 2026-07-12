@@ -3,6 +3,7 @@
 import { getWhatsAppTemplateText } from "@/app/admin/settings/whatsapp-messages/actions";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   CheckCircle2,
   ClipboardList,
@@ -78,6 +79,8 @@ function priorityVariant(priority: string) {
 
 export function RecoveryBoard({ initialState }: RecoveryBoardProps) {
   const { language } = useAdminLanguage();
+  const searchParams = useSearchParams();
+  const focusId = searchParams.get("focus");
   const [state, setState] = useState(initialState);
   const [status, setStatus] = useState<RecoveryBoardStatusFilter>("all");
   const [priority, setPriority] = useState<RecoveryBoardPriorityFilter>("all");
@@ -151,6 +154,15 @@ export function RecoveryBoard({ initialState }: RecoveryBoardProps) {
     });
   };
 
+
+  useEffect(() => {
+    if (!focusId || !state.cases.some((item) => item.id === focusId)) return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(`recovery-${focusId}`)?.scrollIntoView({ block: "center", behavior: "auto" });
+      if (selectedId !== focusId) openDetail(focusId);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusId, state.cases, selectedId]);
 
   const openWhatsAppComposer = async () => {
     if (!detail) return;
@@ -316,10 +328,11 @@ export function RecoveryBoard({ initialState }: RecoveryBoardProps) {
 
               {state.cases.map((item) => (
                 <button
+                  id={`recovery-${item.id}`}
                   key={item.id}
                   onClick={() => openDetail(item.id)}
                   className={`grid min-h-[48px] w-full grid-cols-[minmax(110px,1fr)_90px_110px_94px_92px_28px] items-center gap-2 px-4 py-1.5 text-left hover:bg-white/[0.04] ${
-                    selectedId === item.id ? "bg-amber-200/[0.06]" : ""
+                    selectedId === item.id || focusId === item.id ? "bg-amber-200/[0.08] ring-1 ring-inset ring-amber-300/35" : ""
                   }`}
                 >
                   <p className="truncate text-sm font-semibold text-white">{item.phone}</p>

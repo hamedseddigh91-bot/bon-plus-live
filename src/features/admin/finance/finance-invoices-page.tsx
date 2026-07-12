@@ -2,7 +2,8 @@
 
 import { getWhatsAppTemplateText } from "@/app/admin/settings/whatsapp-messages/actions";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import { Download, Eye, FileText, LoaderCircle, MessageCircle, PackagePlus, Printer, Save, Search, X } from "lucide-react";
 import type { FinanceEntry, OperationDocument, OperationSupplier, OperationsPageState } from "@/app/admin/operations/actions";
 import {
@@ -129,6 +130,9 @@ function printHtml(title: string, body: string) {
 }
 
 export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) {
+  const searchParams = useSearchParams();
+  const focusId = searchParams.get("focus");
+  const requestedStatus = searchParams.get("status");
   const [message, setMessage] = useState<string | null>(initialState.message ?? null);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [invoiceFiles, setInvoiceFiles] = useState<File[]>([]);
@@ -162,6 +166,11 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
   const [selectedDocumentEntryId, setSelectedDocumentEntryId] = useState("");
   const [search, setSearch] = useState(""); const [supplierSearch, setSupplierSearch] = useState(""); const [supplierManageSearch, setSupplierManageSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  useEffect(() => {
+    if (requestedStatus === "unpaid" || requestedStatus === "paid" || requestedStatus === "missing_docs") {
+      setStatusFilter(requestedStatus);
+    }
+  }, [requestedStatus]);
   const [supplierFilter, setSupplierFilter] = useState("all");
   const [usageFilter, setUsageFilter] = useState("all");
   const [isPending, startTransition] = useTransition();
@@ -202,6 +211,14 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
         return b.entryDate.localeCompare(a.entryDate) || b.createdAt.localeCompare(a.createdAt);
       });
   }, [initialState.documents, invoices, search, statusFilter, supplierFilter, usageFilter]);
+
+  useEffect(() => {
+    if (!focusId || !filteredInvoices.some((entry) => entry.id === focusId)) return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(`invoice-${focusId}`)?.scrollIntoView({ block: "center", behavior: "auto" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusId, filteredInvoices]);
 
   const paidTotal = invoices.filter((entry) => entry.paymentStatus === "paid").reduce((sum, entry) => sum + numberValue(entry.amount), 0);
   const unpaidTotal = invoices.filter((entry) => entry.paymentStatus !== "paid").reduce((sum, entry) => sum + numberValue(entry.amount), 0);
@@ -689,8 +706,8 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
                   </select>
                 </div>
 
-                <div className="mt-5 overflow-hidden rounded-3xl border border-white/10">
-                  <table className="w-full text-left text-sm">
+                <div className="bp-table-scroll mt-5 rounded-3xl border border-white/10">
+                  <table className="min-w-[1040px] w-full text-left text-sm">
                     <thead className="bg-white/[0.04] text-white/40">
                       <tr>
                         <th className="px-4 py-3">{t.date}</th>
@@ -706,7 +723,7 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
                         const docs = documentsFor(initialState.documents, "finance_entry", entry.id);
 
                         return (
-                          <tr key={entry.id} className="text-white/70">
+                          <tr id={`invoice-${entry.id}`} key={entry.id} className={`scroll-mt-32 text-white/70 ${focusId === entry.id ? "bg-amber-300/[0.12] ring-1 ring-inset ring-amber-300/35" : ""}`}>
                             <td className="px-4 py-4">{entry.entryDate}</td>
                             <td className="px-4 py-4">
                               <p className="font-semibold text-white">{entry.title || `${entry.supplierName ?? "Invoice"} — ${entry.entryDate}`}</p>

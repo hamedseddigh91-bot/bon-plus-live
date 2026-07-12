@@ -1,7 +1,11 @@
 "use server";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { requireModulePermission } from "@/lib/user-permissions";
+import {
+  getCurrentUserPermissionState,
+  permissionStateAllows,
+  requireModulePermission,
+} from "@/lib/user-permissions";
 import { requireAuthenticatedUser, requireCurrentBusinessSlug } from "@/lib/auth-session";
 
 export type ActionCenterItem = {
@@ -12,6 +16,7 @@ export type ActionCenterItem = {
   priority: "urgent" | "high" | "normal";
   href: string;
   createdAt?: string | null;
+  dueAt?: string | null;
 };
 
 export type ActionCenterState = {
@@ -46,8 +51,11 @@ function daysLeft(value: string | null) {
 }
 
 export async function getActionCenterState(): Promise<ActionCenterState> {
-  await requireModulePermission("action_center", "view");
+  const actorContext = await requireModulePermission("action_center", "view");
   try {
+    const permissionState = await getCurrentUserPermissionState(actorContext);
+    const canView = (moduleKey: string) =>
+      permissionStateAllows(actorContext, permissionState, moduleKey, "view");
     const { supabase, businessId } = await context();
     const monthStart = new Date();
     monthStart.setDate(1);
@@ -69,63 +77,110 @@ export async function getActionCenterState(): Promise<ActionCenterState> {
     const operations: ActionCenterItem[] = [];
 
     for (const row of feedbacks.data ?? []) {
-      if (row.workflow_stage === "new") {
-        crm.push({ id: row.id, title: "Review new feedback", detail: `${row.phone ?? "Customer"} · ${row.overall_score ?? "—"}/5 · ${((row.customer_sources as unknown as { name?: string } | null)?.name ?? "Feedback")}`, category: "crm", priority: Number(row.overall_score ?? 5) <= 2 ? "urgent" : "normal", href: "/admin/crm/feedback", createdAt: row.created_at });
+      if (row.workflow_stage === "new" && canView("feedback")) {
+        crm.push({
+          id: row.id,
+          title: "Review new feedback",
+          detail: `${row.phone ?? "Customer"} · ${row.overall_score ?? "—"}/5 · ${((row.customer_sources as unknown as { name?: string } | null)?.name ?? "Feedback")}`,
+          category: "crm",
+          priority: Number(row.overall_score ?? 5) <= 2 ? "urgent" : "normal",
+          href: `/admin/crm/feedback?stage=new&focus=${encodeURIComponent(row.id)}`,
+          createdAt: row.created_at,
+        });
       }
     }
 
-    for (const row of recoveries.data ?? []) {
-      crm.push({ id: row.id, title: "Open customer follow-up", detail: `${row.phone} · ${row.complaint_reason ?? "Needs follow-up"}`, category: "crm", priority: row.priority === "urgent" || row.priority === "high" ? "urgent" : "high", href: "/admin/crm/follow-ups", createdAt: row.updated_at });
-    }
-
-    for (const row of discounts.data ?? []) {
-      const remaining = Number(row.usage_limit ?? 0) - Number(row.used_count ?? 0);
-      const left = daysLeft(row.expires_at);
-      const finished = row.status !== "active" || remaining <= 0 || left < 0;
-      if (finished) continue;
-      const customerRel = row.customers as unknown as { phone?: string } | null;
-      loyalty.push({ id: row.id, title: left <= 3 ? "Discount code expiry reminder" : "Discount code follow-up", detail: `${row.code} · ${customerRel?.phone ?? "No phone"} · ${Number.isFinite(left) ? `${left} day(s) left` : "No expiry"}`, category: "loyalty", priority: left <= 3 ? "urgent" : "normal", href: "/admin/crm/discounts" });
-    }
-
-
-    for (const row of loyaltyCounters.data ?? []) {
-      const rule = row.loyalty_program_rules as unknown as { name?: string; reward_label?: string } | null;
-      loyalty.push({
-        id: row.id,
-        title: "Loyalty reward ready",
-        detail: `${row.phone} · ${rule?.name ?? "Loyalty"} · ${Number(row.pending_rewards ?? 0)} reward(s) ready`,
-        category: "loyalty",
-        priority: "high",
-        href: "/admin/crm/loyalty",
-      });
-    }
-
-    for (const row of invoices.data ?? []) {
-      const overdue = new Date(row.entry_date).getTime() < monthStart.getTime();
-      finance.push({ id: row.id, title: overdue ? "Previous month unpaid invoice" : "Unpaid invoice", detail: `${row.title} · ${Number(row.amount ?? 0).toFixed(3)} OMR · ${row.entry_date}`, category: "finance", priority: overdue ? "urgent" : "high", href: "/admin/finance/invoices", createdAt: row.entry_date });
-    }
-
-
-    for (const row of recipes.data ?? []) {
-      const components = Array.isArray(row.components) ? row.components : [];
-      if (row.item_type === "menu_item" && components.length === 0) {
-        costing.push({ id: row.id, title: "Menu item missing recipe", detail: row.name, category: "costing", priority: "high", href: "/admin/finance/costing" });
+    if (canView("followups")) {
+      for (const row of recoveries.data ?? []) {
+        crm.push({
+          id: row.id,
+          title: "Open customer follow-up",
+          detail: `${row.phone} · ${row.complaint_reason ?? "Needs follow-up"}`,
+          category: "crm",
+          priority: row.priority === "urgent" || row.priority === "high" ? "urgent" : "high",
+          href: `/admin/crm/follow-ups?focus=${encodeURIComponent(row.id)}`,
+          createdAt: row.updated_at,
+        });
       }
-      if (row.item_type === "ingredient" && (Number(row.purchase_price) <= 0 || Number(row.purchase_qty) <= 0)) {
-        costing.push({ id: row.id, title: "Ingredient missing valid purchase cost", detail: row.name, category: "costing", priority: "high", href: "/admin/finance/costing" });
+    }
+
+    if (canView("discounts")) {
+      for (const row of discounts.data ?? []) {
+        const remaining = Number(row.usage_limit ?? 0) - Number(row.used_count ?? 0);
+        const left = daysLeft(row.expires_at);
+        const finished = row.status !== "active" || remaining <= 0 || left < 0;
+        if (finished) continue;
+        const customerRel = row.customers as unknown as { phone?: string } | null;
+        const section = left <= 3 ? "urgent" : "active";
+        loyalty.push({
+          id: row.id,
+          title: left <= 3 ? "Discount code expiry reminder" : "Discount code follow-up",
+          detail: `${row.code} · ${customerRel?.phone ?? "No phone"} · ${Number.isFinite(left) ? `${left} day(s) left` : "No expiry"}`,
+          category: "loyalty",
+          priority: left <= 3 ? "urgent" : "normal",
+          href: `/admin/crm/discounts?section=${section}&focus=${encodeURIComponent(row.id)}`,
+          dueAt: row.expires_at,
+        });
       }
-      if (row.item_type === "prep_item" && (components.length === 0 || Number(row.purchase_qty) <= 0)) {
-        costing.push({ id: row.id, title: "Prep item missing recipe or output quantity", detail: row.name, category: "costing", priority: "high", href: "/admin/finance/costing" });
+    }
+
+
+    if (canView("loyalty")) {
+      for (const row of loyaltyCounters.data ?? []) {
+        const rule = row.loyalty_program_rules as unknown as { name?: string; reward_label?: string } | null;
+        loyalty.push({
+          id: row.id,
+          title: "Loyalty reward ready",
+          detail: `${row.phone} · ${rule?.name ?? "Loyalty"} · ${Number(row.pending_rewards ?? 0)} reward(s) ready`,
+          category: "loyalty",
+          priority: "high",
+          href: `/admin/crm/loyalty?focus=${encodeURIComponent(row.id)}`,
+        });
       }
-      if (row.item_type === "menu_item" && Number(row.sale_price) <= 0) {
-        costing.push({ id: row.id, title: "Menu item missing sale price", detail: row.name, category: "costing", priority: "normal", href: "/admin/finance/costing" });
+    }
+
+    if (canView("finance_invoices")) {
+      for (const row of invoices.data ?? []) {
+        const overdue = new Date(row.entry_date).getTime() < monthStart.getTime();
+        finance.push({
+          id: row.id,
+          title: overdue ? "Previous month unpaid invoice" : "Unpaid invoice",
+          detail: `${row.title} · ${Number(row.amount ?? 0).toFixed(3)} OMR · ${row.entry_date}`,
+          category: "finance",
+          priority: overdue ? "urgent" : "high",
+          href: `/admin/finance/invoices?status=unpaid&focus=${encodeURIComponent(row.id)}`,
+          createdAt: row.entry_date,
+        });
+      }
+    }
+
+
+    if (canView("costing")) {
+      for (const row of recipes.data ?? []) {
+        const components = Array.isArray(row.components) ? row.components : [];
+        const href = `/admin/finance/costing?type=${encodeURIComponent(row.item_type)}&focus=${encodeURIComponent(row.id)}`;
+        if (row.item_type === "menu_item" && components.length === 0) {
+          costing.push({ id: row.id, title: "Menu item missing recipe", detail: row.name, category: "costing", priority: "high", href });
+        }
+        if (row.item_type === "ingredient" && (Number(row.purchase_price) <= 0 || Number(row.purchase_qty) <= 0)) {
+          costing.push({ id: row.id, title: "Ingredient missing valid purchase cost", detail: row.name, category: "costing", priority: "high", href });
+        }
+        if (row.item_type === "prep_item" && (components.length === 0 || Number(row.purchase_qty) <= 0)) {
+          costing.push({ id: row.id, title: "Prep item missing recipe or output quantity", detail: row.name, category: "costing", priority: "high", href });
+        }
+        if (row.item_type === "menu_item" && Number(row.sale_price) <= 0) {
+          costing.push({ id: row.id, title: "Menu item missing sale price", detail: row.name, category: "costing", priority: "normal", href });
+        }
       }
     }
 
     const all = [...crm, ...loyalty, ...finance, ...operations, ...costing];
     const urgent = all.filter((item) => item.priority === "urgent");
     const today = new Date().toISOString().slice(0, 10);
-    const dueToday = all.filter((item) => item.createdAt?.slice(0, 10) === today && item.priority !== "urgent");
+    const dueToday = all.filter((item) => {
+      const date = item.dueAt ?? item.createdAt;
+      return date?.slice(0, 10) === today && item.priority !== "urgent";
+    });
 
     return { success: true, urgent, dueToday, crm, loyalty, finance, operations, costing };
   } catch (error) {

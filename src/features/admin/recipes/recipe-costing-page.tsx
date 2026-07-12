@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import { Calculator, Download, Package, Plus, Printer, Save, Search } from "lucide-react";
 import type { RecipeComponent, RecipeCostingItem, RecipeCostingState } from "@/app/admin/recipes/actions";
 import { saveRecipeCostingItem } from "@/app/admin/recipes/actions";
@@ -253,6 +254,9 @@ function emptyMenuForm() {
 }
 
 export function RecipeCostingPage({ initialState }: RecipeCostingPageProps) {
+  const searchParams = useSearchParams();
+  const focusId = searchParams.get("focus");
+  const focusType = searchParams.get("type");
   const { language, dir } = useAdminLanguage();
   const t = text[language];
   const [message, setMessage] = useState<string | null>(initialState.message ?? null);
@@ -463,6 +467,15 @@ export function RecipeCostingPage({ initialState }: RecipeCostingPageProps) {
     URL.revokeObjectURL(url);
   };
 
+  useEffect(() => {
+    if (!focusId) return;
+    const prefix = focusType === "ingredient" ? "ingredient" : focusType === "prep_item" ? "prep" : "menu";
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(`${prefix}-${focusId}`)?.scrollIntoView({ block: "center", behavior: "auto" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusId, focusType]);
+
   return (
     <div
       className="space-y-6"
@@ -604,8 +617,8 @@ export function RecipeCostingPage({ initialState }: RecipeCostingPageProps) {
           </div>
         </div>
 
-        <div className="mt-5 overflow-hidden rounded-3xl border border-white/10">
-          <table className="w-full text-left text-sm">
+        <div className="bp-table-scroll mt-5 rounded-3xl border border-white/10">
+          <table className="min-w-[1040px] w-full text-left text-sm">
             <thead className="bg-white/[0.04] text-white/40">
               <tr>
                 <th className="px-4 py-3">{t.name}</th>
@@ -624,7 +637,7 @@ export function RecipeCostingPage({ initialState }: RecipeCostingPageProps) {
                 const item = initialState.menuItems.find((menuItem) => menuItem.id === row.itemId);
 
                 return (
-                  <tr key={row.itemId} className="text-white/70">
+                  <tr id={`menu-${row.itemId}`} key={row.itemId} className={`scroll-mt-32 text-white/70 ${focusId === row.itemId ? "bg-amber-300/[0.12] ring-1 ring-inset ring-amber-300/35" : ""}`}>
                     <td className="px-4 py-4 font-bold text-white">{row.name}</td>
                     <td className="px-4 py-4">{row.category}</td>
                     <td className="px-4 py-4">{money(row.recipeCost)}</td>
@@ -651,7 +664,7 @@ export function RecipeCostingPage({ initialState }: RecipeCostingPageProps) {
           <div className="mt-4 flex items-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-4 py-3"><Search className="h-4 w-4 text-white/35" /><input value={ingredientSearch} onChange={(e) => setIngredientSearch(e.target.value)} placeholder={t.search} className="w-full bg-transparent text-sm text-white outline-none" /></div>
           <div className="mt-5 space-y-2">
             {filteredIngredients.map((item) => (
-              <div key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+              <div id={`ingredient-${item.id}`} key={item.id} className={`scroll-mt-32 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 ${focusId === item.id ? "ring-2 ring-amber-300/45" : ""}`}>
                 <div>
                   <p className="font-bold text-white">{item.name}</p>
                   <p className="text-xs text-white/35">{item.category} / {money(ingredientUnitCost(item))} per {item.unit}</p>
@@ -670,7 +683,7 @@ export function RecipeCostingPage({ initialState }: RecipeCostingPageProps) {
           <div className="mt-4 flex items-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-4 py-3"><Search className="h-4 w-4 text-white/35" /><input value={prepSearch} onChange={(e) => setPrepSearch(e.target.value)} placeholder={t.search} className="w-full bg-transparent text-sm text-white outline-none" /></div>
           <div className="mt-5 space-y-2">
             {filteredPrepItems.map((item) => (
-              <div key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+              <div id={`prep-${item.id}`} key={item.id} className={`scroll-mt-32 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 ${focusId === item.id ? "ring-2 ring-amber-300/45" : ""}`}>
                 <div><p className="font-bold text-white">{item.name}</p><p className="text-xs text-white/35">{item.category} / {money(unitCostFor(item.id))} per {item.unit}</p></div>
                 <div className="flex gap-2"><button type="button" onClick={() => editPrepItem(item)} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/65 hover:bg-white/10">{t.edit}</button></div>
               </div>
@@ -684,7 +697,7 @@ export function RecipeCostingPage({ initialState }: RecipeCostingPageProps) {
           <div className="mt-4 flex items-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-4 py-3"><Search className="h-4 w-4 text-white/35" /><input value={menuSearch} onChange={(e) => setMenuSearch(e.target.value)} placeholder={t.search} className="w-full bg-transparent text-sm text-white outline-none" /></div>
           <div className="mt-5 space-y-2">
             {filteredMenuItems.map((item) => (
-              <div key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+              <div id={`menu-${item.id}`} key={item.id} className={`scroll-mt-32 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 ${focusId === item.id ? "ring-2 ring-amber-300/45" : ""}`}>
                 <div>
                   <p className="font-bold text-white">{item.name}</p>
                   <p className="text-xs text-white/35">{item.category} / {item.components.length} {t.components}</p>

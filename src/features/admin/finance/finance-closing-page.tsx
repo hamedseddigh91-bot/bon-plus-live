@@ -250,8 +250,8 @@ export function FinanceClosingPage({ initialState }: FinanceClosingPageProps) {
                   </div>
                 )}
 
-                <div className="mt-5 overflow-hidden rounded-3xl border border-white/10">
-                  <table className="w-full text-left text-sm">
+                <div className="bp-table-scroll mt-5 rounded-3xl border border-white/10">
+                  <table className="min-w-[860px] w-full text-left text-sm">
                     <thead className="bg-white/[0.04] text-white/40">
                       <tr>
                         <th className="px-4 py-3">{t.date}</th>

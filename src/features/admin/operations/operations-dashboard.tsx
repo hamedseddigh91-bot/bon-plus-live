@@ -1486,8 +1486,8 @@ export function OperationsDashboard({ initialState }: OperationsDashboardProps) 
                   </button>
                 </div>
 
-                <div className="overflow-hidden rounded-3xl border border-white/10">
-                  <table className="w-full text-left text-sm">
+                <div className="bp-table-scroll rounded-3xl border border-white/10">
+                  <table className="min-w-[760px] w-full text-left text-sm">
                     <thead className="bg-white/[0.04] text-white/40">
                       <tr>
                         <th className="px-4 py-3">{t.date}</th>
@@ -1566,8 +1566,8 @@ export function OperationsDashboard({ initialState }: OperationsDashboardProps) 
                 <Card className="p-5 xl:col-span-1">
                   <h2 className="text-xl font-semibold text-white">{t.cashClosings}</h2>
 
-                  <div className="mt-5 overflow-hidden rounded-3xl border border-white/10">
-                    <table className="w-full text-left text-sm">
+                  <div className="bp-table-scroll mt-5 rounded-3xl border border-white/10">
+                    <table className="min-w-[760px] w-full text-left text-sm">
                       <thead className="bg-white/[0.04] text-white/40">
                         <tr>
                           <th className="px-4 py-3">{t.date}</th>
@@ -1603,8 +1603,8 @@ export function OperationsDashboard({ initialState }: OperationsDashboardProps) 
                 <Card className="p-5 xl:col-span-1">
                   <h2 className="text-xl font-semibold text-white">{t.suppliers}</h2>
 
-                  <div className="mt-5 overflow-hidden rounded-3xl border border-white/10">
-                    <table className="w-full text-left text-sm">
+                  <div className="bp-table-scroll mt-5 rounded-3xl border border-white/10">
+                    <table className="min-w-[760px] w-full text-left text-sm">
                       <thead className="bg-white/[0.04] text-white/40">
                         <tr>
                           <th className="px-4 py-3">{t.supplier}</th>

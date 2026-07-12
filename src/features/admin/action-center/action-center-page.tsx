@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, BadgeDollarSign, ChefHat, CircleDollarSign, Clock3, HeartHandshake, ListChecks } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, BadgeDollarSign, ChefHat, CircleDollarSign, Clock3, HeartHandshake, ListChecks } from "lucide-react";
 import type { ActionCenterItem, ActionCenterState } from "@/app/admin/action-center/actions";
 import { Card } from "@/components/ui/card";
 import { useAdminLanguage } from "@/lib/admin-language";
@@ -19,6 +19,7 @@ const copy = {
     operationsTasks: "کارهای عملیاتی",
     costingAlerts: "هشدارهای قیمت تمام‌شده",
     empty: "اقدام بازی وجود ندارد.",
+    openItem: "باز کردن",
     priorities: { urgent: "فوری", high: "مهم", normal: "عادی" },
     itemTitles: {
       "Review new feedback": "بررسی فیدبک جدید",
@@ -46,6 +47,7 @@ const copy = {
     operationsTasks: "مهام العمليات",
     costingAlerts: "تنبيهات التكلفة",
     empty: "لا توجد إجراءات معلقة.",
+    openItem: "فتح",
     priorities: { urgent: "عاجل", high: "مهم", normal: "عادي" },
     itemTitles: {
       "Review new feedback": "مراجعة رأي جديد",
@@ -73,6 +75,7 @@ const copy = {
     operationsTasks: "Operations Tasks",
     costingAlerts: "Costing Alerts",
     empty: "No pending action.",
+    openItem: "Open",
     priorities: { urgent: "Urgent", high: "High", normal: "Normal" },
     itemTitles: {} as Record<string, string>,
   },
@@ -94,7 +97,12 @@ function ActionList({ title, items, icon: Icon, language }: { title: string; ite
               <p className="font-semibold text-white">{c.itemTitles[item.title] ?? item.title}</p>
               <p className="mt-1 truncate text-sm text-white/45">{item.detail}</p>
             </div>
-            <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black uppercase ${item.priority === "urgent" ? "bg-red-400/15 text-red-200" : item.priority === "high" ? "bg-amber-300/15 text-amber-100" : "bg-white/[0.07] text-white/50"}`}>{c.priorities[item.priority]}</span>
+            <div className="flex shrink-0 items-center gap-2">
+              <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase ${item.priority === "urgent" ? "bg-red-400/15 text-red-200" : item.priority === "high" ? "bg-amber-300/15 text-amber-100" : "bg-white/[0.07] text-white/50"}`}>{c.priorities[item.priority]}</span>
+              <span className="inline-flex items-center gap-1 rounded-xl border border-white/10 bg-white/[0.05] px-2.5 py-1.5 text-xs font-bold text-white/70">
+                {c.openItem}<ArrowUpRight className="h-3.5 w-3.5" />
+              </span>
+            </div>
           </Link>
         ))}
       </div>

@@ -125,9 +125,77 @@ export async function getCurrentUserPermissionMap(context: UserContext): Promise
   return state.permissions;
 }
 
+const permissionFallbackModules: Record<string, string> = {
+  action_center: "dashboard",
+  finance_closing: "operations",
+  finance_invoices: "operations",
+  finance_cash: "operations",
+  costing: "operations",
+  followups: "recovery",
+  loyalty: "rewards",
+  settings_general: "settings",
+  settings_feedback: "settings",
+  settings_users: "settings",
+  settings_whatsapp: "settings",
+};
+
+export const adminPermissionRoutes = [
+  { moduleKey: "dashboard", href: "/admin" },
+  { moduleKey: "action_center", href: "/admin/action-center" },
+  { moduleKey: "feedback", href: "/admin/crm/feedback" },
+  { moduleKey: "followups", href: "/admin/crm/follow-ups" },
+  { moduleKey: "customers", href: "/admin/crm/customers" },
+  { moduleKey: "discounts", href: "/admin/crm/discounts" },
+  { moduleKey: "loyalty", href: "/admin/crm/loyalty" },
+  { moduleKey: "finance_closing", href: "/admin/finance/closing" },
+  { moduleKey: "finance_invoices", href: "/admin/finance/invoices" },
+  { moduleKey: "finance_cash", href: "/admin/finance/cash" },
+  { moduleKey: "costing", href: "/admin/finance/costing" },
+  { moduleKey: "reports", href: "/admin/reports" },
+  { moduleKey: "activity_logs", href: "/admin/activity-logs" },
+  { moduleKey: "settings_general", href: "/admin/settings/general" },
+  { moduleKey: "settings_feedback", href: "/admin/settings/feedback-center" },
+  { moduleKey: "settings_users", href: "/admin/settings/users" },
+  { moduleKey: "settings_whatsapp", href: "/admin/settings/whatsapp-messages" },
+] as const;
+
 function fallbackAllowed(context: UserContext, moduleKey: string, level: PermissionLevel) {
-  if (level === "view") return canAccessModule(context.role, moduleKey);
-  return context.role === "manager";
+  if (level === "edit") return context.role === "manager";
+  const fallbackModule = permissionFallbackModules[moduleKey] ?? moduleKey;
+  return canAccessModule(context.role, fallbackModule);
+}
+
+export function permissionStateAllows(
+  context: UserContext,
+  state: CurrentPermissionState,
+  moduleKey: string,
+  level: PermissionLevel = "view",
+): boolean {
+  if (context.role === "owner" || context.isPlatformAdmin) return true;
+  if (!state.membershipFound) return false;
+
+  const explicit = state.permissions[moduleKey];
+  if (explicit) return level === "edit" ? explicit.edit : explicit.view;
+  if (state.hasExplicitPermissions) return false;
+
+  return fallbackAllowed(context, moduleKey, level);
+}
+
+export function firstAllowedAdminRouteFromState(
+  context: UserContext,
+  state: CurrentPermissionState,
+): string {
+  if (context.role === "owner" || context.isPlatformAdmin) return "/admin";
+
+  return adminPermissionRoutes.find(({ moduleKey }) =>
+    permissionStateAllows(context, state, moduleKey, "view"),
+  )?.href ?? "/admin/no-access";
+}
+
+export async function getFirstAllowedAdminRoute(context: UserContext): Promise<string> {
+  if (context.role === "owner" || context.isPlatformAdmin) return "/admin";
+  const state = await getCurrentUserPermissionState(context);
+  return firstAllowedAdminRouteFromState(context, state);
 }
 
 export async function userHasModulePermission(
@@ -135,26 +203,8 @@ export async function userHasModulePermission(
   moduleKey: string,
   level: PermissionLevel = "view",
 ): Promise<boolean> {
-  if (context.role === "owner" || context.isPlatformAdmin) return true;
-
   const state = await getCurrentUserPermissionState(context);
-
-  // The auth context itself proves this user should have a membership. If the
-  // matching row cannot be resolved, deny rather than silently falling back to
-  // broad role permissions.
-  if (!state.membershipFound) return false;
-
-  const explicit = state.permissions[moduleKey];
-  if (explicit) {
-    return level === "edit" ? explicit.edit : explicit.view;
-  }
-
-  // Once a user has any custom permission rows, the custom map is authoritative
-  // and missing modules are denied. This prevents manager-role fallback from
-  // accidentally granting edit access to modules omitted from the map.
-  if (state.hasExplicitPermissions) return false;
-
-  return fallbackAllowed(context, moduleKey, level);
+  return permissionStateAllows(context, state, moduleKey, level);
 }
 
 export async function requireModulePermission(
@@ -177,24 +227,10 @@ export async function requireAnyModulePermission(
 ): Promise<UserContext> {
   const context = await requireUserContext();
 
-  if (context.role === "owner" || context.isPlatformAdmin) {
-    return context;
-  }
-
   const state = await getCurrentUserPermissionState(context);
-  if (!state.membershipFound) {
-    await redirectPermissionDenied();
-  }
-
-  const allowed = moduleKeys.some((moduleKey) => {
-    const explicit = state.permissions[moduleKey];
-    if (explicit) {
-      return level === "edit" ? explicit.edit : explicit.view;
-    }
-
-    if (state.hasExplicitPermissions) return false;
-    return fallbackAllowed(context, moduleKey, level);
-  });
+  const allowed = moduleKeys.some((moduleKey) =>
+    permissionStateAllows(context, state, moduleKey, level),
+  );
 
   if (!allowed) {
     await redirectPermissionDenied();

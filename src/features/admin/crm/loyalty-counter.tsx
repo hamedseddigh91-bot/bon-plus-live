@@ -1,6 +1,7 @@
-﻿"use client";
+"use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import { Coffee, Gift, MessageCircle, PlusCircle, Search, CheckCircle2 } from "lucide-react";
 import type { LoyaltyCounterRow, LoyaltyCounterState } from "@/app/admin/crm/loyalty/actions";
 import { redeemLoyaltyReward, recordLoyaltyPurchase } from "@/app/admin/crm/loyalty/actions";
@@ -38,6 +39,8 @@ function fillTemplate(template: string, row: LoyaltyCounterRow) {
 
 export function LoyaltyCounter({ initialState }: { initialState: LoyaltyCounterState }) {
   const { language } = useAdminLanguage();
+  const searchParams = useSearchParams();
+  const focusId = searchParams.get("focus");
   const [phone, setPhone] = useState("");
   const [ruleId, setRuleId] = useState(initialState.rules[0]?.id ?? "");
   const [result, setResult] = useState<any>(null);
@@ -52,6 +55,14 @@ export function LoyaltyCounter({ initialState }: { initialState: LoyaltyCounterS
   } : {
     title:"Record loyalty purchase", subtitle:"Record a customer purchase and track progress toward the reward.", phone:"Phone number", rule:"Counter rule", record:"Record purchase", customers:"Customers being counted", search:"Search phone or loyalty program", whatsapp:"WhatsApp", progress:"Progress", remaining:"Remaining to reward", total:"Total records", empty:"No matching loyalty customers.", rewardReady:"Reward ready", useReward:"Mark reward used"
   };
+
+  useEffect(() => {
+    if (!focusId || !initialState.counters.some((row) => row.id === focusId)) return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(`loyalty-${focusId}`)?.scrollIntoView({ block: "center", behavior: "auto" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusId, initialState.counters]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -110,7 +121,7 @@ export function LoyaltyCounter({ initialState }: { initialState: LoyaltyCounterS
     <Card className="p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h3 className="text-lg font-black text-[color:var(--admin-text)]">{copy.customers}</h3><div className="flex items-center gap-2 rounded-2xl border border-[color:var(--admin-border)] bg-black/10 px-4 py-2.5"><Search className="h-4 w-4 text-[color:var(--admin-muted)]"/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder={copy.search} className="min-w-0 bg-transparent text-sm text-[color:var(--admin-text)] outline-none"/></div></div>
       <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {filtered.map(row=>{const remaining=Math.max(row.thresholdCount-row.currentCount,0);const progress=row.thresholdCount>0?Math.min(row.currentCount/row.thresholdCount*100,100):0;return <div key={row.id} className="rounded-3xl border border-[color:var(--admin-border)] bg-black/10 p-4">
+        {filtered.map(row=>{const remaining=Math.max(row.thresholdCount-row.currentCount,0);const progress=row.thresholdCount>0?Math.min(row.currentCount/row.thresholdCount*100,100):0;return <div id={`loyalty-${row.id}`} key={row.id} className={`scroll-mt-32 rounded-3xl border border-[color:var(--admin-border)] bg-black/10 p-4 ${focusId === row.id ? "ring-2 ring-amber-300/45" : ""}`}>
           <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-lg font-black text-[color:var(--admin-text)]">{row.phone}</p><div className="mt-1 flex items-center gap-2 text-sm text-[color:var(--admin-muted)]"><Coffee className="h-4 w-4"/><span className="truncate">{row.ruleName}</span></div></div><div className="rounded-2xl border border-amber-200/20 bg-amber-200/10 px-3 py-2 text-center"><p className="text-xl font-black text-amber-200">{row.currentCount}/{row.thresholdCount}</p><p className="text-[10px] text-[color:var(--admin-muted)]">{copy.progress}</p></div></div>
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-black/20"><div className="h-full rounded-full bg-amber-200" style={{width:`${progress}%`}}/></div>
           {row.pendingRewards>0&&<div className="mt-4 rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-3"><p className="font-black text-emerald-200">{copy.rewardReady}: {row.pendingRewards}</p><p className="mt-1 text-xs text-[color:var(--admin-muted)]">{rewardText(row)}</p></div>}

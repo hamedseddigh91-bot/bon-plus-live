@@ -2,7 +2,8 @@
 
 import { getWhatsAppTemplateText } from "@/app/admin/settings/whatsapp-messages/actions";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Gift, MessageCircle, RefreshCw, Search, TicketPercent } from "lucide-react";
 import {
   type DiscountCenterState,
@@ -76,6 +77,9 @@ function reminderMessage(row: DiscountCenterState["codes"][number], stage: "earl
 }
 export function DiscountsManager({ initialState }: DiscountsManagerProps) {
   const { language } = useAdminLanguage();
+  const searchParams = useSearchParams();
+  const focusId = searchParams.get("focus");
+  const focusSection = searchParams.get("section");
   const [state, setState] = useState(initialState);
   const [status, setStatus] = useState<DiscountStatusFilter>("all");
   const [source, setSource] = useState<DiscountSourceFilter>("all");
@@ -98,6 +102,15 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
       search.trim().length > 0,
     ].filter(Boolean).length;
   }, [rewardType, search, source, status]);
+
+  useEffect(() => {
+    const targetId = focusId ? `discount-${focusId}` : focusSection ? `discount-section-${focusSection}` : null;
+    if (!targetId) return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(targetId)?.scrollIntoView({ block: "center", behavior: "auto" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusId, focusSection, state.codes.length]);
 
   const groupedCodes = useMemo(() => {
     const activeLong: DiscountCenterState["codes"] = [];
@@ -310,7 +323,7 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
             { key: "active" as const, title: "Unused codes — more than 3 days remaining", rows: groupedCodes.activeLong, stage: "early" as const },
             { key: "closed" as const, title: "Used or expired codes", rows: groupedCodes.closed, stage: null },
           ].map((group) => (
-            <Card key={group.key} className="overflow-hidden p-0">
+            <Card id={`discount-section-${group.key}`} key={group.key} className="overflow-hidden p-0 scroll-mt-28">
               <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
                 <h2 className="font-semibold text-white">{group.title}</h2>
                 <Badge>{group.rows.length}</Badge>
@@ -326,7 +339,7 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
                       const statusInfo = codeStatus(row);
                       const sent = group.stage === "early" ? row.earlyReminderSentAt : group.stage === "expiry" ? row.expiryReminderSentAt : null;
                       return (
-                        <div key={row.id} className="grid min-h-[58px] grid-cols-[minmax(150px,1fr)_130px_130px_130px_150px_minmax(220px,1.2fr)] items-center gap-2 px-4 py-3">
+                        <div id={`discount-${row.id}`} key={row.id} className={`grid min-h-[58px] scroll-mt-32 grid-cols-[minmax(150px,1fr)_130px_130px_130px_150px_minmax(220px,1.2fr)] items-center gap-2 px-4 py-3 ${focusId === row.id ? "bg-amber-300/[0.12] ring-1 ring-inset ring-amber-300/40" : ""}`}>
                           <div><p className="truncate text-sm font-semibold tracking-[0.1em] text-white">{row.code}</p><p className="mt-1 text-xs text-white/35">{row.feedbackPhone ?? "No phone"}</p></div>
                           <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
                           <p className="text-sm text-white/60">{row.rewardType}</p>

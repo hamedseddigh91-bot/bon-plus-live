@@ -257,8 +257,8 @@ export function FinanceDashboardPage({ initialState }: FinanceDashboardPageProps
 
             <Card className="p-5">
               <h2 className="text-xl font-semibold text-white">{t.recentInvoices}</h2>
-              <div className="mt-5 overflow-hidden rounded-3xl border border-white/10">
-                <table className="w-full text-left text-sm">
+              <div className="bp-table-scroll mt-5 rounded-3xl border border-white/10">
+                <table className="min-w-[760px] w-full text-left text-sm">
                   <thead className="bg-white/[0.04] text-white/40"><tr><th className="px-4 py-3">{t.date}</th><th className="px-4 py-3">{t.titleField}</th><th className="px-4 py-3">{t.supplier}</th><th className="px-4 py-3">{t.paymentStatus}</th><th className="px-4 py-3 text-right">{t.amount}</th></tr></thead>
                   <tbody className="divide-y divide-white/10">
                     {invoiceEntries.slice(0, 8).map((entry) => (

@@ -266,13 +266,6 @@ body[data-admin-language="fa"] button {
   z-index: -1;
 }
 
-.bp-page-enter > * {
-  animation: bp-fade-up 0.48s ease-out backwards;
-}
-
-.bp-page-enter > *:nth-child(2) { animation-delay: 0.04s; }
-.bp-page-enter > *:nth-child(3) { animation-delay: 0.08s; }
-.bp-page-enter > *:nth-child(4) { animation-delay: 0.12s; }
 
 ::selection {
   background: rgba(250, 204, 21, 0.35);
@@ -297,16 +290,6 @@ body[data-admin-language="fa"] button {
   background: rgba(250, 204, 21, 0.38);
 }
 
-@keyframes bp-fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(14px) scale(0.985);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
 
 @keyframes bp-float {
   0%, 100% {
@@ -701,22 +684,8 @@ body[data-admin-theme="light"] ::-webkit-scrollbar-thumb:hover {
   position: relative;
 }
 
-.bp-content-wrap {
-  animation: bp-content-rise 420ms ease both;
-}
 
-@keyframes bp-content-rise {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.995);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.bp-page-enter > .bp-content-wrap > * + * {
+.bp-content-wrap > * + * {
   margin-top: 1.5rem;
 }
 
@@ -818,7 +787,8 @@ body[data-admin-theme="light"] ::-webkit-scrollbar-thumb:hover {
 }
 
 .bp-admin-shell table {
-  overflow: hidden;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .bp-admin-shell thead th:first-child {
@@ -867,7 +837,7 @@ body[data-admin-theme="light"] .bp-admin-shell select:focus {
     max-width: 100%;
   }
 
-  .bp-page-enter > .bp-content-wrap > * + * {
+  .bp-content-wrap > * + * {
     margin-top: 1rem;
   }
 }
@@ -1147,23 +1117,36 @@ body[data-admin-theme="liquid-light"] ::selection { background: rgba(72,149,239,
   body[data-admin-theme="liquid-light"] * { backdrop-filter: none !important; }
 }
 
-/* Final navigation polish: smooth route feedback without hiding the current page abruptly. */
-@keyframes bpRouteProgress {
-  0% { transform: translateX(-120%); opacity: 0.55; }
-  45% { opacity: 1; }
-  100% { transform: translateX(420%); opacity: 0.7; }
+
+
+/* Mobile data tables: preserve every column and scroll only the table container. */
+.bp-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
 }
 
-.bp-route-progress {
-  animation: bpRouteProgress 1.05s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  will-change: transform;
+@media (max-width: 767px) {
+  .bp-admin-shell :where(div, section, article):has(> table) {
+    max-width: 100%;
+    overflow-x: auto !important;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .bp-admin-shell :where(div, section, article):has(> table) > table,
+  .bp-admin-shell .bp-table-scroll > table {
+    min-width: 720px;
+    width: max-content;
+  }
+
+  .bp-admin-shell table th,
+  .bp-admin-shell table td {
+    white-space: nowrap;
+  }
 }
 
-.bp-route-loading {
-  animation: bpPageFadeIn 220ms ease-out both;
-}
-
-@keyframes bpPageFadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}

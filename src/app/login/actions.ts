@@ -6,7 +6,9 @@ import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
   createSupabaseAuthClient,
+  type UserContext,
 } from "@/lib/auth-session";
+import { getFirstAllowedAdminRoute } from "@/lib/user-permissions";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { BUSINESS_COOKIE_NAME, getCurrentBusinessSlug } from "@/lib/business-context";
 
@@ -86,10 +88,14 @@ export async function signInWithPassword(input: {
     });
   }
 
+  const redirectTo = context?.success
+    ? await getFirstAllowedAdminRoute(context as UserContext)
+    : "/platform";
+
   return {
     success: true,
     message: "Logged in.",
-    redirectTo: context?.success ? "/admin" : "/platform",
+    redirectTo,
   };
 }
 

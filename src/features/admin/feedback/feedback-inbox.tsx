@@ -1,8 +1,9 @@
-﻿"use client";
+"use client";
 
 import { getWhatsAppTemplateText } from "@/app/admin/settings/whatsapp-messages/actions";
 
 import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   CalendarDays,
@@ -312,6 +313,8 @@ function StatCard({ label, value, tone, icon }: { label: string; value: string |
 }
 
 export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
+  const searchParams = useSearchParams();
+  const focusId = searchParams.get("focus");
   const { language } = useAdminLanguage();
   const t: Record<string, string> = text[language];
   const [state, setState] = useState(initialState);
@@ -436,6 +439,15 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
     });
   };
 
+  useEffect(() => {
+    if (!focusId || !state.feedback.some((item) => item.id === focusId)) return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(`feedback-${focusId}`)?.scrollIntoView({ block: "center", behavior: "auto" });
+      if (selectedId !== focusId) openDetail(focusId);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusId, state.feedback, selectedId]);
+
   const applyRecoveryResult = (result: { success: boolean; message?: string; feedback: FeedbackDetail | null }) => {
     if (!result.success || !result.feedback) {
       setMessage(result.message ?? "Recovery update failed.");
@@ -512,12 +524,13 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
         {items.length === 0 && <div className="p-6 text-sm text-[color:var(--admin-muted)]">{t.noFeedback}</div>}
         {items.map((item) => (
           <div
+            id={`feedback-${item.id}`}
             key={item.id}
             role="button"
             tabIndex={0}
             onClick={() => openDetail(item.id)}
             onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") openDetail(item.id); }}
-            className={`grid min-h-[58px] min-w-[900px] w-full cursor-pointer grid-cols-[minmax(220px,1.6fr)_72px_100px_118px_82px_96px_minmax(160px,0.9fr)_28px] items-center gap-2 px-4 py-2 text-start transition hover:bg-amber-300/[0.08] ${selectedId === item.id ? "bg-amber-300/[0.10]" : ""}`}
+            className={`grid min-h-[58px] min-w-[900px] w-full scroll-mt-32 cursor-pointer grid-cols-[minmax(220px,1.6fr)_72px_100px_118px_82px_96px_minmax(160px,0.9fr)_28px] items-center gap-2 px-4 py-2 text-start transition hover:bg-amber-300/[0.08] ${selectedId === item.id || focusId === item.id ? "bg-amber-300/[0.10] ring-1 ring-inset ring-amber-300/35" : ""}`}
           >
             <div className="min-w-0">
               <p className="truncate text-sm font-black text-[color:var(--admin-text)]">{item.phone}</p>

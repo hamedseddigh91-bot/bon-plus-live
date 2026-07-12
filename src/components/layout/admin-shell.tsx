@@ -87,6 +87,7 @@ type NavItem = {
 const roleModules: Record<BusinessRole, string[]> = {
   owner: [
     "dashboard",
+    "action_center",
     "operations",
     "feedback",
     "recovery",
@@ -189,6 +190,11 @@ const pageMetaByPath: Array<{
     test: (path) => path === "/admin",
     titleKey: "pageDashboardTitle",
     subtitleKey: "pageDashboardSubtitle",
+  },
+  {
+    test: (path) => path.startsWith("/admin/action-center"),
+    titleKey: "pageActionCenterTitle",
+    subtitleKey: "pageActionCenterSubtitle",
   },
   {
     test: (path) => path.startsWith("/admin/finance"),
@@ -306,7 +312,6 @@ function AdminShellInner({
   const [desktopNavOpen, setDesktopNavOpen] = useState(true);
   const [desktopNavPreferenceReady, setDesktopNavPreferenceReady] = useState(false);
   const [permissionNoticeOpen, setPermissionNoticeOpen] = useState(false);
-  const [routeTransitioning, setRouteTransitioning] = useState(false);
 
   useEffect(() => {
     try {
@@ -329,23 +334,6 @@ function AdminShellInner({
       // Sidebar toggle still works for the current page without persistence.
     }
   }, [desktopNavOpen, desktopNavPreferenceReady]);
-
-  useEffect(() => {
-    setRouteTransitioning(false);
-  }, [pathname]);
-
-  useEffect(() => {
-    const onClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement | null;
-      const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;
-      if (!anchor || event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-      const url = new URL(anchor.href, window.location.href);
-      if (url.origin !== window.location.origin || !url.pathname.startsWith("/admin") || url.pathname === pathname) return;
-      setRouteTransitioning(true);
-    };
-    document.addEventListener("click", onClick, true);
-    return () => document.removeEventListener("click", onClick, true);
-  }, [pathname]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -426,11 +414,6 @@ function AdminShellInner({
         fontFamily: language === "fa" ? "var(--font-persian)" : undefined,
       }}
     >
-      {routeTransitioning && (
-        <div className="fixed inset-x-0 top-0 z-[140] h-1 overflow-hidden bg-white/5" aria-hidden="true">
-          <div className="bp-route-progress h-full w-1/3 rounded-full bg-gradient-to-r from-cyan-300 via-blue-400 to-violet-400 shadow-[0_0_18px_rgba(96,165,250,0.8)]" />
-        </div>
-      )}
       {permissionNoticeOpen && (
         <div className="fixed inset-x-0 top-5 z-[120] flex justify-center px-4" role="status" aria-live="polite">
           <div className="flex w-full max-w-md items-start gap-3 rounded-2xl border border-amber-300/25 bg-[#17130b]/95 px-4 py-3 text-amber-50 shadow-[0_18px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl">
@@ -861,7 +844,7 @@ function AdminShellInner({
           </div>
         </header>
 
-        <main className="bp-page-enter bp-content-shell min-h-screen px-3 py-4 sm:px-6 lg:px-8 lg:py-5 lg:pb-5">
+        <main className="bp-content-shell min-h-screen px-3 py-4 sm:px-6 lg:px-8 lg:py-5 lg:pb-5">
           <div className="bp-content-wrap mx-auto w-full max-w-[1680px]">
             {children}
           </div>
