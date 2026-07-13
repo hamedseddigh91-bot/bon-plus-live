@@ -302,7 +302,7 @@ function recoveryVariant(status: string | null) {
 function StatCard({ label, value, tone, icon }: { label: string; value: string | number; tone: string; icon: ReactNode }) {
   return (
     <Card className="group relative overflow-hidden p-4">
-      <div className="absolute -right-8 -top-10 h-24 w-24 rounded-full bg-current opacity-[0.06] blur-2xl" />
+      <div className="absolute -right-8 -top-10 h-24 w-24 rounded-full" style={{ background: "radial-gradient(circle, currentColor, transparent 70%)", opacity: 0.1 }} />
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-[color:var(--admin-muted)]">{label}</p>
         <span className={tone}>{icon}</span>
@@ -562,7 +562,7 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
 
   return (
     <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-[2.25rem] border border-[color:var(--admin-border)] bg-[color:var(--admin-card)] p-6 shadow-2xl shadow-black/10 backdrop-blur-2xl">
+      <section className="relative overflow-hidden rounded-[2.25rem] border border-[color:var(--admin-border)] bg-[color:var(--admin-card)] p-6 shadow-2xl shadow-black/10">
         <div className="absolute inset-y-0 right-0 w-2/5 bg-[radial-gradient(circle_at_top,rgba(251,191,36,0.22),transparent_55%)]" />
         <div className="relative">
           <div>
@@ -725,7 +725,7 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
         </Card>
       </div>
       {whatsappOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4">
           <div className="w-full max-w-xl rounded-[2rem] border border-[color:var(--admin-border)] bg-[color:var(--admin-card)] p-5 shadow-2xl">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-xl font-black text-[color:var(--admin-text)]">{t.whatsappTitle}</h3>

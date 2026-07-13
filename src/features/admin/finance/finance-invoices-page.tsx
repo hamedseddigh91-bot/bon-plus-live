@@ -764,7 +764,7 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
 
             {documentViewer && (
               <div
-                className="fixed inset-0 z-[180] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+                className="fixed inset-0 z-[180] flex items-center justify-center bg-black/75 p-4"
                 onClick={() => setDocumentViewer(null)}
               >
                 <div

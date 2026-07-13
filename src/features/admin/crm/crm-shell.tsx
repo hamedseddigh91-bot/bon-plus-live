@@ -26,8 +26,8 @@ export function CrmShell({ active, children }: { active: CrmTab; children: React
   const t = copy[language];
   return (
     <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-[2rem] border border-[color:var(--admin-border)] bg-[color:var(--admin-card)] p-6 shadow-2xl shadow-black/10 backdrop-blur-xl">
-        <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-amber-300/20 blur-3xl" />
+      <section className="relative overflow-hidden rounded-[2rem] border border-[color:var(--admin-border)] bg-[color:var(--admin-card)] p-6 shadow-2xl shadow-black/10">
+        <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full" style={{ background: "radial-gradient(circle, rgba(252,211,77,0.28), transparent 70%)" }} />
         <div className="relative z-10">
           <h1 className="text-3xl font-black tracking-[-0.04em] text-[color:var(--admin-text)] sm:text-4xl">{t.title}</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[color:var(--admin-muted)]">{t.subtitle}</p>

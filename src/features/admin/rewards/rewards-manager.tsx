@@ -183,7 +183,7 @@ export function RewardsManager({ initialState }: RewardsManagerProps) {
   return (
     <>
       <div className="space-y-6">
-        <section className="flex flex-col gap-4 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur md:flex-row md:items-center md:justify-between">
+        <section className="flex flex-col gap-4 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="mb-3 flex items-center gap-2 text-amber-200/80">
               <Gift className="h-5 w-5" />
@@ -478,7 +478,7 @@ export function RewardsManager({ initialState }: RewardsManagerProps) {
           ))}
         </div>
 
-        <div className="sticky bottom-5 z-10 flex justify-end gap-3 rounded-3xl border border-white/10 bg-[#15110d]/90 p-3 shadow-2xl shadow-black/30 backdrop-blur">
+        <div className="sticky bottom-5 z-10 flex justify-end gap-3 rounded-3xl border border-white/10 bg-[#15110d]/96 p-3 shadow-2xl shadow-black/30">
           <Button variant="secondary" onClick={resetLocal} disabled={isPending}>
             <RotateCcw className="h-4 w-4" />
             Reset

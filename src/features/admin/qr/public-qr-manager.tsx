@@ -27,7 +27,7 @@ export function PublicQrManager({ initialState, embedded = false }: PublicQrMana
   const copyLink = async () => { if (!feedbackUrl) return; await navigator.clipboard.writeText(feedbackUrl); setMessage(t.copied); };
 
   const content = <div className="space-y-6">
-    <section className="rounded-[2rem] border border-[color:var(--admin-border)] bg-[color:var(--admin-card)] p-6 backdrop-blur-xl">
+    <section className="rounded-[2rem] border border-[color:var(--admin-border)] bg-[color:var(--admin-card)] p-6">
       <div className="mb-3 flex items-center gap-2 text-amber-300"><QrCode className="h-5 w-5"/><span className="text-sm font-bold uppercase tracking-[0.22em]">{t.eyebrow}</span></div>
       <h1 className="text-3xl font-black tracking-[-0.03em] text-[color:var(--admin-text)]">{t.title}</h1>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-[color:var(--admin-muted)]">{t.subtitle}</p>

@@ -35,9 +35,9 @@ export function FinanceShell({ active, intro, children }: FinanceShellProps) {
       lang={language}
       style={{ fontFamily: language === "fa" ? "var(--font-persian)" : undefined }}
     >
-      <section className="bp-module-hero relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20 backdrop-blur-xl">
-        <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-amber-300/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 left-16 h-60 w-60 rounded-full bg-cyan-400/10 blur-3xl" />
+      <section className="bp-module-hero relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20">
+        <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full" style={{ background: "radial-gradient(circle, rgba(252,211,77,0.28), transparent 70%)" }} />
+        <div className="pointer-events-none absolute -bottom-24 left-16 h-60 w-60 rounded-full" style={{ background: "radial-gradient(circle, rgba(34,211,238,0.18), transparent 70%)" }} />
 
         <div className="relative z-10 flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div>

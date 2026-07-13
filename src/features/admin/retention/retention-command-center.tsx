@@ -305,7 +305,7 @@ function buildMessage(template: TemplateType, target: TargetCustomer | null, lan
 function MetricCard({ label, value, hint, icon, variant = "amber" }: { label: string; value: string | number; hint: string; icon: ReactNode; variant?: "amber" | "danger" | "success" | "warning" }) {
   return (
     <Card className="relative overflow-hidden p-5">
-      <div className="absolute -right-10 -top-12 h-32 w-32 rounded-full bg-current opacity-[0.055] blur-3xl" />
+      <div className="absolute -right-10 -top-12 h-32 w-32 rounded-full" style={{ background: "radial-gradient(circle, currentColor, transparent 70%)", opacity: 0.09 }} />
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-[color:var(--admin-muted)]">{label}</p>
@@ -428,9 +428,9 @@ export function RetentionCommandCenter({ recoveryState, customerState, feedbackS
 
   return (
     <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.065] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl">
-        <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-fuchsia-300/10 blur-3xl" />
-        <div className="absolute -bottom-24 left-12 h-56 w-56 rounded-full bg-amber-300/10 blur-3xl" />
+      <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.065] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.22)]">
+        <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full" style={{ background: "radial-gradient(circle, rgba(240,171,252,0.16), transparent 70%)" }} />
+        <div className="absolute -bottom-24 left-12 h-56 w-56 rounded-full" style={{ background: "radial-gradient(circle, rgba(252,211,77,0.16), transparent 70%)" }} />
         <div className="relative z-10 flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-amber-100">

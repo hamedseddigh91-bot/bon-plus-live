@@ -484,7 +484,7 @@ export function RecoveryBoard({ initialState }: RecoveryBoardProps) {
       </div>
 
       {whatsappOpen && detail && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-4">
           <div className="w-full max-w-xl rounded-[2rem] border border-white/15 bg-[#12151b] p-5 shadow-2xl">
             <div className="flex items-center justify-between gap-3">
               <div>

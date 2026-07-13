@@ -105,9 +105,8 @@ body[data-admin-language="fa"] button {
 .bp-orb {
   position: absolute;
   border-radius: 9999px;
-  filter: blur(32px);
-  opacity: 0.62;
-  animation: bp-float 12s ease-in-out infinite;
+  opacity: 0.55;
+  animation: bp-float 18s ease-in-out infinite;
   will-change: transform;
 }
 
@@ -243,8 +242,7 @@ body[data-admin-theme="light"] .bp-admin-shell {
 }
 
 body[data-admin-theme="light"] .bp-orb {
-  opacity: 0.48;
-  filter: blur(36px);
+  opacity: 0.42;
 }
 
 body[data-admin-theme="light"] .bp-orb-1 {
@@ -415,7 +413,7 @@ body[data-admin-theme="light"] ::-webkit-scrollbar-thumb:hover {
 }
 
 .bp-card :where(thead) {
-  backdrop-filter: blur(18px);
+  background: var(--bp-surface-strong, rgba(255,255,255,0.06));
 }
 
 .bp-card :where(th) {
@@ -710,24 +708,21 @@ body[data-admin-theme="liquid-dark"] aside,
 body[data-admin-theme="liquid-dark"] header,
 body[data-admin-theme="liquid-dark"] .bp-card {
   border-color: var(--bp-border) !important;
-  background: linear-gradient(145deg, rgba(18, 42, 74, 0.60), rgba(8, 25, 49, 0.44)) !important;
+  background: linear-gradient(145deg, rgba(18, 42, 74, 0.88), rgba(8, 25, 49, 0.82)) !important;
   box-shadow: 0 24px 70px var(--bp-shadow), inset 0 1px 0 rgba(255,255,255,0.08) !important;
-  backdrop-filter: blur(24px) saturate(135%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(135%) !important;
 }
 
-body[data-admin-theme="liquid-dark"] header { background: rgba(7, 20, 40, 0.64) !important; }
-body[data-admin-theme="liquid-dark"] aside { background: rgba(8, 22, 42, 0.66) !important; }
+body[data-admin-theme="liquid-dark"] header { background: rgba(7, 20, 40, 0.92) !important; }
+body[data-admin-theme="liquid-dark"] aside { background: rgba(8, 22, 42, 0.92) !important; }
 body[data-admin-theme="liquid-dark"] .bp-card::before { background: linear-gradient(135deg, rgba(255,255,255,0.10), transparent 42%); }
 body[data-admin-theme="liquid-dark"] .bp-card::after { background: radial-gradient(circle, rgba(72, 149, 239, 0.16), transparent 70%); }
 body[data-admin-theme="liquid-dark"] input,
 body[data-admin-theme="liquid-dark"] textarea,
 body[data-admin-theme="liquid-dark"] select {
-  background: rgba(5, 20, 40, 0.52) !important;
+  background: rgba(5, 20, 40, 0.82) !important;
   border-color: var(--bp-border) !important;
   color: var(--bp-text-main) !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 10px 30px rgba(0,0,0,0.10);
-  backdrop-filter: blur(16px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 6px 18px rgba(0,0,0,0.10);
 }
 body[data-admin-theme="liquid-dark"] select option { background: #0a1730; color: #f8fbff; }
 body[data-admin-theme="liquid-dark"] ::selection { background: rgba(72,149,239,0.38); color: white; }
@@ -761,13 +756,11 @@ body[data-admin-theme="liquid-light"] aside,
 body[data-admin-theme="liquid-light"] header,
 body[data-admin-theme="liquid-light"] .bp-card {
   border-color: var(--bp-border) !important;
-  background: linear-gradient(145deg, rgba(255,255,255,0.58), rgba(235,246,255,0.34)) !important;
+  background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(235,246,255,0.86)) !important;
   box-shadow: 0 24px 70px var(--bp-shadow), inset 0 1px 0 rgba(255,255,255,0.90) !important;
-  backdrop-filter: blur(26px) saturate(125%) !important;
-  -webkit-backdrop-filter: blur(26px) saturate(125%) !important;
 }
-body[data-admin-theme="liquid-light"] header { background: rgba(241, 248, 255, 0.58) !important; }
-body[data-admin-theme="liquid-light"] aside { background: rgba(239, 247, 255, 0.56) !important; }
+body[data-admin-theme="liquid-light"] header { background: rgba(241, 248, 255, 0.94) !important; }
+body[data-admin-theme="liquid-light"] aside { background: rgba(239, 247, 255, 0.94) !important; }
 body[data-admin-theme="liquid-light"] .bp-card::before { background: linear-gradient(135deg, rgba(255,255,255,0.92), transparent 44%); }
 body[data-admin-theme="liquid-light"] .bp-card::after { background: radial-gradient(circle, rgba(72,149,239,0.12), transparent 70%); }
 
@@ -806,11 +799,10 @@ body[data-admin-theme="liquid-light"] [class*="bg-black\\/"] { background-color:
 body[data-admin-theme="liquid-light"] input,
 body[data-admin-theme="liquid-light"] textarea,
 body[data-admin-theme="liquid-light"] select {
-  background: rgba(255,255,255,0.52) !important;
+  background: rgba(255,255,255,0.82) !important;
   border-color: var(--bp-border) !important;
   color: var(--bp-text-main) !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.95), 0 10px 30px rgba(66, 103, 145, 0.08);
-  backdrop-filter: blur(16px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.95), 0 6px 18px rgba(66, 103, 145, 0.08);
 }
 body[data-admin-theme="liquid-light"] input::placeholder,
 body[data-admin-theme="liquid-light"] textarea::placeholder { color: rgba(16,35,63,0.42) !important; }

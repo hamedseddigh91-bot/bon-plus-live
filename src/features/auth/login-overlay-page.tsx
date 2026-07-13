@@ -48,7 +48,7 @@ export function LoginOverlayPage({ error, message }: LoginOverlayPageProps) {
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,12,0.15)_0%,rgba(2,6,12,0.66)_36%,rgba(2,6,12,0.96)_55%,#02060c_100%)]" />
 
           <div className="relative z-10 flex min-h-screen items-end px-5 pb-8 pt-12">
-            <div className="w-full rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
+            <div className="w-full rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
               <div className="mb-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#62c0ff]">
                   Cafe Retention

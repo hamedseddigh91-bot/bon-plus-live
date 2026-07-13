@@ -34,7 +34,7 @@ export function LoginForm() {
       noValidate
       lang="en"
       dir="ltr"
-      className="w-[450px] max-w-[calc(100vw-32px)] rounded-[17px] border border-white/20 bg-white/[0.055] p-5 pb-8 text-left text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.20),inset_0_-1px_0_rgba(255,255,255,0.06),0_0_16px_rgba(39,168,255,0.88),0_0_38px_rgba(0,119,255,0.68),0_0_76px_rgba(0,92,255,0.38)] backdrop-blur-[18px] backdrop-saturate-[1.35]"
+      className="w-[450px] max-w-[calc(100vw-32px)] rounded-[17px] border border-white/20 bg-white/[0.055] p-5 pb-8 text-left text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.20),inset_0_-1px_0_rgba(255,255,255,0.06),0_0_16px_rgba(39,168,255,0.88),0_0_38px_rgba(0,119,255,0.68),0_0_76px_rgba(0,92,255,0.38)]-[18px] backdrop-saturate-[1.35]"
       style={{ fontFamily: "'Quicksand', 'Trebuchet MS', Arial, sans-serif" }}
     >
       <h1 className="text-center text-[28px] font-semibold leading-[36px] tracking-[0.7px]">

@@ -239,7 +239,7 @@ export function UserManager({ initialState }: UserManagerProps) {
       </Card>
 
       {passwordUser && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" onClick={() => setPasswordUser(null)}>
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-950/60 p-4" onClick={() => setPasswordUser(null)}>
           <div className="relative w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <button type="button" onClick={() => setPasswordUser(null)} className="absolute right-4 top-4 rounded-xl p-2 text-slate-500 hover:bg-slate-100"><X className="h-5 w-5" /></button>
             <h2 className="text-2xl font-black text-slate-900">Change Password</h2>

@@ -170,7 +170,7 @@ export function FeedbackWizard({
   if (submitResult?.success) {
     return (
       <main className="min-h-screen bg-[#0b0b0b] px-4 py-10 text-white">
-        <div className="mx-auto max-w-xl rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 text-center shadow-2xl backdrop-blur-xl sm:p-8">
+        <div className="mx-auto max-w-xl rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 text-center shadow-2xl sm:p-8">
           <CheckCircle2 className="mx-auto h-14 w-14 text-amber-200" />
           <p className="mt-5 text-sm text-amber-200/80">Thank you</p>
           <h1 className="mt-2 text-2xl font-semibold">{submitResult.message}</h1>
@@ -224,7 +224,7 @@ export function FeedbackWizard({
 
   return (
     <main className="min-h-screen bg-[#0b0b0b] px-4 py-6 text-white sm:py-10">
-      <div className="mx-auto max-w-xl rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-2xl backdrop-blur-xl sm:p-8">
+      <div className="mx-auto max-w-xl rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-2xl sm:p-8">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <MessageSquareHeart className="h-7 w-7 text-amber-200" />

@@ -378,9 +378,9 @@ export function AppControlCenter({ initialState }: AppControlCenterProps) {
 
   return (
     <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-[2.35rem] border border-white/10 bg-white/[0.065] p-6 shadow-[0_30px_90px_rgba(0,0,0,0.22)] backdrop-blur-2xl sm:p-8">
-        <div className="pointer-events-none absolute -right-20 -top-24 h-80 w-80 rounded-full bg-violet-400/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 left-12 h-80 w-80 rounded-full bg-amber-300/14 blur-3xl" />
+      <section className="relative overflow-hidden rounded-[2.35rem] border border-white/10 bg-white/[0.065] p-6 shadow-[0_30px_90px_rgba(0,0,0,0.22)] sm:p-8">
+        <div className="pointer-events-none absolute -right-20 -top-24 h-80 w-80 rounded-full" style={{ background: "radial-gradient(circle, rgba(167,139,250,0.28), transparent 70%)" }} />
+        <div className="pointer-events-none absolute -bottom-24 left-12 h-80 w-80 rounded-full" style={{ background: "radial-gradient(circle, rgba(252,211,77,0.20), transparent 70%)" }} />
 
         <div className="relative z-10 grid gap-6 xl:grid-cols-[1fr_auto] xl:items-end">
           <div>

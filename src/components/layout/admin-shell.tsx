@@ -416,7 +416,7 @@ function AdminShellInner({
     >
       {permissionNoticeOpen && (
         <div className="fixed inset-x-0 top-5 z-[120] flex justify-center px-4" role="status" aria-live="polite">
-          <div className="flex w-full max-w-md items-start gap-3 rounded-2xl border border-amber-300/25 bg-[#17130b]/95 px-4 py-3 text-amber-50 shadow-[0_18px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+          <div className="flex w-full max-w-md items-start gap-3 rounded-2xl border border-amber-300/25 bg-[#17130b]/95 px-4 py-3 text-amber-50 shadow-[0_18px_60px_rgba(0,0,0,0.45)]">
             <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-300/15 text-amber-200">!</div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-black">
@@ -454,12 +454,12 @@ function AdminShellInner({
           <button
             type="button"
             aria-label="Close navigation overlay"
-            className="absolute inset-0 bg-black/72 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/72"
             onClick={() => setMobileNavOpen(false)}
           />
 
           <aside
-            className={`absolute top-0 h-full w-[min(88vw,360px)] overflow-y-auto overscroll-contain px-4 py-4 shadow-[0_24px_90px_rgba(0,0,0,0.45)] backdrop-blur-2xl ${
+            className={`absolute top-0 h-full w-[min(88vw,360px)] overflow-y-auto overscroll-contain px-4 py-4 shadow-[0_24px_90px_rgba(0,0,0,0.45)] ${
               isLightTheme
                 ? "border-slate-200 bg-white/98 text-slate-900"
                 : "border-white/10 bg-[#080a10]/96 text-white"
@@ -585,7 +585,7 @@ function AdminShellInner({
       )}
 
       <aside
-        className={`fixed left-0 top-0 z-30 hidden h-screen w-[326px] overflow-y-auto overscroll-contain border-r border-white/10 bg-black/35 px-5 py-5 shadow-[24px_0_80px_rgba(0,0,0,0.25)] backdrop-blur-2xl transition-[transform,opacity] duration-300 ease-out lg:block ${
+        className={`fixed left-0 top-0 z-30 hidden h-screen w-[326px] overflow-y-auto overscroll-contain border-r border-white/10 bg-[#08090d]/92 px-5 py-5 shadow-[24px_0_80px_rgba(0,0,0,0.25)] transition-[transform,opacity] duration-300 ease-out lg:block ${
           desktopNavOpen
             ? "lg:translate-x-0 lg:opacity-100"
             : "pointer-events-none lg:-translate-x-full lg:opacity-0"
@@ -699,7 +699,7 @@ function AdminShellInner({
           desktopNavOpen ? "lg:pl-[326px]" : "lg:pl-0"
         }`}
       >
-        <header className="sticky top-0 z-20 border-b border-white/10 bg-[#06070b]/72 px-4 py-3 backdrop-blur-2xl sm:px-6 lg:px-8 lg:py-4">
+        <header className="sticky top-0 z-20 border-b border-white/10 bg-[#06070b]/92 px-4 py-3 sm:px-6 lg:px-8 lg:py-4">
           <div className="mb-3 flex items-center justify-between gap-3 lg:hidden">
             <Link
               href="/admin"
