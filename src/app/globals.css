@@ -43,33 +43,15 @@ select option:hover {
 /* Append this to src/app/globals.css. Do not replace the whole file. */
 
 /*
-  Persian font setup.
-  Put your licensed font files here:
-  public/fonts/iransans/IRANSansX-Regular.woff2
-  public/fonts/iransans/IRANSansX-Medium.woff2
-  public/fonts/iransans/IRANSansX-Bold.woff2
+  Persian font (IRANSansX variable font).
+  File lives at public/fonts/iransans/IRANSansX-VF.ttf and covers
+  all weights via a single request instead of 3 separate files.
 */
 
 @font-face {
   font-family: "IRANSansX";
-  src: url("/fonts/iransans/IRANSansX-Regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "IRANSansX";
-  src: url("/fonts/iransans/IRANSansX-Medium.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "IRANSansX";
-  src: url("/fonts/iransans/IRANSansX-Bold.woff2") format("woff2");
-  font-weight: 700 900;
+  src: url("/fonts/iransans/IRANSansX-VF.ttf") format("truetype-variations");
+  font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
@@ -90,88 +72,6 @@ select option:hover {
 [lang="fa"] select,
 [lang="fa"] button {
   font-family: var(--font-persian);
-}
-
-/* Dark dropdown menus across the whole app */
-select,
-select option,
-select optgroup {
-  background-color: #070707;
-  color: #ffffff;
-  color-scheme: dark;
-}
-
-select option:checked,
-select option:hover {
-  background-color: #1d4ed8;
-  color: #ffffff;
-}
-
-/* Append this to src/app/globals.css. Do not replace the whole file. */
-
-/*
-  Persian font setup.
-  Put your licensed font files here:
-  public/fonts/iransans/IRANSansX-Regular.woff2
-  public/fonts/iransans/IRANSansX-Medium.woff2
-  public/fonts/iransans/IRANSansX-Bold.woff2
-*/
-
-@font-face {
-  font-family: "IRANSansX";
-  src: url("/fonts/iransans/IRANSansX-Regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "IRANSansX";
-  src: url("/fonts/iransans/IRANSansX-Medium.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "IRANSansX";
-  src: url("/fonts/iransans/IRANSansX-Bold.woff2") format("woff2");
-  font-weight: 700 900;
-  font-style: normal;
-  font-display: swap;
-}
-
-:root {
-  --font-persian: "IRANSansX", "IRANSans", "Vazirmatn", Tahoma, Arial, sans-serif;
-}
-
-/* Persian UI */
-[lang="fa"],
-.font-persian {
-  font-family: var(--font-persian);
-}
-
-/* Keep form controls inheriting the selected UI font */
-[lang="fa"] input,
-[lang="fa"] textarea,
-[lang="fa"] select,
-[lang="fa"] button {
-  font-family: var(--font-persian);
-}
-
-/* Dark dropdown menus across the whole app */
-select,
-select option,
-select optgroup {
-  background-color: #070707;
-  color: #ffffff;
-  color-scheme: dark;
-}
-
-select option:checked,
-select option:hover {
-  background-color: #1d4ed8;
-  color: #ffffff;
 }
 
 /* v4.2 Premium Admin Visual System */
@@ -205,9 +105,10 @@ body[data-admin-language="fa"] button {
 .bp-orb {
   position: absolute;
   border-radius: 9999px;
-  filter: blur(64px);
+  filter: blur(32px);
   opacity: 0.62;
   animation: bp-float 12s ease-in-out infinite;
+  will-change: transform;
 }
 
 .bp-orb-1 {
@@ -343,7 +244,7 @@ body[data-admin-theme="light"] .bp-admin-shell {
 
 body[data-admin-theme="light"] .bp-orb {
   opacity: 0.48;
-  filter: blur(72px);
+  filter: blur(36px);
 }
 
 body[data-admin-theme="light"] .bp-orb-1 {
@@ -490,195 +391,6 @@ body[data-admin-theme="light"] ::-webkit-scrollbar-thumb:hover {
   background: rgba(251, 191, 36, 0.55);
 }
 
-/* v4.3 Global Theme Switcher - append after v4.2 CSS */
-:root,
-body[data-admin-theme="dark"] {
-  --bp-page-bg: #06070b;
-  --bp-text-main: #ffffff;
-  --bp-text-soft: rgba(255, 255, 255, 0.62);
-  --bp-text-muted: rgba(255, 255, 255, 0.42);
-  --bp-surface: rgba(255, 255, 255, 0.065);
-  --bp-surface-strong: rgba(255, 255, 255, 0.095);
-  --bp-surface-soft: rgba(255, 255, 255, 0.045);
-  --bp-border: rgba(255, 255, 255, 0.10);
-  --bp-border-strong: rgba(255, 255, 255, 0.16);
-  --bp-input-bg: rgba(0, 0, 0, 0.20);
-  --bp-shadow: rgba(0, 0, 0, 0.24);
-}
-
-body[data-admin-theme="light"] {
-  --bp-page-bg: #f5f1e8;
-  --bp-text-main: #1b1a17;
-  --bp-text-soft: rgba(31, 29, 24, 0.68);
-  --bp-text-muted: rgba(31, 29, 24, 0.46);
-  --bp-surface: rgba(255, 255, 255, 0.74);
-  --bp-surface-strong: rgba(255, 255, 255, 0.92);
-  --bp-surface-soft: rgba(255, 255, 255, 0.58);
-  --bp-border: rgba(78, 66, 44, 0.12);
-  --bp-border-strong: rgba(78, 66, 44, 0.18);
-  --bp-input-bg: rgba(255, 255, 255, 0.72);
-  --bp-shadow: rgba(86, 69, 35, 0.12);
-  background: var(--bp-page-bg);
-  color: var(--bp-text-main);
-}
-
-body[data-admin-theme="light"] .bp-admin-shell {
-  background:
-    radial-gradient(circle at 12% 6%, rgba(251, 191, 36, 0.26), transparent 28%),
-    radial-gradient(circle at 82% 0%, rgba(34, 211, 238, 0.14), transparent 24%),
-    radial-gradient(circle at 50% 100%, rgba(255, 255, 255, 0.88), transparent 34%),
-    linear-gradient(180deg, #fff8e7 0%, #f6efe2 48%, #efe5d6 100%) !important;
-  color: var(--bp-text-main) !important;
-}
-
-body[data-admin-theme="light"] .bp-orb {
-  opacity: 0.48;
-  filter: blur(72px);
-}
-
-body[data-admin-theme="light"] .bp-orb-1 {
-  background: radial-gradient(circle, rgba(251, 191, 36, 0.34), transparent 70%);
-}
-
-body[data-admin-theme="light"] .bp-orb-2 {
-  background: radial-gradient(circle, rgba(14, 165, 233, 0.16), transparent 70%);
-}
-
-body[data-admin-theme="light"] .bp-orb-3 {
-  background: radial-gradient(circle, rgba(168, 85, 247, 0.12), transparent 72%);
-}
-
-body[data-admin-theme="light"] aside,
-body[data-admin-theme="light"] header,
-body[data-admin-theme="light"] .bp-card {
-  border-color: var(--bp-border) !important;
-  background-color: var(--bp-surface) !important;
-  box-shadow: 0 24px 70px var(--bp-shadow) !important;
-}
-
-body[data-admin-theme="light"] header {
-  background-color: rgba(255, 248, 231, 0.78) !important;
-}
-
-body[data-admin-theme="light"] aside {
-  background-color: rgba(255, 248, 231, 0.72) !important;
-}
-
-body[data-admin-theme="light"] .bp-card::before {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), transparent 46%);
-}
-
-body[data-admin-theme="light"] .bp-card::after {
-  background: radial-gradient(circle, rgba(251, 191, 36, 0.16), transparent 70%);
-}
-
-body[data-admin-theme="light"] .text-white,
-body[data-admin-theme="light"] .text-amber-100,
-body[data-admin-theme="light"] .text-orange-100,
-body[data-admin-theme="light"] .text-emerald-100,
-body[data-admin-theme="light"] .text-red-100 {
-  color: var(--bp-text-main) !important;
-}
-
-body[data-admin-theme="light"] .text-white\/95,
-body[data-admin-theme="light"] .text-white\/90,
-body[data-admin-theme="light"] .text-white\/85,
-body[data-admin-theme="light"] .text-white\/80,
-body[data-admin-theme="light"] .text-white\/75,
-body[data-admin-theme="light"] .text-white\/70,
-body[data-admin-theme="light"] .text-white\/65,
-body[data-admin-theme="light"] .text-white\/62,
-body[data-admin-theme="light"] .text-white\/60 {
-  color: var(--bp-text-soft) !important;
-}
-
-body[data-admin-theme="light"] .text-white\/55,
-body[data-admin-theme="light"] .text-white\/50,
-body[data-admin-theme="light"] .text-white\/48,
-body[data-admin-theme="light"] .text-white\/45,
-body[data-admin-theme="light"] .text-white\/42,
-body[data-admin-theme="light"] .text-white\/40,
-body[data-admin-theme="light"] .text-white\/35,
-body[data-admin-theme="light"] .text-white\/30 {
-  color: var(--bp-text-muted) !important;
-}
-
-body[data-admin-theme="light"] .border-white\/5,
-body[data-admin-theme="light"] .border-white\/10,
-body[data-admin-theme="light"] .border-white\/12,
-body[data-admin-theme="light"] .border-white\/15,
-body[data-admin-theme="light"] .border-white\/16,
-body[data-admin-theme="light"] .border-white\/20 {
-  border-color: var(--bp-border) !important;
-}
-
-body[data-admin-theme="light"] [class*="bg-white/"],
-body[data-admin-theme="light"] [class*="bg-white\\/"],
-body[data-admin-theme="light"] [class*="bg-black/"],
-body[data-admin-theme="light"] [class*="bg-black\\/"] {
-  background-color: var(--bp-surface-soft) !important;
-}
-
-body[data-admin-theme="light"] .bg-amber-200,
-body[data-admin-theme="light"] .bg-yellow-300,
-body[data-admin-theme="light"] .from-amber-200,
-body[data-admin-theme="light"] .via-yellow-300,
-body[data-admin-theme="light"] .to-orange-300,
-body[data-admin-theme="light"] .to-orange-400 {
-  color: #111111;
-}
-
-body[data-admin-theme="light"] input,
-body[data-admin-theme="light"] textarea,
-body[data-admin-theme="light"] select {
-  background-color: var(--bp-input-bg) !important;
-  border-color: var(--bp-border) !important;
-  color: var(--bp-text-main) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.70);
-}
-
-body[data-admin-theme="light"] input::placeholder,
-body[data-admin-theme="light"] textarea::placeholder {
-  color: rgba(31, 29, 24, 0.42) !important;
-}
-
-body[data-admin-theme="light"] select option {
-  background: #fffaf0;
-  color: #1b1a17;
-}
-
-body[data-admin-theme="light"] table thead,
-body[data-admin-theme="light"] .bg-white\/\[0\.04\] {
-  background-color: rgba(255, 255, 255, 0.56) !important;
-}
-
-body[data-admin-theme="light"] tbody,
-body[data-admin-theme="light"] tr,
-body[data-admin-theme="light"] td,
-body[data-admin-theme="light"] th {
-  border-color: var(--bp-border) !important;
-}
-
-body[data-admin-theme="light"] .divide-white\/10 > :not([hidden]) ~ :not([hidden]) {
-  border-color: var(--bp-border) !important;
-}
-
-body[data-admin-theme="light"] ::selection {
-  background: rgba(251, 191, 36, 0.38);
-  color: #111111;
-}
-
-body[data-admin-theme="light"] ::-webkit-scrollbar-track {
-  background: rgba(78, 66, 44, 0.06);
-}
-
-body[data-admin-theme="light"] ::-webkit-scrollbar-thumb {
-  background: rgba(78, 66, 44, 0.22);
-}
-
-body[data-admin-theme="light"] ::-webkit-scrollbar-thumb:hover {
-  background: rgba(251, 191, 36, 0.55);
-}
 /* v4.4 Premium Internal Pages Redesign - append to src/app/globals.css */
 .bp-content-shell {
   position: relative;
@@ -1115,6 +827,10 @@ body[data-admin-theme="liquid-light"] ::selection { background: rgba(72,149,239,
 @media (prefers-reduced-motion: reduce) {
   body[data-admin-theme="liquid-dark"] *,
   body[data-admin-theme="liquid-light"] * { backdrop-filter: none !important; }
+
+  .bp-orb {
+    animation: none !important;
+  }
 }
 
 
