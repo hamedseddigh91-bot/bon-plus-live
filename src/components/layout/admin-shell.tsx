@@ -474,6 +474,7 @@ function AdminShellInner({
               <Link
                 href="/admin"
                 prefetch
+                scroll={false}
                 onClick={() => setMobileNavOpen(false)}
                 className="flex min-w-0 items-center gap-3 rounded-[1.35rem] border border-white/10 bg-white/[0.05] p-3"
               >
@@ -515,6 +516,7 @@ function AdminShellInner({
                 <Link
                   href="/platform"
                   prefetch
+                  scroll={false}
                   onClick={() => setMobileNavOpen(false)}
                   className={`group flex h-12 items-center gap-4 rounded-[1.15rem] px-4 text-[15px] font-semibold transition ${
                     pathname.startsWith("/platform")
@@ -539,6 +541,7 @@ function AdminShellInner({
                     key={item.href}
                     href={href}
                     prefetch
+                    scroll={false}
                     onClick={() => setMobileNavOpen(false)}
                     className={`group relative flex h-12 items-center gap-4 overflow-hidden rounded-[1.15rem] px-4 text-[15px] font-semibold transition duration-300 ${
                       active
@@ -595,6 +598,7 @@ function AdminShellInner({
         <Link
           href="/admin"
           prefetch
+          scroll={false}
           onPointerEnter={() => warmRoute("/admin")}
           onMouseDown={() => warmRoute("/admin")}
           onFocus={() => warmRoute("/admin")}
@@ -631,6 +635,7 @@ function AdminShellInner({
             <Link
               href="/platform"
               prefetch
+              scroll={false}
               onPointerEnter={() => warmRoute("/platform")}
               onMouseDown={() => warmRoute("/platform")}
               onFocus={() => warmRoute("/platform")}
@@ -655,6 +660,7 @@ function AdminShellInner({
                 <Link
                   href={href}
                   prefetch
+                  scroll={false}
                   onPointerEnter={() => warmRoute(href)}
                   onMouseDown={() => warmRoute(href)}
                   onFocus={() => warmRoute(href)}
@@ -704,6 +710,7 @@ function AdminShellInner({
             <Link
               href="/admin"
               prefetch
+              scroll={false}
               className="flex min-w-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.055] px-3 py-2"
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-200 to-yellow-300 text-xs font-black text-black">{businessLogoUrl ? <img src={businessLogoUrl} alt="Business logo" className="block h-full w-full rounded-[inherit] object-cover object-center" /> : "BP"}</span>
