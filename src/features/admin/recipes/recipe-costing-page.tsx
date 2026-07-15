@@ -512,7 +512,7 @@ export function RecipeCostingPage({ initialState }: RecipeCostingPageProps) {
             {t.live}: {t.costPerUnit} = <span className="font-black text-white">{money(liveIngredientCost)} OMR / {ingredientForm.unit || "unit"}</span>
           </div>
           <div className="mt-5 flex flex-wrap gap-3">
-            <Button onClick={submitIngredient} disabled={isPending || !ingredientForm.name.trim()}>
+            <Button onClick={submitIngredient} loading={isPending} disabled={!ingredientForm.name.trim()}>
               <Save className="h-4 w-4" />
               {ingredientForm.id ? t.updateIngredient : t.saveIngredient}
             </Button>
@@ -572,7 +572,7 @@ export function RecipeCostingPage({ initialState }: RecipeCostingPageProps) {
           </div>
 
           <div className="mt-5 flex flex-wrap gap-3">
-            <Button onClick={submitMenuItem} disabled={isPending || !menuForm.name.trim()}>
+            <Button onClick={submitMenuItem} loading={isPending} disabled={!menuForm.name.trim()}>
               <Save className="h-4 w-4" />
               {menuForm.id ? t.updateMenuItem : t.saveMenuItem}
             </Button>
@@ -601,7 +601,7 @@ export function RecipeCostingPage({ initialState }: RecipeCostingPageProps) {
         <div className="mt-4 grid gap-2 md:grid-cols-2">{prepComponents.map((component) => { const item=itemMap.get(component.itemId); return <div key={component.itemId} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm"><span className="text-white/70">{item?.name ?? "—"} × {component.qty} {item?.unit ?? ""}</span><span className="font-bold text-white">{money(unitCostFor(component.itemId)*numberValue(component.qty))}</span><button type="button" className="text-red-200" onClick={() => setPrepComponents((current) => current.filter((row) => row.itemId !== component.itemId))}>{t.remove}</button></div>; })}</div>
         <div className="mt-4 rounded-2xl border border-amber-200/15 bg-amber-200/[0.06] p-4 text-sm text-white/60">Batch cost: <b className="text-white">{money(livePrepBatchCost)} OMR</b> · {t.costPerUnit}: <b className="text-white">{money(livePrepUnitCost)} OMR / {prepForm.unit || "unit"}</b></div>
         <textarea className="mt-4 min-h-20 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" placeholder={t.notes} value={prepForm.notes} onChange={(event) => setPrepForm((current) => ({ ...current, notes: event.target.value }))} />
-        <div className="mt-4 flex gap-3"><Button onClick={submitPrepItem} disabled={isPending || !prepForm.name.trim() || !prepForm.outputQty}><Save className="h-4 w-4" />{prepForm.id ? t.updatePrepItem : t.savePrepItem}</Button><Button variant="secondary" onClick={() => { setPrepForm(emptyPrepForm()); setPrepComponents([]); }}>{t.clear}</Button></div>
+        <div className="mt-4 flex gap-3"><Button onClick={submitPrepItem} loading={isPending} disabled={!prepForm.name.trim() || !prepForm.outputQty}><Save className="h-4 w-4" />{prepForm.id ? t.updatePrepItem : t.savePrepItem}</Button><Button variant="secondary" onClick={() => { setPrepForm(emptyPrepForm()); setPrepComponents([]); }}>{t.clear}</Button></div>
       </Card>
 
       <Card className="p-5">

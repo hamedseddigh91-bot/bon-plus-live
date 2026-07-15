@@ -622,7 +622,7 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
                 </div>
 
                 <div className="mt-5 flex flex-wrap gap-3">
-                  <Button onClick={submitEntry} disabled={isPending || !entryForm.amount}>
+                  <Button onClick={submitEntry} loading={isPending} disabled={!entryForm.amount}>
                     <Save className="h-4 w-4" />
                     {entryForm.id ? t.updateInvoice : t.saveInvoice}
                   </Button>
@@ -660,7 +660,7 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
                     <div className="flex overflow-hidden rounded-2xl border border-white/10 bg-black/20"><span className="flex items-center border-e border-white/10 px-3 text-sm font-black text-amber-200" dir="ltr">+968</span><input value={supplierForm.phone} onChange={(event) => setSupplierForm((current) => ({ ...current, phone: event.target.value.replace(/\D+/g, "").slice(0, 8) }))} className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none [color-scheme:dark]" placeholder="91234567" inputMode="numeric" maxLength={8} dir="ltr" /></div>
                     <input value={supplierForm.email} onChange={(event) => setSupplierForm((current) => ({ ...current, email: event.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none [color-scheme:dark] focus:border-amber-200/50" placeholder={t.email} />
                     <textarea value={supplierForm.notes} onChange={(event) => setSupplierForm((current) => ({ ...current, notes: event.target.value }))} className="min-h-20 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none [color-scheme:dark] focus:border-amber-200/50" placeholder={t.notes} />
-                    <Button onClick={submitSupplier} disabled={isPending || !supplierForm.name.trim()}>
+                    <Button onClick={submitSupplier} loading={isPending} disabled={!supplierForm.name.trim()}>
                       <PackagePlus className="h-4 w-4" />
                       {supplierForm.id ? t.updateSupplier : t.saveSupplier}
                     </Button>

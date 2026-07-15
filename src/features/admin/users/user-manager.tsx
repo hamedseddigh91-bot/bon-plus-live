@@ -201,8 +201,8 @@ export function UserManager({ initialState }: UserManagerProps) {
           <label className="text-sm text-[color:var(--admin-muted)]">Status<select value={active ? "active" : "inactive"} onChange={(e) => setActive(e.target.value === "active")} className={inputClass}><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
         </div>
         <div className="mt-5 flex flex-wrap gap-3">
-          <Button onClick={createDirect} disabled={isPending || !email || password.length < 6}><UserPlus className="h-4 w-4" />{isPending ? "Working..." : "Create user"}</Button>
-          <Button variant="secondary" onClick={saveOnly} disabled={isPending || !email}><Save className="h-4 w-4" />Save user</Button>
+          <Button onClick={createDirect} loading={isPending} disabled={!email || password.length < 6}><UserPlus className="h-4 w-4" />Create user</Button>
+          <Button variant="secondary" onClick={saveOnly} loading={isPending} disabled={!email}><Save className="h-4 w-4" />Save user</Button>
         </div>
       </Card>
 
