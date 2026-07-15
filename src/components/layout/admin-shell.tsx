@@ -34,6 +34,7 @@ import {
   useAdminLanguage,
 } from "@/lib/admin-language";
 import { AdminPermissionsProvider } from "@/lib/admin-permissions";
+import { Loader } from "@/components/ui/loader";
 
 type BusinessRole = "owner" | "manager" | "accountant" | "staff" | "read_only";
 
@@ -312,6 +313,21 @@ function AdminShellInner({
   const [desktopNavOpen, setDesktopNavOpen] = useState(true);
   const [desktopNavPreferenceReady, setDesktopNavPreferenceReady] = useState(false);
   const [permissionNoticeOpen, setPermissionNoticeOpen] = useState(false);
+  const [isRouteChanging, setIsRouteChanging] = useState(false);
+
+  useEffect(() => {
+    setIsRouteChanging(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!isRouteChanging) return;
+    const timeout = window.setTimeout(() => setIsRouteChanging(false), 8000);
+    return () => window.clearTimeout(timeout);
+  }, [isRouteChanging]);
+
+  const startNavigation = (href: string) => {
+    if (href !== pathname) setIsRouteChanging(true);
+  };
 
   useEffect(() => {
     try {
@@ -475,8 +491,7 @@ function AdminShellInner({
                 href="/admin"
                 prefetch
                 scroll={false}
-                onClick={() => setMobileNavOpen(false)}
-                className="flex min-w-0 items-center gap-3 rounded-[1.35rem] border border-white/10 bg-white/[0.05] p-3"
+                onClick={() => { setMobileNavOpen(false); startNavigation("/admin"); }}
               >
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.1rem] bg-gradient-to-br from-amber-200 via-yellow-300 to-orange-400 text-sm font-black text-black">{businessLogoUrl ? <img src={businessLogoUrl} alt="Business logo" className="block h-full w-full rounded-[inherit] object-cover object-center" /> : "BP"}</div>
                 <div className="min-w-0">
@@ -517,7 +532,7 @@ function AdminShellInner({
                   href="/platform"
                   prefetch
                   scroll={false}
-                  onClick={() => setMobileNavOpen(false)}
+                  onClick={() => { setMobileNavOpen(false); startNavigation("/platform"); }}
                   className={`group flex h-12 items-center gap-4 rounded-[1.15rem] px-4 text-[15px] font-semibold transition ${
                     pathname.startsWith("/platform")
                       ? "bg-gradient-to-r from-amber-200 to-yellow-300 text-black shadow-[0_18px_50px_rgba(251,191,36,0.20)]"
@@ -542,7 +557,7 @@ function AdminShellInner({
                     href={href}
                     prefetch
                     scroll={false}
-                    onClick={() => setMobileNavOpen(false)}
+                    onClick={() => { setMobileNavOpen(false); startNavigation(href); }}
                     className={`group relative flex h-12 items-center gap-4 overflow-hidden rounded-[1.15rem] px-4 text-[15px] font-semibold transition duration-300 ${
                       active
                         ? "bg-gradient-to-r from-amber-200 to-yellow-300 text-black shadow-[0_18px_50px_rgba(251,191,36,0.20)]"
@@ -602,6 +617,7 @@ function AdminShellInner({
           onPointerEnter={() => warmRoute("/admin")}
           onMouseDown={() => warmRoute("/admin")}
           onFocus={() => warmRoute("/admin")}
+          onClick={() => startNavigation("/admin")}
           className="mb-5 flex items-center gap-3 rounded-[1.45rem] border border-white/10 bg-white/[0.05] p-3 transition hover:bg-white/[0.08]"
         >
           <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[1.25rem] bg-gradient-to-br from-amber-200 via-yellow-300 to-orange-400 text-base font-black text-black shadow-[0_18px_40px_rgba(251,191,36,0.22)]">
@@ -639,6 +655,7 @@ function AdminShellInner({
               onPointerEnter={() => warmRoute("/platform")}
               onMouseDown={() => warmRoute("/platform")}
               onFocus={() => warmRoute("/platform")}
+              onClick={() => startNavigation("/platform")}
               className={`group flex h-12 items-center gap-4 rounded-[1.15rem] px-4 text-[15px] font-semibold transition ${
                 pathname.startsWith("/platform")
                   ? "bg-gradient-to-r from-amber-200 to-yellow-300 text-black shadow-[0_18px_50px_rgba(251,191,36,0.20)]"
@@ -664,6 +681,7 @@ function AdminShellInner({
                   onPointerEnter={() => warmRoute(href)}
                   onMouseDown={() => warmRoute(href)}
                   onFocus={() => warmRoute(href)}
+                  onClick={() => startNavigation(href)}
                   className={`group relative flex h-12 items-center gap-4 overflow-hidden rounded-[1.15rem] px-4 text-[15px] font-semibold transition duration-300 ${
                     active
                       ? "bg-gradient-to-r from-amber-200 to-yellow-300 text-black shadow-[0_18px_50px_rgba(251,191,36,0.20)]"
@@ -711,6 +729,7 @@ function AdminShellInner({
               href="/admin"
               prefetch
               scroll={false}
+              onClick={() => startNavigation("/admin")}
               className="flex min-w-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.055] px-3 py-2"
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-200 to-yellow-300 text-xs font-black text-black">{businessLogoUrl ? <img src={businessLogoUrl} alt="Business logo" className="block h-full w-full rounded-[inherit] object-cover object-center" /> : "BP"}</span>
@@ -851,6 +870,16 @@ function AdminShellInner({
           </div>
         </header>
 
+        {isRouteChanging && (
+          <div
+            className="fixed inset-0 z-[200] flex items-center justify-center"
+            style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", background: "rgba(6,7,11,0.35)" }}
+            role="status"
+            aria-live="polite"
+          >
+            <Loader />
+          </div>
+        )}
         <main className="bp-content-shell min-h-screen px-3 py-4 sm:px-6 lg:px-8 lg:py-5 lg:pb-5">
           <div className="bp-content-wrap mx-auto w-full max-w-[1680px]">
             {children}
