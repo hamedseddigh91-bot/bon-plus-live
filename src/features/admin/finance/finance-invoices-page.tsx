@@ -432,8 +432,25 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
 
   const shareInvoice = async (entry: FinanceEntry, language: FinanceLanguage) => {
     const saved = await getWhatsAppTemplateText("invoice", language);
-    const fallback = [`Invoice: ${entry.title}`, `Date: ${entry.entryDate}`, `Supplier: ${entry.supplierName ?? "—"}`, `Amount: ${money(entry.amount)} OMR`, `Status: ${entry.paymentStatus}`].join("\n");
-    const text = (saved || fallback).replaceAll("{invoice_no}", entry.referenceNo || entry.title).replaceAll("{date}", entry.entryDate).replaceAll("{supplier}", entry.supplierName ?? "—").replaceAll("{amount}", `${money(entry.amount)} OMR`).replaceAll("{status}", entry.paymentStatus);
+    const docs = documentsFor(initialState.documents, "finance_entry", entry.id);
+
+    let link = "";
+    if (docs.length > 0) {
+      const result = await getOperationDocumentSignedUrl({
+        documentId: docs[0].id,
+        expiresInSeconds: 60 * 60 * 24 * 30, // 30 days
+      });
+      if (result.success && result.url) link = result.url;
+    }
+
+    const fallback = [`Invoice: ${entry.title}`, `Date: ${entry.entryDate}`, `Supplier: ${entry.supplierName ?? "—"}`, `Amount: ${money(entry.amount)} OMR`, `Status: ${entry.paymentStatus}`, ...(link ? [link] : [])].join("\n");
+    const text = (saved || fallback)
+      .replaceAll("{invoice_no}", entry.referenceNo || entry.title)
+      .replaceAll("{date}", entry.entryDate)
+      .replaceAll("{supplier}", entry.supplierName ?? "—")
+      .replaceAll("{amount}", `${money(entry.amount)} OMR`)
+      .replaceAll("{status}", entry.paymentStatus)
+      .replaceAll("{link}", link || "—");
 
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
   };

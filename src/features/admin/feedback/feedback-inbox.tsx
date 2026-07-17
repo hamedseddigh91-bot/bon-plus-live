@@ -37,6 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAdminLanguage } from "@/lib/admin-language";
+import type { LanguageCode } from "@/types/feedback";
 
 type FeedbackInboxProps = {
   initialState: FeedbackInboxState;
@@ -339,34 +340,34 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
   const [whatsappText, setWhatsappText] = useState("");
   const [movingFeedbackId, setMovingFeedbackId] = useState<string | null>(null);
 
-  const defaultWhatsappText = (score: number, phone: string) => {
+  const defaultWhatsappText = (score: number, phone: string, msgLang: LanguageCode) => {
     const name = phone || "Customer";
     if (score <= 2) {
-      return language === "fa"
+      return msgLang === "fa"
         ? `${name} عزیز، از تجربه‌ای که داشتید متأسفیم. بازخورد شما را با دقت بررسی می‌کنیم و برای پیگیری با شما در ارتباط خواهیم بود.`
-        : language === "ar"
+        : msgLang === "ar"
           ? `عزيزي ${name}، نأسف لتجربتك. سنراجع ملاحظاتك بعناية ونتابع معك.`
           : `Hi ${name}, we're sorry about your experience. We are reviewing your feedback carefully and will follow up with you.`;
     }
     if (score >= 4) {
-      return language === "fa"
+      return msgLang === "fa"
         ? `${name} عزیز، ممنون از بازخورد و همراهی شما. خوشحالیم که تجربه خوبی داشتید.`
-        : language === "ar"
+        : msgLang === "ar"
           ? `عزيزي ${name}، شكرًا لملاحظاتك ودعمك. يسعدنا أنك حظيت بتجربة جيدة.`
           : `Hi ${name}, thank you for your feedback and support. We're glad you had a good experience.`;
     }
-    return language === "fa"
+    return msgLang === "fa"
       ? `${name} عزیز، ممنون که تجربه‌تان را با ما در میان گذاشتید. بازخورد شما برای بهتر شدن ما ارزشمند است.`
-      : language === "ar"
+      : msgLang === "ar"
         ? `عزيزي ${name}، شكرًا لمشاركة تجربتك معنا. ملاحظاتك تساعدنا على التحسن.`
         : `Hi ${name}, thank you for sharing your experience. Your feedback helps us improve.`;
   };
 
-  const openWhatsappComposer = async (phone: string, score: number) => {
+  const openWhatsappComposer = async (phone: string, score: number, msgLang: LanguageCode) => {
     setWhatsappPhone(phone);
     const key = score >= 4 ? "feedback_high" : score <= 2 ? "feedback_low" : "feedback_mid";
-    const saved = await getWhatsAppTemplateText(key, language);
-    const text = (saved || defaultWhatsappText(score, phone))
+    const saved = await getWhatsAppTemplateText(key, msgLang);
+    const text = (saved || defaultWhatsappText(score, phone, msgLang))
       .replaceAll("{customer_name}", phone)
       .replaceAll("{score}", String(score));
     setWhatsappText(text);
@@ -516,9 +517,10 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
   };
 
   const renderFeedbackTable = (items: typeof state.feedback, stage: "new" | "follow_up" | "resolved") => (
-    <Card className="overflow-x-auto p-0">
-      <div className="grid min-w-[900px] grid-cols-[minmax(220px,1.6fr)_72px_100px_118px_82px_96px_minmax(160px,0.9fr)_28px] gap-2 border-b border-[color:var(--admin-border)] bg-black/5 px-4 py-3 text-[10px] font-black uppercase tracking-[0.12em] text-[color:var(--admin-muted)]">
-        <span>{t.phone}</span><span>{t.score}</span><span>{t.level}</span><span>{t.recovery}</span><span>{t.date}</span><span>{t.whatsapp}</span><span>{language === "fa" ? "مرحله" : language === "ar" ? "المرحلة" : "Stage"}</span><span />
+    <Card className="p-0">
+      <div className="overflow-x-auto">
+      <div className="grid min-w-[970px] grid-cols-[minmax(220px,1.6fr)_72px_100px_118px_82px_70px_96px_minmax(160px,0.9fr)_28px] gap-2 border-b border-[color:var(--admin-border)] bg-black/5 px-4 py-3 text-[10px] font-black uppercase tracking-[0.12em] text-[color:var(--admin-muted)]">
+        <span>{t.phone}</span><span>{t.score}</span><span>{t.level}</span><span>{t.recovery}</span><span>{t.date}</span><span>{t.language}</span><span>{t.whatsapp}</span><span>{language === "fa" ? "مرحله" : language === "ar" ? "المرحلة" : "Stage"}</span><span />
       </div>
       <div className="divide-y divide-[color:var(--admin-border)]">
         {items.length === 0 && <div className="p-6 text-sm text-[color:var(--admin-muted)]">{t.noFeedback}</div>}
@@ -530,7 +532,7 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
             tabIndex={0}
             onClick={() => openDetail(item.id)}
             onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") openDetail(item.id); }}
-            className={`grid min-h-[58px] min-w-[900px] w-full scroll-mt-32 cursor-pointer grid-cols-[minmax(220px,1.6fr)_72px_100px_118px_82px_96px_minmax(160px,0.9fr)_28px] items-center gap-2 px-4 py-2 text-start transition hover:bg-amber-300/[0.08] ${selectedId === item.id || focusId === item.id ? "bg-amber-300/[0.10] ring-1 ring-inset ring-amber-300/35" : ""}`}
+            className={`grid min-h-[58px] min-w-[970px] w-full scroll-mt-32 cursor-pointer grid-cols-[minmax(220px,1.6fr)_72px_100px_118px_82px_70px_96px_minmax(160px,0.9fr)_28px] items-center gap-2 px-4 py-2 text-start transition hover:bg-amber-300/[0.08] ${selectedId === item.id || focusId === item.id ? "bg-amber-300/[0.10] ring-1 ring-inset ring-amber-300/35" : ""}`}
           >
             <div className="min-w-0">
               <p className="truncate text-sm font-black text-[color:var(--admin-text)]">{item.phone}</p>
@@ -540,7 +542,8 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
             <Badge variant={segmentVariant(item.segment)}>{item.segment}</Badge>
             <Badge variant={recoveryVariant(item.recoveryStatus)}>{recoveryLabel(item.recoveryStatus, t)}</Badge>
             <p className="text-xs text-[color:var(--admin-muted)]">{item.createdAt.slice(5, 10)}</p>
-            <button type="button" onClick={(event) => { event.stopPropagation(); openWhatsappComposer(item.phone, Number(item.overallScore || 0)); }} className="flex items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-2 py-2 text-xs font-bold text-emerald-200"><MessageCircle className="h-3.5 w-3.5" />{t.whatsapp}</button>
+            <Badge variant="secondary">{item.language?.toUpperCase() ?? "—"}</Badge>
+            <button type="button" onClick={(event) => { event.stopPropagation(); openWhatsappComposer(item.phone, Number(item.overallScore || 0), item.language); }} className="flex items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-2 py-2 text-xs font-bold text-emerald-200"><MessageCircle className="h-3.5 w-3.5" />{t.whatsapp}</button>
               <div className="min-w-0" onClick={(event) => event.stopPropagation()}>
   <select
   value={item.workflowStage ?? "new"}
@@ -556,6 +559,7 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
             <ChevronRight className="h-4 w-4 text-[color:var(--admin-muted)]" />
           </div>
         ))}
+      </div>
       </div>
     </Card>
   );

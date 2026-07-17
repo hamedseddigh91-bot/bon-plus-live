@@ -1054,6 +1054,7 @@ export async function uploadOperationDocuments(formData: FormData): Promise<Acti
 
 export async function getOperationDocumentSignedUrl(input: {
   documentId: string;
+  expiresInSeconds?: number;
 }): Promise<{ success: boolean; message?: string; url?: string }> {
   await requireAnyModulePermission(["finance_invoices", "finance_closing", "finance_cash"], "view");
   const context = await getOperationsContext();
@@ -1084,7 +1085,7 @@ export async function getOperationDocumentSignedUrl(input: {
 
   const { data, error: signedError } = await supabase.storage
     .from("operation-documents")
-    .createSignedUrl(document.file_path, 60 * 5);
+    .createSignedUrl(document.file_path, input.expiresInSeconds ?? 60 * 5);
 
   if (signedError || !data?.signedUrl) {
     return {
