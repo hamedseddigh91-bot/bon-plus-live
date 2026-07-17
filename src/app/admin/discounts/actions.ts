@@ -203,13 +203,23 @@ export async function createManualDiscountCode(input: {
     const phone = normalizeOmanPhone(input.phone);
     if (!phone) return { success: false, message: "Enter a valid 8-digit Oman phone number." };
     const { data: customer } = await supabase.from("customers").select("id").eq("business_id", businessId).eq("phone", phone).maybeSingle();
+    let customerId = customer?.id ?? null;
+    if (!customerId) {
+      const { data: newCustomer, error: customerError } = await supabase
+        .from("customers")
+        .insert({ business_id: businessId, phone })
+        .select("id")
+        .single();
+      if (customerError) return { success: false, message: customerError.message };
+      customerId = newCustomer.id;
+    }
     const code = makeManualCode();
     const expiresAt = new Date(Date.now() + Math.max(1, input.expiryDays || 7) * 86400000).toISOString();
     const freeItem = input.rewardType === "free_cafe_item" ? `Cafe item × ${Math.max(1, input.value || 1)}` : input.rewardType === "free_food_item" ? `Food item × ${Math.max(1, input.value || 1)}` : null;
     const rewardType: RewardType = input.rewardType === "free_cafe_item" || input.rewardType === "free_food_item" ? "free_item" : input.rewardType;
     const { error } = await supabase.from("discount_codes").insert({
       business_id: businessId,
-      customer_id: customer?.id ?? null,
+      customer_id: customerId,
       code,
       source: "manual",
       reason: input.acquisitionSource.trim() || "Other",
