@@ -19,6 +19,7 @@ import {
   type CustomerDirectoryState,
   type CustomerProfile,
   type CustomerRiskFilter,
+  createCustomer,
   getCustomerDirectory,
   getCustomerProfile,
 } from "@/app/admin/customers/actions";
@@ -79,6 +80,14 @@ const text = {
     risk: "ریسک بالا",
     open: "باز",
     profile: "پروفایل مشتری",
+    addCustomer: "افزودن مشتری",
+    addCustomerTitle: "افزودن مشتری جدید",
+    phoneNumber: "شماره تلفن",
+    customerLanguage: "زبان مشتری",
+    notesOptional: "یادداشت (اختیاری)",
+    save: "ذخیره",
+    cancel: "انصراف",
+    addSuccess: "مشتری با موفقیت اضافه شد.",
   },
   ar: {
     command: "مركز ذكاء العملاء",
@@ -127,6 +136,14 @@ const text = {
     risk: "خطر عالي",
     open: "مفتوح",
     profile: "ملف العميل",
+    addCustomer: "إضافة عميل",
+    addCustomerTitle: "إضافة عميل جديد",
+    phoneNumber: "رقم الهاتف",
+    customerLanguage: "لغة العميل",
+    notesOptional: "ملاحظات (اختياري)",
+    save: "حفظ",
+    cancel: "إلغاء",
+    addSuccess: "تمت إضافة العميل بنجاح.",
   },
   en: {
     command: "Customer intelligence center",
@@ -175,6 +192,14 @@ const text = {
     risk: "High risk",
     open: "open",
     profile: "Customer profile",
+    addCustomer: "Add customer",
+    addCustomerTitle: "Add new customer",
+    phoneNumber: "Phone number",
+    customerLanguage: "Customer language",
+    notesOptional: "Notes (optional)",
+    save: "Save",
+    cancel: "Cancel",
+    addSuccess: "Customer added successfully.",
   },
 } as const;
 
@@ -238,6 +263,9 @@ export function CustomerDirectory({ initialState }: CustomerDirectoryProps) {
   const [message, setMessage] = useState<string | null>(initialState.success ? null : initialState.message ?? "Failed to load customers.");
   const [isPending, startTransition] = useTransition();
   const [isDetailPending, startDetailTransition] = useTransition();
+  const [addOpen, setAddOpen] = useState(false);
+  const [addForm, setAddForm] = useState({ phone: "", language: "fa" as "fa" | "ar" | "en", notes: "" });
+  const [isAddPending, startAddTransition] = useTransition();
 
   const stats = state.stats;
   const pagination = state.pagination;
@@ -272,6 +300,24 @@ export function CustomerDirectory({ initialState }: CustomerDirectoryProps) {
       }
 
       setMessage(result.success ? null : result.message ?? "Load failed.");
+    });
+  };
+
+  const submitAddCustomer = () => {
+    startAddTransition(async () => {
+      const result = await createCustomer({
+        phone: addForm.phone,
+        language: addForm.language,
+        notes: addForm.notes,
+      });
+      if (result.success) {
+        setAddOpen(false);
+        setAddForm({ phone: "", language: "fa", notes: "" });
+        setMessage(t.addSuccess);
+        load(0);
+      } else {
+        setMessage(result.message ?? "Could not add customer.");
+      }
     });
   };
 
@@ -346,6 +392,10 @@ export function CustomerDirectory({ initialState }: CustomerDirectoryProps) {
               {activeFilterCount > 0 && <Badge variant="amber">{activeFilterCount} {t.active}</Badge>}
             </div>
             <div className="flex gap-2">
+              <Button variant="secondary" onClick={() => setAddOpen(true)}>
+                <UserRound className="h-4 w-4" />
+                {t.addCustomer}
+              </Button>
               <Button variant="secondary" onClick={clearFilters} disabled={isPending}>{t.clear}</Button>
               <Button onClick={() => load(0)} disabled={isPending}>
                 <RefreshCw className={`h-4 w-4 ${isPending ? "animate-spin" : ""}`} />
@@ -494,6 +544,59 @@ export function CustomerDirectory({ initialState }: CustomerDirectoryProps) {
           )}
         </Card>
       </div>
+
+      {addOpen && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/50 px-4" role="dialog" aria-modal="true">
+          <Card className="w-full max-w-md p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-black text-[color:var(--admin-text)]">{t.addCustomerTitle}</h3>
+              <button type="button" onClick={() => setAddOpen(false)} className="text-[color:var(--admin-muted)]"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-xs font-bold text-[color:var(--admin-muted)]">{t.phoneNumber}</label>
+                <div className="flex overflow-hidden rounded-2xl border border-[color:var(--admin-border)] bg-black/20">
+                  <span className="flex items-center border-e border-[color:var(--admin-border)] px-3 text-sm font-black text-amber-200" dir="ltr">+968</span>
+                  <input
+                    value={addForm.phone}
+                    onChange={(event) => setAddForm((current) => ({ ...current, phone: event.target.value.replace(/\D+/g, "").slice(0, 8) }))}
+                    placeholder="91234567"
+                    inputMode="numeric"
+                    maxLength={8}
+                    dir="ltr"
+                    className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-[color:var(--admin-text)] outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold text-[color:var(--admin-muted)]">{t.customerLanguage}</label>
+                <select
+                  value={addForm.language}
+                  onChange={(event) => setAddForm((current) => ({ ...current, language: event.target.value as typeof current.language }))}
+                  className="w-full rounded-2xl border border-[color:var(--admin-border)] bg-black/20 px-4 py-3 text-sm text-[color:var(--admin-text)] outline-none"
+                >
+                  <option value="fa">فارسی</option>
+                  <option value="ar">العربية</option>
+                  <option value="en">English</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold text-[color:var(--admin-muted)]">{t.notesOptional}</label>
+                <textarea
+                  value={addForm.notes}
+                  onChange={(event) => setAddForm((current) => ({ ...current, notes: event.target.value }))}
+                  rows={3}
+                  className="w-full rounded-2xl border border-[color:var(--admin-border)] bg-black/20 px-4 py-3 text-sm text-[color:var(--admin-text)] outline-none"
+                />
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setAddOpen(false)}>{t.cancel}</Button>
+              <Button onClick={submitAddCustomer} loading={isAddPending} disabled={addForm.phone.length !== 8}>{t.save}</Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

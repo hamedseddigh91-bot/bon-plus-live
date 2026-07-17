@@ -18,6 +18,7 @@ import {
   HeartHandshake,
   Search,
   Settings2,
+  ShoppingCart,
   Sparkles,
   Sun,
   X,
@@ -65,6 +66,7 @@ type LabelKey =
   | "questions"
   | "rewards"
   | "discounts"
+  | "shoppingList"
   | "reports"
   | "activityLogs"
   | "users"
@@ -158,6 +160,12 @@ const navItems: NavItem[] = [
       { labelKey: "discounts", href: "/admin/crm/discounts" },
       { labelKey: "rewards", href: "/admin/crm/loyalty" },
     ],
+  },
+  {
+    labelKey: "shoppingList",
+    href: "/admin/operations/shopping-list",
+    icon: ShoppingCart,
+    module: "shopping_list",
   },
   {
     labelKey: "settings",

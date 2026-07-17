@@ -205,3 +205,19 @@ export async function redeemLoyaltyReward(counterId: string) {
     return { success: false, message: error instanceof Error ? error.message : "Reward redemption failed." };
   }
 }
+
+export async function getCustomerLanguageByPhone(phone: string): Promise<"fa" | "ar" | "en"> {
+  await requireModulePermission("loyalty", "view");
+  const supabase = createSupabaseAdminClient();
+  const businessSlug = await requireCurrentBusinessSlug();
+  const { data: business } = await supabase.from("businesses").select("id").eq("slug", businessSlug).maybeSingle();
+  if (!business) return "en";
+  const normalized = normalizeOmanPhone(phone) ?? phone;
+  const { data: customer } = await supabase
+    .from("customers")
+    .select("language")
+    .eq("business_id", business.id)
+    .eq("phone", normalized)
+    .maybeSingle();
+  return (customer?.language as "fa" | "ar" | "en" | undefined) ?? "en";
+}

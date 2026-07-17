@@ -1,9 +1,11 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireCurrentBusinessSlug } from "@/lib/auth-session";
 import { requireModulePermission } from "@/lib/user-permissions";
 import type { FeedbackSegment, LanguageCode, RewardType } from "@/types/feedback";
+import { normalizeOmanPhone } from "@/lib/oman-phone";
 
 export type CustomerRiskFilter = "all" | "repeat" | "low_score" | "unhappy";
 
@@ -149,6 +151,54 @@ export async function getCustomerDirectory(
   }
 
   return data as CustomerDirectoryState;
+}
+
+export type CreateCustomerInput = {
+  phone: string;
+  language: LanguageCode;
+  notes?: string;
+};
+
+export async function createCustomer(
+  input: CreateCustomerInput
+): Promise<{ success: boolean; message?: string; customerId?: string }> {
+  await requireModulePermission("customers", "edit");
+  const supabase = createSupabaseAdminClient();
+  const businessSlug = await requireCurrentBusinessSlug();
+
+  const phone = normalizeOmanPhone(input.phone);
+  if (!phone) return { success: false, message: "Enter a valid 8-digit Oman phone number." };
+
+  const { data: business, error: businessError } = await supabase
+    .from("businesses")
+    .select("id")
+    .eq("slug", businessSlug)
+    .maybeSingle();
+  if (businessError || !business) return { success: false, message: businessError?.message ?? "Business was not found." };
+
+  const { data: existing } = await supabase
+    .from("customers")
+    .select("id")
+    .eq("business_id", business.id)
+    .eq("phone", phone)
+    .maybeSingle();
+  if (existing) return { success: false, message: "A customer with this phone number already exists." };
+
+  const { data: created, error } = await supabase
+    .from("customers")
+    .insert({
+      business_id: business.id,
+      phone,
+      language: input.language,
+      notes: input.notes?.trim() || null,
+    })
+    .select("id")
+    .single();
+
+  if (error) return { success: false, message: error.message };
+
+  revalidatePath("/admin/crm/customers");
+  return { success: true, customerId: created.id };
 }
 
 export async function getCustomerProfile(

@@ -32,6 +32,7 @@ const copy = {
 const placeholderMap: Record<string, string[]> = {
   discount_early: ["{code}", "{expiry_date}", "{remaining_days}"],
   discount_expiry: ["{code}", "{expiry_date}", "{remaining_days}"],
+  discount_talabat: ["{code}", "{expiry_date}", "{remaining_days}"],
   invoice: ["{invoice_no}", "{date}", "{supplier}", "{amount}", "{status}", "{link}"],
 };
 

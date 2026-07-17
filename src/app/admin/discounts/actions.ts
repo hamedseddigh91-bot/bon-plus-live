@@ -8,6 +8,7 @@ import { requireAuthenticatedUser, requireCurrentBusinessSlug } from "@/lib/auth
 import { requireModulePermission } from "@/lib/user-permissions";
 import type { FeedbackSegment, RewardType } from "@/types/feedback";
 import { normalizeOmanPhone } from "@/lib/oman-phone";
+import type { LanguageCode } from "@/types/feedback";
 
 export type DiscountStatusFilter = "all" | "available" | "used_up" | "expired" | string;
 export type DiscountSourceFilter = "all" | "system" | "manual" | string;
@@ -27,6 +28,7 @@ export type DiscountCodeRow = {
   createdAt: string;
   feedbackSubmissionId: string | null;
   feedbackPhone: string | null;
+  customerLanguage: LanguageCode | null;
   feedbackScore: number | null;
   feedbackSegment: FeedbackSegment | null;
   isExpired: boolean;
@@ -95,15 +97,16 @@ export async function getDiscountCenter(input: {
   if (ids.length > 0) {
     const { data: reminderRows } = await supabase
       .from("discount_codes")
-      .select("id,reason,early_reminder_sent_at,expiry_reminder_sent_at,customer_id,customers(phone)")
+      .select("id,reason,early_reminder_sent_at,expiry_reminder_sent_at,customer_id,customers(phone,language)")
       .in("id", ids);
 
     const reminders = new Map(
       (reminderRows ?? []).map((row) => {
-        const customerRel = row.customers as unknown as { phone?: string } | null;
+        const customerRel = row.customers as unknown as { phone?: string; language?: LanguageCode } | null;
         return [row.id, {
           reason: row.reason ?? null,
           phone: customerRel?.phone ?? null,
+          language: customerRel?.language ?? null,
           earlyReminderSentAt: row.early_reminder_sent_at ?? null,
           expiryReminderSentAt: row.expiry_reminder_sent_at ?? null,
         }];
@@ -116,6 +119,7 @@ export async function getDiscountCenter(input: {
         ...row,
         reason: extra.reason,
         feedbackPhone: row.feedbackPhone ?? extra.phone,
+        customerLanguage: extra.language,
         earlyReminderSentAt: extra.earlyReminderSentAt,
         expiryReminderSentAt: extra.expiryReminderSentAt,
       } : row;
@@ -191,6 +195,7 @@ function makeManualCode() {
 
 export async function createManualDiscountCode(input: {
   phone: string;
+  language: LanguageCode;
   rewardType: "percentage" | "fixed" | "free_cafe_item" | "free_food_item";
   value: number;
   acquisitionSource: string;
@@ -207,11 +212,13 @@ export async function createManualDiscountCode(input: {
     if (!customerId) {
       const { data: newCustomer, error: customerError } = await supabase
         .from("customers")
-        .insert({ business_id: businessId, phone })
+        .insert({ business_id: businessId, phone, language: input.language })
         .select("id")
         .single();
       if (customerError) return { success: false, message: customerError.message };
       customerId = newCustomer.id;
+    } else {
+      await supabase.from("customers").update({ language: input.language }).eq("id", customerId);
     }
     const code = makeManualCode();
     const expiresAt = new Date(Date.now() + Math.max(1, input.expiryDays || 7) * 86400000).toISOString();

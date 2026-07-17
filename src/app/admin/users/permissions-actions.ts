@@ -14,7 +14,7 @@ export type UserPermission = {
 const MODULES = [
   "dashboard","action_center","finance_closing","finance_invoices","finance_cash","costing",
   "feedback","followups","customers","discounts","loyalty","reports","activity_logs","system",
-  "settings_general","settings_feedback","settings_users","settings_whatsapp"
+  "settings_general","settings_feedback","settings_users","settings_whatsapp","shopping_list"
 ] as const;
 
 export async function getUserPermissions(businessUserId: string) {

@@ -40,6 +40,7 @@ const permissionLabels: Record<string, string> = {
   customers: "CRM · Customers",
   discounts: "CRM · Discounts",
   loyalty: "CRM · Loyalty",
+  shopping_list: "Operations · Shopping List",
   reports: "Reports",
   activity_logs: "Activity Logs",
   settings_general: "Settings · General",

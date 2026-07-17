@@ -920,3 +920,27 @@ body[data-admin-theme="liquid-light"] ::selection { background: rgba(72,149,239,
   }
 }
 
+@media print {
+  .bp-admin-shell aside,
+  .bp-admin-shell header,
+  .print\:hidden {
+    display: none !important;
+  }
+  .bp-content-shell {
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: 0 !important;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .bp-card {
+    break-inside: avoid;
+    border: 1px solid #ccc !important;
+    background: #fff !important;
+    color: #000 !important;
+    box-shadow: none !important;
+  }
+}
+

@@ -6,6 +6,7 @@ import { Coffee, Gift, MessageCircle, PlusCircle, Search, CheckCircle2 } from "l
 import type { LoyaltyCounterRow, LoyaltyCounterState } from "@/app/admin/crm/loyalty/actions";
 import { redeemLoyaltyReward, recordLoyaltyPurchase } from "@/app/admin/crm/loyalty/actions";
 import { getWhatsAppTemplateText } from "@/app/admin/settings/whatsapp-messages/actions";
+import { getCustomerLanguageByPhone } from "@/app/admin/crm/loyalty/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAdminLanguage } from "@/lib/admin-language";
@@ -77,7 +78,8 @@ export function LoyaltyCounter({ initialState }: { initialState: LoyaltyCounterS
 
   const openWhatsApp = async (row: LoyaltyCounterRow) => {
     const key = row.pendingRewards > 0 ? "loyalty_reward" : "loyalty_progress";
-    const saved = await getWhatsAppTemplateText(key, language);
+    const msgLang = await getCustomerLanguageByPhone(row.phone);
+    const saved = await getWhatsAppTemplateText(key, msgLang);
     const remaining = Math.max(row.thresholdCount - row.currentCount, 0);
     const fallback = row.pendingRewards > 0
       ? `Congratulations! Your reward ${rewardText(row)} is ready.`

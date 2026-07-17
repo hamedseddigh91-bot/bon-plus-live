@@ -64,16 +64,32 @@ function daysUntil(value: string | null | undefined) {
   return Math.ceil((new Date(value).getTime() - Date.now()) / 86_400_000);
 }
 
-function reminderMessage(row: DiscountCenterState["codes"][number], stage: "early" | "expiry") {
+function talabatReminderMessage(row: DiscountCenterState["codes"][number], msgLang: "fa" | "ar" | "en") {
+  const days = daysUntil(row.expiresAt);
+  if (msgLang === "fa") return `مشتری عزیز، کد تخفیف بن‌پلاس شما (${row.code}) آماده استفاده است و ${days} روز دیگر اعتبار دارد. منتظر سفارش شما از طریق طلبات هستیم!`;
+  if (msgLang === "ar") return `عزيزي العميل، رمز خصم بون بلس الخاص بك (${row.code}) جاهز للاستخدام وصالح لمدة ${days} يومًا أخرى. بانتظار طلبك عبر طلبات!`;
+  return `Dear customer, your Bon Plus discount code ${row.code} is ready to use and valid for ${days} more days. We look forward to your order via Talabat!`;
+}
+
+function reminderMessage(row: DiscountCenterState["codes"][number], stage: "early" | "expiry", msgLang: "fa" | "ar" | "en") {
   const reward = row.rewardType === "percentage"
-    ? `${row.discountValue ?? 0}% discount`
+    ? `${row.discountValue ?? 0}%`
     : row.rewardType === "fixed"
-      ? `${row.discountValue ?? 0} OMR discount`
-      : row.freeItemName ?? "your Bon Plus reward";
-  const phone = row.feedbackPhone ?? "Dear customer";
+      ? `${row.discountValue ?? 0} OMR`
+      : row.freeItemName ?? (msgLang === "fa" ? "جایزه‌ی بن‌پلاس" : msgLang === "ar" ? "مكافأة بون بلس" : "your Bon Plus reward");
+  if (msgLang === "fa") {
+    return stage === "expiry"
+      ? `مشتری عزیز، کد تخفیف بن‌پلاس شما (${row.code}) به‌زودی منقضی می‌شود. جایزه‌ی شما: ${reward}. منتظر دیدار دوباره‌ی شما هستیم.`
+      : `مشتری عزیز، یادآوری می‌کنیم کد تخفیف بن‌پلاس شما (${row.code}) فعال است. جایزه‌ی شما: ${reward}. منتظر دیدار دوباره‌ی شما هستیم.`;
+  }
+  if (msgLang === "ar") {
+    return stage === "expiry"
+      ? `عزيزي العميل، سينتهي قريبًا رمز خصم بون بلس الخاص بك (${row.code}). مكافأتك: ${reward}. نتطلع لرؤيتك مرة أخرى.`
+      : `عزيزي العميل، تذكير بأن رمز خصم بون بلس الخاص بك (${row.code}) لا يزال فعالاً. مكافأتك: ${reward}. نتطلع لرؤيتك مرة أخرى.`;
+  }
   return stage === "expiry"
-    ? `${phone}, your Bon Plus discount code ${row.code} is expiring soon. Your reward is ${reward}. We would love to see you again before it expires.`
-    : `${phone}, a friendly reminder that your Bon Plus discount code ${row.code} is active. Your reward is ${reward}. We look forward to welcoming you again.`;
+    ? `Dear customer, your Bon Plus discount code ${row.code} is expiring soon. Your reward is ${reward}. We would love to see you again before it expires.`
+    : `Dear customer, a friendly reminder that your Bon Plus discount code ${row.code} is active. Your reward is ${reward}. We look forward to welcoming you again.`;
 }
 export function DiscountsManager({ initialState }: DiscountsManagerProps) {
   const { language } = useAdminLanguage();
@@ -88,7 +104,7 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
   const [redeemCode, setRedeemCode] = useState("");
   const [redeemNote, setRedeemNote] = useState("");
   const [validation, setValidation] = useState<DiscountValidation | null>(null);
-  const [createForm, setCreateForm] = useState({ phone: "", rewardType: "percentage" as "percentage" | "fixed" | "free_cafe_item" | "free_food_item", value: "10", acquisitionSource: "Talabat", usageLimit: "1", expiryDays: "7" });
+  const [createForm, setCreateForm] = useState({ phone: "", language: "fa" as "fa" | "ar" | "en", rewardType: "percentage" as "percentage" | "fixed" | "free_cafe_item" | "free_food_item", value: "10", acquisitionSource: "Talabat", usageLimit: "1", expiryDays: "7" });
   const [message, setMessage] = useState<string | null>(
     initialState.success ? null : initialState.message ?? "Failed to load discounts."
   );
@@ -173,6 +189,7 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
     startTransition(async () => {
       const result = await createManualDiscountCode({
         phone: createForm.phone,
+        language: createForm.language,
         rewardType: createForm.rewardType,
         value: Number(createForm.value || 0),
         acquisitionSource: createForm.acquisitionSource,
@@ -193,8 +210,12 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
   };
 
   const openReminder = async (row: DiscountCenterState["codes"][number], stage: "early" | "expiry") => {
-    const saved = await getWhatsAppTemplateText(stage === "early" ? "discount_early" : "discount_expiry", language);
-    const messageText = (saved || reminderMessage(row, stage)).replaceAll("{code}", row.code).replaceAll("{expiry_date}", row.expiresAt ? new Date(row.expiresAt).toLocaleDateString() : "—").replaceAll("{remaining_days}", String(daysUntil(row.expiresAt)));
+    const msgLang = row.customerLanguage ?? language;
+    const isTalabat = stage === "early" && (row.reason ?? "").trim().toLowerCase() === "talabat";
+    const templateKey = isTalabat ? "discount_talabat" : stage === "early" ? "discount_early" : "discount_expiry";
+    const saved = await getWhatsAppTemplateText(templateKey, msgLang);
+    const fallback = isTalabat ? talabatReminderMessage(row, msgLang) : reminderMessage(row, stage, msgLang);
+    const messageText = (saved || fallback).replaceAll("{code}", row.code).replaceAll("{expiry_date}", row.expiresAt ? new Date(row.expiresAt).toLocaleDateString() : "—").replaceAll("{remaining_days}", String(daysUntil(row.expiresAt)));
     const phone = (row.feedbackPhone ?? "").replace(/\D/g, "");
     const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(messageText)}` : `https://wa.me/?text=${encodeURIComponent(messageText)}`;
     window.open(url, "_blank", "noopener,noreferrer");
@@ -260,12 +281,34 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
           <Card className="p-5">
             <div className="mb-4 flex items-center gap-2 text-white"><TicketPercent className="h-5 w-5 text-amber-200" /><h2 className="text-lg font-semibold">Create discount code</h2></div>
             <div className="grid gap-3 md:grid-cols-2">
-              <div className="flex overflow-hidden rounded-2xl border border-white/10 bg-black/20"><span className="flex items-center border-e border-white/10 px-3 text-sm font-black text-amber-200" dir="ltr">+968</span><input value={createForm.phone} onChange={(e)=>setCreateForm((c)=>({...c,phone:e.target.value.replace(/\D+/g, "").slice(0,8)}))} placeholder="91234567" inputMode="numeric" maxLength={8} dir="ltr" className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none" /></div>
-              <select value={createForm.rewardType} onChange={(e)=>setCreateForm((c)=>({...c,rewardType:e.target.value as typeof c.rewardType}))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none"><option value="percentage">Percentage</option><option value="fixed">Fixed OMR</option><option value="free_cafe_item">Free café item</option><option value="free_food_item">Free food item</option></select>
-              <input type="number" step="0.001" value={createForm.value} onChange={(e)=>setCreateForm((c)=>({...c,value:e.target.value}))} placeholder="Value / quantity" className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" />
-              <select value={createForm.acquisitionSource} onChange={(e)=>setCreateForm((c)=>({...c,acquisitionSource:e.target.value}))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none"><option>Talabat</option><option>Social Media</option><option>Google</option><option>Other</option></select>
-              <input type="number" min="1" value={createForm.usageLimit} onChange={(e)=>setCreateForm((c)=>({...c,usageLimit:e.target.value}))} placeholder="Usage limit" className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" />
-              <input type="number" min="1" value={createForm.expiryDays} onChange={(e)=>setCreateForm((c)=>({...c,expiryDays:e.target.value}))} placeholder="Expiry days" className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" />
+              <div>
+                <label className="mb-1 block text-xs font-bold text-white/50">Phone number</label>
+                <div className="flex overflow-hidden rounded-2xl border border-white/10 bg-black/20"><span className="flex items-center border-e border-white/10 px-3 text-sm font-black text-amber-200" dir="ltr">+968</span><input value={createForm.phone} onChange={(e)=>setCreateForm((c)=>({...c,phone:e.target.value.replace(/\D+/g, "").slice(0,8)}))} placeholder="91234567" inputMode="numeric" maxLength={8} dir="ltr" className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none" /></div>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold text-white/50">Customer language</label>
+                <select value={createForm.language} onChange={(e)=>setCreateForm((c)=>({...c,language:e.target.value as typeof c.language}))} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none"><option value="fa">فارسی</option><option value="ar">العربية</option><option value="en">English</option></select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold text-white/50">Discount type</label>
+                <select value={createForm.rewardType} onChange={(e)=>setCreateForm((c)=>({...c,rewardType:e.target.value as typeof c.rewardType}))} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none"><option value="percentage">Percentage</option><option value="fixed">Fixed OMR</option><option value="free_cafe_item">Free café item</option><option value="free_food_item">Free food item</option></select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold text-white/50">Discount value / quantity</label>
+                <input type="number" step="0.001" value={createForm.value} onChange={(e)=>setCreateForm((c)=>({...c,value:e.target.value}))} placeholder="Value / quantity" className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold text-white/50">Acquisition source</label>
+                <select value={createForm.acquisitionSource} onChange={(e)=>setCreateForm((c)=>({...c,acquisitionSource:e.target.value}))} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none"><option>Talabat</option><option>Social Media</option><option>Google</option><option>Other</option></select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold text-white/50">Usage limit</label>
+                <input type="number" min="1" value={createForm.usageLimit} onChange={(e)=>setCreateForm((c)=>({...c,usageLimit:e.target.value}))} placeholder="Usage limit" className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold text-white/50">Expiry (days)</label>
+                <input type="number" min="1" value={createForm.expiryDays} onChange={(e)=>setCreateForm((c)=>({...c,expiryDays:e.target.value}))} placeholder="Expiry days" className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" />
+              </div>
             </div>
             <Button className="mt-4" onClick={createCode} disabled={isPending || createForm.phone.length !== 8}>Create code</Button>
           </Card>
