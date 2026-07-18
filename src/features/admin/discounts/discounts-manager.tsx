@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAdminLanguage } from "@/lib/admin-language";
+import { useWhatsAppLanguagePicker } from "@/components/ui/whatsapp-language-picker";
 
 type DiscountsManagerProps = {
   initialState: DiscountCenterState;
@@ -104,7 +105,8 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
   const [redeemCode, setRedeemCode] = useState("");
   const [redeemNote, setRedeemNote] = useState("");
   const [validation, setValidation] = useState<DiscountValidation | null>(null);
-  const [createForm, setCreateForm] = useState({ phone: "", language: "fa" as "fa" | "ar" | "en", rewardType: "percentage" as "percentage" | "fixed" | "free_cafe_item" | "free_food_item", value: "10", acquisitionSource: "Talabat", usageLimit: "1", expiryDays: "7" });
+  const [createForm, setCreateForm] = useState({ phone: "", rewardType: "percentage" as "percentage" | "fixed" | "free_cafe_item" | "free_food_item", value: "10", acquisitionSource: "Talabat", usageLimit: "1", expiryDays: "7" });
+  const { pickLanguage, picker: languagePicker } = useWhatsAppLanguagePicker();
   const [message, setMessage] = useState<string | null>(
     initialState.success ? null : initialState.message ?? "Failed to load discounts."
   );
@@ -189,7 +191,6 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
     startTransition(async () => {
       const result = await createManualDiscountCode({
         phone: createForm.phone,
-        language: createForm.language,
         rewardType: createForm.rewardType,
         value: Number(createForm.value || 0),
         acquisitionSource: createForm.acquisitionSource,
@@ -210,7 +211,9 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
   };
 
   const openReminder = async (row: DiscountCenterState["codes"][number], stage: "early" | "expiry") => {
-    const msgLang = row.customerLanguage ?? language;
+    const picked = await pickLanguage();
+    if (!picked) return;
+    const msgLang = picked;
     const isTalabat = stage === "early" && (row.reason ?? "").trim().toLowerCase() === "talabat";
     const templateKey = isTalabat ? "discount_talabat" : stage === "early" ? "discount_early" : "discount_expiry";
     const saved = await getWhatsAppTemplateText(templateKey, msgLang);
@@ -284,10 +287,6 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
               <div>
                 <label className="mb-1 block text-xs font-bold text-white/50">Phone number</label>
                 <div className="flex overflow-hidden rounded-2xl border border-white/10 bg-black/20"><span className="flex items-center border-e border-white/10 px-3 text-sm font-black text-amber-200" dir="ltr">+968</span><input value={createForm.phone} onChange={(e)=>setCreateForm((c)=>({...c,phone:e.target.value.replace(/\D+/g, "").slice(0,8)}))} placeholder="91234567" inputMode="numeric" maxLength={8} dir="ltr" className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none" /></div>
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-bold text-white/50">Customer language</label>
-                <select value={createForm.language} onChange={(e)=>setCreateForm((c)=>({...c,language:e.target.value as typeof c.language}))} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none"><option value="fa">فارسی</option><option value="ar">العربية</option><option value="en">English</option></select>
               </div>
               <div>
                 <label className="mb-1 block text-xs font-bold text-white/50">Discount type</label>
@@ -417,6 +416,7 @@ export function DiscountsManager({ initialState }: DiscountsManagerProps) {
           )}
         </div>
       </div>
+      {languagePicker}
     </>
   );
 }

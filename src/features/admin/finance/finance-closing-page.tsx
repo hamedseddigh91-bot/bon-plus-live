@@ -118,7 +118,7 @@ export function FinanceClosingPage({ initialState }: FinanceClosingPageProps) {
     [initialState.closings],
   );
   const latestClosing = sortedClosings[0] ?? null;
-  const previewTotal = numberValue(form.cashAmount) + numberValue(form.cardAmount) + numberValue(form.talabatAmount) + numberValue(form.otherAmount);
+  const previewTotal = numberValue(form.cashAmount) + numberValue(form.cardAmount) + numberValue(form.talabatAmount);
 
   const totals = useMemo(() => {
     return sortedClosings.reduce(

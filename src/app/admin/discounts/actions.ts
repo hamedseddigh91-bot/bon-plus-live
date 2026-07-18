@@ -195,7 +195,6 @@ function makeManualCode() {
 
 export async function createManualDiscountCode(input: {
   phone: string;
-  language: LanguageCode;
   rewardType: "percentage" | "fixed" | "free_cafe_item" | "free_food_item";
   value: number;
   acquisitionSource: string;
@@ -212,13 +211,11 @@ export async function createManualDiscountCode(input: {
     if (!customerId) {
       const { data: newCustomer, error: customerError } = await supabase
         .from("customers")
-        .insert({ business_id: businessId, phone, language: input.language })
+        .insert({ business_id: businessId, phone })
         .select("id")
         .single();
       if (customerError) return { success: false, message: customerError.message };
       customerId = newCustomer.id;
-    } else {
-      await supabase.from("customers").update({ language: input.language }).eq("id", customerId);
     }
     const code = makeManualCode();
     const expiresAt = new Date(Date.now() + Math.max(1, input.expiryDays || 7) * 86400000).toISOString();

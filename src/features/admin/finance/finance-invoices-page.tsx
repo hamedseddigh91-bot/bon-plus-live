@@ -14,6 +14,7 @@ import {
 } from "@/app/admin/operations/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useWhatsAppLanguagePicker } from "@/components/ui/whatsapp-language-picker";
 import { FinanceShell } from "@/features/admin/finance/finance-shell";
 import type { FinanceLanguage } from "@/features/admin/finance/finance-i18n";
 import { documentsFor, fileSize, getInvoiceEntries, money, numberValue, today } from "@/features/admin/finance/finance-utils";
@@ -174,6 +175,7 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
   const [supplierFilter, setSupplierFilter] = useState("all");
   const [usageFilter, setUsageFilter] = useState("all");
   const [isPending, startTransition] = useTransition();
+  const { pickLanguage, picker: languagePicker } = useWhatsAppLanguagePicker();
 
   const invoices = useMemo(() => getInvoiceEntries(initialState.entries), [initialState.entries]);
 
@@ -764,7 +766,7 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
                                 )}
                                 <button type="button" onClick={() => editEntry(entry)} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/65 hover:bg-white/10">{t.edit}</button>
                                 <button type="button" onClick={() => printInvoice(entry, l.invoicePreview)} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/65 hover:bg-white/10"><Printer className="h-3.5 w-3.5" /></button>
-                                <button type="button" onClick={() => shareInvoice(entry, language)} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/65 hover:bg-white/10"><MessageCircle className="h-3.5 w-3.5" /></button>
+                                <button type="button" onClick={async () => { const picked = await pickLanguage(); if (picked) shareInvoice(entry, picked); }} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/65 hover:bg-white/10"><MessageCircle className="h-3.5 w-3.5" /></button>
                               </div>
                             </td>
                           </tr>
@@ -872,6 +874,7 @@ export function FinanceInvoicesPage({ initialState }: FinanceInvoicesPageProps) 
                 </div>
               </div>
             )}
+            {languagePicker}
           </>
         );
       }}

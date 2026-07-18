@@ -37,6 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAdminLanguage } from "@/lib/admin-language";
+import { useWhatsAppLanguagePicker } from "@/components/ui/whatsapp-language-picker";
 import type { LanguageCode } from "@/types/feedback";
 
 type FeedbackInboxProps = {
@@ -339,6 +340,7 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
   const [whatsappPhone, setWhatsappPhone] = useState("");
   const [whatsappText, setWhatsappText] = useState("");
   const [movingFeedbackId, setMovingFeedbackId] = useState<string | null>(null);
+  const { pickLanguage, picker: languagePicker } = useWhatsAppLanguagePicker();
 
   const defaultWhatsappText = (score: number, phone: string, msgLang: LanguageCode) => {
     const name = phone || "Customer";
@@ -543,7 +545,7 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
             <Badge variant={recoveryVariant(item.recoveryStatus)}>{recoveryLabel(item.recoveryStatus, t)}</Badge>
             <p className="text-xs text-[color:var(--admin-muted)]">{item.createdAt.slice(5, 10)}</p>
             <Badge variant="secondary">{item.language?.toUpperCase() ?? "—"}</Badge>
-            <button type="button" onClick={(event) => { event.stopPropagation(); openWhatsappComposer(item.phone, Number(item.overallScore || 0), item.language); }} className="flex items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-2 py-2 text-xs font-bold text-emerald-200"><MessageCircle className="h-3.5 w-3.5" />{t.whatsapp}</button>
+            <button type="button" onClick={async (event) => { event.stopPropagation(); const picked = await pickLanguage(); if (picked) openWhatsappComposer(item.phone, Number(item.overallScore || 0), picked); }} className="flex items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-2 py-2 text-xs font-bold text-emerald-200"><MessageCircle className="h-3.5 w-3.5" />{t.whatsapp}</button>
               <div className="min-w-0" onClick={(event) => event.stopPropagation()}>
   <select
   value={item.workflowStage ?? "new"}
@@ -740,6 +742,7 @@ export function FeedbackInbox({ initialState }: FeedbackInboxProps) {
           </div>
         </div>
       )}
+      {languagePicker}
     </div>
   );
 }
